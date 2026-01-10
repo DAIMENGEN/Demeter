@@ -1,0 +1,253 @@
+.register-page {
+  height: 100vh;
+  overflow: hidden;
+
+  .register-content {
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #f5f5f7 0%, #e8e8ed 100%);
+
+    .register-container {
+      display: flex;
+      width: 90%;
+      max-width: 1200px;
+      height: 85vh;
+      max-height: 800px;
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+
+      .register-left {
+        flex: 1;
+        background-size: cover;
+        background-position: center;
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        .overlay {
+          position: absolute;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background: linear-gradient(
+            135deg,
+            rgba(0, 0, 0, 0.65) 0%,
+            rgba(0, 0, 0, 0.75) 100%
+          );
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          padding: 40px;
+
+          .logo-container {
+            margin-bottom: 24px;
+
+            img {
+              max-width: 240px;
+              height: auto;
+              border-radius: 12px;
+              box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+            }
+          }
+
+          .welcome-title {
+            color: #fff;
+            font-size: 48px;
+            font-weight: 700;
+            margin-bottom: 16px;
+            text-align: center;
+            font-family: Georgia, "Times New Roman", Times, serif;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+          }
+
+          .welcome-subtitle {
+            color: rgba(255, 255, 255, 0.95);
+            font-size: 18px;
+            text-align: center;
+            margin: 0;
+            font-weight: 300;
+            letter-spacing: 0.5px;
+          }
+        }
+      }
+
+      .register-right {
+        flex: 1;
+        background-color: #fff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 32px 40px;
+        overflow: hidden;
+
+        .register-form {
+          width: 100%;
+          max-width: 460px;
+
+          .form-title {
+            font-size: 26px;
+            font-weight: 600;
+            margin-bottom: 24px;
+            color: #1d1d1f;
+            text-align: center;
+          }
+
+          .ant-form {
+            .ant-form-item {
+              margin-bottom: 16px;
+            }
+
+            .ant-form-item-label {
+              padding-bottom: 4px;
+
+              > label {
+                font-weight: 500;
+                color: #6e6e73;
+                font-size: 14px;
+              }
+            }
+          }
+
+          .register-button {
+            height: 44px;
+            font-size: 16px;
+            font-weight: 500;
+            margin-top: 4px;
+            border-radius: 8px;
+          }
+
+          .login-link {
+            text-align: center;
+            margin-top: 16px;
+            font-size: 14px;
+
+            span {
+              color: #86868b;
+              margin-right: 8px;
+            }
+
+            a {
+              color: #0071e3;
+              font-weight: 500;
+              cursor: pointer;
+              text-decoration: none;
+
+              &:hover {
+                text-decoration: underline;
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+// 响应式设计
+@media (max-width: 992px) {
+  .register-page {
+    .register-content {
+      .register-container {
+        flex-direction: column;
+        width: 95%;
+        height: 95vh;
+
+        .register-left {
+          flex: 0 0 200px;
+
+          .overlay {
+            .logo-container img {
+              max-width: 160px;
+            }
+
+            .welcome-title {
+              font-size: 32px;
+            }
+
+            .welcome-subtitle {
+              font-size: 16px;
+            }
+          }
+        }
+
+        .register-right {
+          flex: 1;
+          padding: 20px 24px;
+
+          .register-form {
+            max-width: 400px;
+
+            .form-title {
+              font-size: 22px;
+              margin-bottom: 20px;
+            }
+
+            .ant-form {
+              .ant-form-item {
+                margin-bottom: 14px;
+              }
+            }
+
+            .login-link {
+              margin-top: 12px;
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+@media (max-width: 576px) {
+  .register-page {
+    .register-content {
+      .register-container {
+        .register-left {
+          flex: 0 0 150px;
+
+          .overlay {
+            .logo-container img {
+              max-width: 120px;
+            }
+
+            .welcome-title {
+              font-size: 24px;
+            }
+
+            .welcome-subtitle {
+              font-size: 14px;
+            }
+          }
+        }
+
+        .register-right {
+          padding: 16px;
+
+          .register-form {
+            .form-title {
+              font-size: 20px;
+              margin-bottom: 16px;
+            }
+
+            .ant-form {
+              .ant-form-item {
+                margin-bottom: 12px;
+              }
+            }
+
+            .login-link {
+              margin-top: 10px;
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
