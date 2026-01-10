@@ -5,7 +5,7 @@ import { useNavigate } from "react-router-dom";
 import { useLogin, type LoginParams } from "@Webapp/api";
 import { useAppDispatch } from "@Webapp/store/hooks";
 import { loginSuccess } from "@Webapp/store/slices/user-slice";
-import loginBgImage from "@Webapp/assets/backgrounds/login-bg-image.jpeg";
+import loginBgImage from "@Webapp/assets/backgrounds/auth-bg-image.jpeg";
 import loginLogoImage from "@Webapp/assets/trademark/wine-red-logo.jpg";
 
 const { Content } = Layout;
