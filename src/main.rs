@@ -1,57 +1,42 @@
-use axum::{
-    routing::{get, post},
-    http::StatusCode,
-    Json, Router,
-};
-use serde::{Deserialize, Serialize};
+mod common;
+mod config;
+mod modules;
+
+use axum::Router;
+use sqlx::postgres::PgPoolOptions;
 
 #[tokio::main]
-async fn main() {
-    // initialize tracing
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    // 初始化日志
     tracing_subscriber::fmt::init();
 
-    // build our application with a route
+    // 加载配置
+    let config = config::AppConfig::from_env()?;
+
+    // 创建数据库连接池
+    let pool = PgPoolOptions::new()
+        .max_connections(config.database.max_connections)
+        .connect(&config.database.url)
+        .await?;
+
+    tracing::info!("数据库连接成功");
+
+    // 运行数据库迁移
+    sqlx::migrate!("./migrations").run(&pool).await?;
+
+    tracing::info!("数据库迁移完成");
+
+    // 构建应用路由
     let app = Router::new()
-        // `GET /` goes to `root`
-        .route("/", get(root))
-        // `POST /users` goes to `create_user`
-        .route("/users", post(create_user));
+        .merge(modules::user::user_routes())
+        .with_state(pool);
 
-    // run our app with hyper, listening globally on port 3000
-    let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await.unwrap();
-    axum::serve(listener, app).await.unwrap();
-}
+    // 启动服务器
+    let addr = format!("{}:{}", config.server.host, config.server.port);
+    tracing::info!("服务器启动于: {}", addr);
 
-// basic handler that responds with a static string
-async fn root() -> &'static str {
-    "Hello, World!"
-}
+    let listener = tokio::net::TcpListener::bind(&addr).await?;
+    axum::serve(listener, app).await?;
 
-async fn create_user(
-    // this argument tells axum to parse the request body
-    // as JSON into a `CreateUser` type
-    Json(payload): Json<CreateUser>,
-) -> (StatusCode, Json<User>) {
-    // insert your application logic here
-    let user = User {
-        id: 1337,
-        username: payload.username,
-    };
-
-    // this will be converted into a JSON response
-    // with a status code of `201 Created`
-    (StatusCode::CREATED, Json(user))
-}
-
-// the input to our `create_user` handler
-#[derive(Deserialize)]
-struct CreateUser {
-    username: String,
-}
-
-// the output to our `create_user` handler
-#[derive(Serialize)]
-struct User {
-    id: u64,
-    username: String,
+    Ok(())
 }
