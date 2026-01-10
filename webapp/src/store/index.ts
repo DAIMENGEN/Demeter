@@ -1,8 +1,9 @@
 import {combineReducers, configureStore} from "@reduxjs/toolkit";
 import {FLUSH, PAUSE, PERSIST, persistReducer, persistStore, PURGE, REGISTER, REHYDRATE,} from "redux-persist";
-import storage from "redux-persist/lib/storage";
-
+import localStorage from "redux-persist/es/storage"; // 默认使用 localStorage
+// import storage from "redux-persist/lib/storage/session"; // 如果需要使用 sessionStorage
 import userReducer from "./slices/user-slice.ts";
+
 
 /**
  * 组合所有 reducers
@@ -23,7 +24,7 @@ const rootReducer = combineReducers({
 const persistConfig = {
     key: "root",
     version: 1,
-    storage,
+    storage: localStorage,
     // whitelist: ["user"], // 只持久化 user state
     // blacklist: [], // 不持久化的 reducers
 };
