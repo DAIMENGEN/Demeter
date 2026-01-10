@@ -11,6 +11,18 @@ function App() {
                     colorPrimary: "#91003c",
                     borderRadius: 2,
                 },
+                components: {
+                    Layout: {
+                        headerBg: "#91003c",
+                        headerHeight: 50,
+                        headerPadding: 0,
+                    },
+                    Menu: {
+                        darkItemBg: "#91003c",
+                        darkItemSelectedBg: "rgba(255, 255, 255, 0.2)",
+                        darkItemHoverBg: "rgba(255, 255, 255, 0.1)",
+                    },
+                },
             }}
         >
             <BrowserRouter>
