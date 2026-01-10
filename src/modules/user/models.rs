@@ -3,6 +3,7 @@ use sqlx::FromRow;
 
 /// 用户数据模型
 #[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
+#[serde(rename_all = "camelCase")]
 pub struct User {
     pub id: String,
     pub username: String,
@@ -20,6 +21,7 @@ pub struct User {
 
 /// 创建用户请求参数
 #[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct CreateUserParams {
     pub username: String,
     pub password: String,
@@ -32,6 +34,7 @@ pub struct CreateUserParams {
 
 /// 更新用户请求参数
 #[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct UpdateUserParams {
     pub username: Option<String>,
     pub password: Option<String>,
@@ -43,6 +46,7 @@ pub struct UpdateUserParams {
 
 /// 用户查询参数
 #[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct UserQueryParams {
     pub page: Option<i64>,
     pub page_size: Option<i64>,
@@ -61,6 +65,7 @@ pub struct BatchDeleteUsersParams {
 
 /// 切换用户状态请求参数
 #[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct ToggleUserStatusParams {
     pub is_active: bool,
 }
