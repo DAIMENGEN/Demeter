@@ -2,5 +2,6 @@
 pub mod auth;
 pub mod department;
 pub mod holiday;
+pub mod team;
 pub mod user;
 
