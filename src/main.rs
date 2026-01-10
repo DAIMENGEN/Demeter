@@ -26,10 +26,25 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     tracing::info!("数据库迁移完成");
 
+    // 创建应用状态
+    let app_state = modules::auth::AppState {
+        pool: pool.clone(),
+        jwt_config: config.jwt.clone(),
+    };
+
     // 构建应用路由
-    let app = Router::new()
-        .merge(modules::user::user_routes())
+    // Auth routes have their own state
+    let auth_routes = modules::auth::auth_routes(app_state);
+
+    // User routes need PgPool state
+    let user_routes = Router::new()
+        .nest("/api", modules::user::user_routes())
         .with_state(pool);
+
+    // Merge all routes
+    let app = Router::new()
+        .merge(auth_routes)
+        .merge(user_routes);
 
     // 启动服务器
     let addr = format!("{}:{}", config.server.host, config.server.port);

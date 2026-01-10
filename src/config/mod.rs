@@ -5,6 +5,7 @@ use serde::Deserialize;
 pub struct AppConfig {
     pub server: ServerConfig,
     pub database: DatabaseConfig,
+    pub jwt: JwtConfig,
 }
 
 /// 服务器配置
@@ -21,6 +22,14 @@ pub struct DatabaseConfig {
     pub max_connections: u32,
 }
 
+/// JWT 配置
+#[derive(Debug, Deserialize, Clone)]
+pub struct JwtConfig {
+    pub secret: String,
+    pub access_token_expires_in: i64,  // 访问令牌过期时间（秒）
+    pub refresh_token_expires_in: i64, // 刷新令牌过期时间（秒）
+}
+
 impl AppConfig {
     /// 从环境变量加载配置
     pub fn from_env() -> Result<Self, config::ConfigError> {
@@ -33,4 +42,3 @@ impl AppConfig {
         config.try_deserialize()
     }
 }
-

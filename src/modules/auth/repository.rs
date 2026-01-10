@@ -1,0 +1,199 @@
+use crate::common::error::AppResult;
+use crate::modules::auth::models::{RefreshToken, UserInfo};
+use crate::modules::user::models::User;
+use sqlx::PgPool;
+
+/// 认证数据访问层
+pub struct AuthRepository;
+
+impl AuthRepository {
+    /// 根据用户名获取用户（用于登录）
+    pub async fn get_user_by_username_for_auth(
+        pool: &PgPool,
+        username: &str,
+    ) -> AppResult<Option<User>> {
+        let user = sqlx::query_as::<_, User>(
+            r#"
+            SELECT id, username, password, full_name, email, phone, is_active,
+                   creator_id, updater_id, create_date_time, update_date_time
+            FROM users
+            WHERE username = $1
+            "#,
+        )
+        .bind(username)
+        .fetch_optional(pool)
+        .await?;
+
+        Ok(user)
+    }
+
+    /// 根据邮箱检查用户是否存在
+    pub async fn check_email_exists(pool: &PgPool, email: &str) -> AppResult<bool> {
+        let result: (bool,) = sqlx::query_as(
+            r#"
+            SELECT EXISTS(SELECT 1 FROM users WHERE email = $1)
+            "#,
+        )
+        .bind(email)
+        .fetch_one(pool)
+        .await?;
+
+        Ok(result.0)
+    }
+
+    /// 根据用户名检查用户是否存在
+    pub async fn check_username_exists(pool: &PgPool, username: &str) -> AppResult<bool> {
+        let result: (bool,) = sqlx::query_as(
+            r#"
+            SELECT EXISTS(SELECT 1 FROM users WHERE username = $1)
+            "#,
+        )
+        .bind(username)
+        .fetch_one(pool)
+        .await?;
+
+        Ok(result.0)
+    }
+
+    /// 创建用户（注册）
+    pub async fn create_user(
+        pool: &PgPool,
+        username: &str,
+        password_hash: &str,
+        full_name: &str,
+        email: &str,
+        phone: Option<&str>,
+    ) -> AppResult<User> {
+        let id = uuid::Uuid::new_v4().to_string();
+
+        let user = sqlx::query_as::<_, User>(
+            r#"
+            INSERT INTO users (id, username, password, full_name, email, phone, is_active, creator_id, create_date_time)
+            VALUES ($1, $2, $3, $4, $5, $6, true, $1, NOW())
+            RETURNING id, username, password, full_name, email, phone, is_active, creator_id, updater_id, create_date_time, update_date_time
+            "#
+        )
+        .bind(&id)
+        .bind(username)
+        .bind(password_hash)
+        .bind(full_name)
+        .bind(email)
+        .bind(phone)
+        .fetch_one(pool)
+        .await?;
+
+        Ok(user)
+    }
+
+    /// 保存刷新令牌
+    pub async fn save_refresh_token(
+        pool: &PgPool,
+        user_id: &str,
+        token: &str,
+        expires_at: chrono::NaiveDateTime,
+    ) -> AppResult<()> {
+        let id = uuid::Uuid::new_v4().to_string();
+
+        sqlx::query(
+            r#"
+            INSERT INTO refresh_tokens (id, user_id, token, expires_at, created_at)
+            VALUES ($1, $2, $3, $4, NOW())
+            "#,
+        )
+        .bind(&id)
+        .bind(user_id)
+        .bind(token)
+        .bind(expires_at)
+        .execute(pool)
+        .await?;
+
+        Ok(())
+    }
+
+    /// 验证刷新令牌是否存在且有效
+    pub async fn verify_refresh_token(
+        pool: &PgPool,
+        token: &str,
+    ) -> AppResult<Option<RefreshToken>> {
+        let refresh_token = sqlx::query_as::<_, RefreshToken>(
+            r#"
+            SELECT id, user_id, token, expires_at, created_at
+            FROM refresh_tokens
+            WHERE token = $1 AND expires_at > NOW()
+            "#,
+        )
+        .bind(token)
+        .fetch_optional(pool)
+        .await?;
+
+        Ok(refresh_token)
+    }
+
+    /// 删除刷新令牌
+    pub async fn delete_refresh_token(pool: &PgPool, token: &str) -> AppResult<()> {
+        sqlx::query(
+            r#"
+            DELETE FROM refresh_tokens
+            WHERE token = $1
+            "#,
+        )
+        .bind(token)
+        .execute(pool)
+        .await?;
+
+        Ok(())
+    }
+
+    /// 删除用户的所有刷新令牌
+    pub async fn delete_user_refresh_tokens(pool: &PgPool, user_id: &str) -> AppResult<()> {
+        sqlx::query(
+            r#"
+            DELETE FROM refresh_tokens
+            WHERE user_id = $1
+            "#,
+        )
+        .bind(user_id)
+        .execute(pool)
+        .await?;
+
+        Ok(())
+    }
+
+    /// 清理过期的刷新令牌
+    pub async fn cleanup_expired_tokens(pool: &PgPool) -> AppResult<u64> {
+        let result = sqlx::query(
+            r#"
+            DELETE FROM refresh_tokens
+            WHERE expires_at <= NOW()
+            "#,
+        )
+        .execute(pool)
+        .await?;
+
+        Ok(result.rows_affected())
+    }
+
+    /// 根据用户ID获取用户信息
+    pub async fn get_user_info_by_id(pool: &PgPool, user_id: &str) -> AppResult<Option<UserInfo>> {
+        let user = sqlx::query_as::<_, User>(
+            r#"
+            SELECT id, username, password, full_name, email, phone, is_active,
+                   creator_id, updater_id, create_date_time, update_date_time
+            FROM users
+            WHERE id = $1
+            "#,
+        )
+        .bind(user_id)
+        .fetch_optional(pool)
+        .await?;
+
+        Ok(user.map(|u| UserInfo {
+            id: u.id,
+            username: u.username,
+            full_name: u.full_name,
+            email: u.email,
+            phone: u.phone,
+            is_active: u.is_active,
+        }))
+    }
+}
