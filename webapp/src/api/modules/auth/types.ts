@@ -14,11 +14,16 @@ export interface LoginParams {
  * 登录响应数据
  */
 export interface LoginResponse {
-    token: string;
+    accessToken: string;
     refreshToken: string;
-    userId: string;
-    username: string;
-    fullName: string;
+    user: {
+        id: string;
+        username: string;
+        fullName: string;
+        email: string;
+        phone?: string;
+        isActive: boolean;
+    };
 }
 
 /**

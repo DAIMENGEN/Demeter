@@ -32,8 +32,9 @@ const refreshToken = async (): Promise<string> => {
   }
 
   try {
+    // 使用 axios 直接调用，避免使用 httpClient（防止循环拦截）
     const response = await axios.post<ApiResponse<{ token: string; refreshToken: string }>>(
-      "http://127.0.0.1:9090/api/auth/refresh",
+      "http://127.0.0.1:9000/api/auth/refresh",
       { refreshToken },
       {
         headers: {

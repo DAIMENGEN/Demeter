@@ -3,6 +3,7 @@ use sqlx::FromRow;
 
 /// 注册请求参数
 #[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct RegisterRequest {
     pub username: String,
     pub password: String,
@@ -20,12 +21,14 @@ pub struct LoginRequest {
 
 /// 刷新令牌请求参数
 #[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct RefreshTokenRequest {
     pub refresh_token: String,
 }
 
 /// 认证响应
 #[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct AuthResponse {
     pub access_token: String,
     pub refresh_token: String,
@@ -34,6 +37,7 @@ pub struct AuthResponse {
 
 /// 用户信息
 #[derive(Debug, Serialize, Clone)]
+#[serde(rename_all = "camelCase")]
 pub struct UserInfo {
     pub id: String,
     pub username: String,

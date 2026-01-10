@@ -2,8 +2,10 @@ mod common;
 mod config;
 mod modules;
 
+use axum::http::{header, HeaderValue, Method};
 use axum::Router;
 use sqlx::postgres::PgPoolOptions;
+use tower_http::cors::CorsLayer;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -32,19 +34,25 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         jwt_config: config.jwt.clone(),
     };
 
-    // 构建应用路由
-    // Auth routes have their own state
-    let auth_routes = modules::auth::auth_routes(app_state);
+    // 配置 CORS
+    let cors = CorsLayer::new()
+        .allow_origin("http://127.0.0.1:3000".parse::<HeaderValue>().unwrap())
+        .allow_methods([
+            Method::GET,
+            Method::POST,
+            Method::PUT,
+            Method::DELETE,
+            Method::OPTIONS,
+        ])
+        .allow_headers([header::CONTENT_TYPE, header::AUTHORIZATION, header::ACCEPT])
+        .allow_credentials(true);
 
-    // User routes need PgPool state
-    let user_routes = Router::new()
-        .nest("/api", modules::user::user_routes())
-        .with_state(pool);
+    // 将所有路由挂载到 /api 下
+    let api_routes = Router::new()
+        .merge(modules::auth::auth_routes(app_state))
+        .merge(modules::user::user_routes().with_state(pool));
 
-    // Merge all routes
-    let app = Router::new()
-        .merge(auth_routes)
-        .merge(user_routes);
+    let app = Router::new().nest("/api", api_routes).layer(cors);
 
     // 启动服务器
     let addr = format!("{}:{}", config.server.host, config.server.port);

@@ -22,15 +22,15 @@ export const LoginPage = () => {
         const response = await login(values);
 
         // 保存 token 到 sessionStorage
-        sessionStorage.setItem("token", response.data.token);
+        sessionStorage.setItem("token", response.data.accessToken);
         sessionStorage.setItem("refreshToken", response.data.refreshToken);
 
         // 更新 Redux store
         dispatch(
           loginSuccess({
-            id: response.data.userId,
-            username: response.data.username,
-            email: "", // 根据实际 API 返回调整
+            id: response.data.user.id,
+            username: response.data.user.username,
+            email: response.data.user.email,
           })
         );
 

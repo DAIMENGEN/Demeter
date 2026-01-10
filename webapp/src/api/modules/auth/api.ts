@@ -13,28 +13,28 @@ export const authApi = {
    * 用户登录
    */
   login: (data: LoginParams) => {
-    return post<LoginResponse>("/api/auth/login", data);
+    return post<LoginResponse>("/auth/login", data);
   },
 
   /**
    * 用户注册
    */
   register: (data: RegisterParams) => {
-    return post<LoginResponse>("/api/auth/register", data);
+    return post<LoginResponse>("/auth/register", data);
   },
 
   /**
    * 用户登出
    */
   logout: () => {
-    return post<void>("/api/auth/logout");
+    return post<void>("/auth/logout");
   },
 
   /**
    * 刷新 Token
    */
   refreshToken: (refreshToken: string) => {
-    return post<{ token: string; refreshToken: string }>("/api/auth/refresh", {
+    return post<{ token: string; refreshToken: string }>("/auth/refresh", {
       refreshToken,
     });
   },
