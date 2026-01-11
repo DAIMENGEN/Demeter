@@ -1,8 +1,8 @@
 import "./home-page.scss";
-import React, {useCallback, useState} from "react";
+import React, {useCallback, useState, useMemo} from "react";
 import {Layout, Menu, Space, Avatar, Dropdown, Button, Typography, theme} from "antd";
 import type {MenuProps} from "antd";
-import {Outlet, useNavigate} from "react-router-dom";
+import {Outlet, useNavigate, useLocation} from "react-router-dom";
 import {HomeOutlined, LogoutOutlined, UserOutlined, SettingOutlined} from "@ant-design/icons";
 import {useAppDispatch, useAppSelector} from "@Webapp/store/hooks";
 import {logout as logoutAction, selectCurrentUser, selectIsAuthenticated} from "@Webapp/store/slices/user-slice";
@@ -13,11 +13,23 @@ const {Text} = Typography;
 
 export const HomePage: React.FC = () => {
     const navigate = useNavigate();
+    const location = useLocation();
     const dispatch = useAppDispatch();
     const currentUser = useAppSelector(selectCurrentUser);
     const isAuthenticated = useAppSelector(selectIsAuthenticated);
     const {token} = theme.useToken(); // 获取主题 token
     const [profileDrawerOpen, setProfileDrawerOpen] = useState(false);
+
+    // Determine selected menu key based on current path
+    const selectedKeys = useMemo(() => {
+        const path = location.pathname;
+        // Only highlight Home when on the home index page
+        if (path === "/home" || path === "/home/") {
+            return ["/home"];
+        }
+        // Don't highlight any menu item when on other pages (project-management, calendar, etc.)
+        return [];
+    }, [location.pathname]);
 
     const onClick: MenuProps["onClick"] = useCallback((e: {key: string}) => {
         const {key} = e;
@@ -91,11 +103,14 @@ export const HomePage: React.FC = () => {
                         onClick={onClick}
                         theme="dark"
                         mode="horizontal"
-                        items={[{
-                            key: "/home",
-                            label: "Home",
-                            icon: <HomeOutlined/>,
-                        }]}
+                        selectedKeys={selectedKeys}
+                        items={[
+                            {
+                                key: "/home",
+                                label: "Home",
+                                icon: <HomeOutlined/>,
+                            }
+                        ]}
                     />
                 </Space>
                 <Space className="header-right" size="middle">
