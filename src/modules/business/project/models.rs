@@ -12,7 +12,7 @@ pub struct Project {
     pub end_date_time: Option<String>,
     pub project_status: i32,
     pub version: Option<i32>,
-    pub order: Option<i32>,
+    pub order: Option<f64>,
     pub creator_id: i64,
     pub updater_id: Option<i64>,
     pub create_date_time: chrono::NaiveDateTime,
@@ -29,7 +29,7 @@ pub struct CreateProjectParams {
     pub end_date_time: Option<String>,
     pub project_status: i32,
     pub version: Option<i32>,
-    pub order: Option<i32>,
+    pub order: Option<f64>,
 }
 
 /// 更新项目请求参数
@@ -42,7 +42,7 @@ pub struct UpdateProjectParams {
     pub end_date_time: Option<String>,
     pub project_status: Option<i32>,
     pub version: Option<i32>,
-    pub order: Option<i32>,
+    pub order: Option<f64>,
 }
 
 /// 项目查询参数

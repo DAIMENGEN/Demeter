@@ -7,7 +7,7 @@ CREATE TABLE IF NOT EXISTS projects (
     end_date_time VARCHAR(10),
     project_status INTEGER NOT NULL,
     version INTEGER,
-    "order" INTEGER,
+    "order" DOUBLE PRECISION,
     creator_id BIGINT NOT NULL,
     updater_id BIGINT,
     create_date_time TIMESTAMP NOT NULL DEFAULT '2022-10-08 00:00:00',
