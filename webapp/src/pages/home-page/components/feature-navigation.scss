@@ -22,10 +22,10 @@
     height: 100%;
     border-radius: 8px;
     overflow: hidden;
-    background: #fff;
     border: 1px solid #f0f0f0;
 
     &:hover {
+      cursor: pointer;
       border-color: #7073f2;
     }
 
