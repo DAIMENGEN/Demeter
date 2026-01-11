@@ -21,10 +21,9 @@
 
   .card-header {
     display: flex;
-    align-items: flex-start;
+    align-items: center;
     justify-content: space-between;
     gap: 12px;
-    margin-bottom: 12px;
 
     .project-title {
       flex: 1;
@@ -44,7 +43,6 @@
   .project-meta {
     width: 100%;
     padding-top: 12px;
-    border-top: 1px solid #f0f0f0;
 
     .meta-icon {
       color: rgba(0, 0, 0, 0.45);

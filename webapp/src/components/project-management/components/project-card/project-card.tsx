@@ -1,6 +1,13 @@
 import type {MenuProps} from "antd";
 import {Card, Dropdown, Space, Tag, Typography} from "antd";
-import {CalendarOutlined, DeleteOutlined, EditOutlined, MoreOutlined, UserOutlined} from "@ant-design/icons";
+import {
+    CalendarOutlined,
+    DeleteOutlined,
+    EditOutlined,
+    MoreOutlined,
+    SafetyOutlined,
+    UserOutlined
+} from "@ant-design/icons";
 import dayjs from "dayjs";
 import type {Project} from "@Webapp/api/modules/project";
 import {ProjectStatus, ProjectStatusLabels} from "@Webapp/api/modules/project";
@@ -36,16 +43,22 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({
                                                             onDelete,
                                                             onClick
                                                         }) => {
-    const menuItems: MenuProps["items"] = [
-        {
-            key: "edit",
-            icon: <EditOutlined/>,
-            label: "编辑",
-            onClick: () => onEdit?.(project)
-        },
-        {
-            type: "divider"
-        },
+    const handleCardClick = () => {
+        onClick?.(project);
+    };
+
+    const handleEdit = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        onEdit?.(project);
+    };
+
+    const handlePermission = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        // TODO: 实现权限管理功能
+        console.log("权限管理", project);
+    };
+
+    const moreMenuItems: MenuProps["items"] = [
         {
             key: "delete",
             icon: <DeleteOutlined/>,
@@ -55,33 +68,33 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({
         }
     ];
 
-    const handleCardClick = () => {
-        onClick?.(project);
-    };
+    const cardActions = [
+        <EditOutlined key="edit" onClick={handleEdit}/>,
+        <SafetyOutlined key="permission" onClick={handlePermission}/>,
+        <Dropdown menu={{items: moreMenuItems}} trigger={["click"]} key="more">
+            <MoreOutlined onClick={(e) => e.stopPropagation()}/>
+        </Dropdown>
+    ];
+
+    const cardTitle = (
+        <div className="card-header">
+            <Title level={5} className="project-title" ellipsis={{rows: 1}} style={{margin: 0}}>
+                {project.projectName}
+            </Title>
+            <Tag color={getStatusColor(project.projectStatus)}>
+                {ProjectStatusLabels[project.projectStatus]}
+            </Tag>
+        </div>
+    );
 
     return (
         <Card
             className="project-card"
             hoverable
             onClick={handleCardClick}
-            extra={
-                <Dropdown menu={{items: menuItems}} trigger={["click"]}>
-                    <MoreOutlined
-                        className="more-icon"
-                        onClick={(e) => e.stopPropagation()}
-                    />
-                </Dropdown>
-            }
+            title={cardTitle}
+            actions={cardActions}
         >
-            <div className="card-header">
-                <Title level={4} className="project-title" ellipsis={{rows: 1}}>
-                    {project.projectName}
-                </Title>
-                <Tag color={getStatusColor(project.projectStatus)}>
-                    {ProjectStatusLabels[project.projectStatus]}
-                </Tag>
-            </div>
-
             <Paragraph
                 className="project-description"
                 ellipsis={{rows: 2}}
