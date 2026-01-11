@@ -1,3 +1,5 @@
+pub mod logging;
+
 use serde::Deserialize;
 
 /// 应用配置

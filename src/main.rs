@@ -10,8 +10,9 @@ use tower_http::cors::CorsLayer;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    // 初始化日志
-    tracing_subscriber::fmt::init();
+    // 初始化日志系统（文件 + 控制台）
+    let log_config = config::logging::LogConfig::from_env();
+    log_config.init()?;
 
     // 加载配置
     let config = config::AppConfig::from_env()?;
