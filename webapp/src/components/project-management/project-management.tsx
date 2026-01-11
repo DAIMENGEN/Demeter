@@ -11,6 +11,7 @@ import {
 import "./project-management.scss";
 import {ProjectList} from "./components/project-list/project-list.tsx";
 import {CreateProjectDrawer} from "./components/create-project-drawer/create-project-drawer.tsx";
+import {EditProjectDrawer} from "./components/edit-project-drawer/edit-project-drawer.tsx";
 
 const {Sider, Content} = Layout;
 
@@ -20,6 +21,8 @@ export const ProjectManagement: React.FC = () => {
     const [selectedView, setSelectedView] = useState<ProjectViewType>("myCreated");
     const [collapsed, setCollapsed] = useState(false);
     const [createDrawerOpen, setCreateDrawerOpen] = useState(false);
+    const [editDrawerOpen, setEditDrawerOpen] = useState(false);
+    const [editingProject, setEditingProject] = useState<Project | null>(null);
     const { message } = App.useApp();
 
     // 获取不同视图的项目数据
@@ -74,8 +77,8 @@ export const ProjectManagement: React.FC = () => {
 
     // 处理编辑项目
     const handleEditProject = (project: Project) => {
-        message.info(`编辑项目: ${project.projectName}`);
-        // TODO: 打开编辑弹窗
+        setEditingProject(project);
+        setEditDrawerOpen(true);
     };
 
     // 处理删除项目
@@ -105,6 +108,11 @@ export const ProjectManagement: React.FC = () => {
 
     // 处理创建项目成功
     const handleCreateSuccess = () => {
+        currentViewData.refetch();
+    };
+
+    // 处理编辑项目成功
+    const handleEditSuccess = () => {
         currentViewData.refetch();
     };
 
@@ -172,6 +180,15 @@ export const ProjectManagement: React.FC = () => {
                 open={createDrawerOpen}
                 onClose={() => setCreateDrawerOpen(false)}
                 onSuccess={handleCreateSuccess}
+            />
+            <EditProjectDrawer
+                open={editDrawerOpen}
+                project={editingProject}
+                onClose={() => {
+                    setEditDrawerOpen(false);
+                    setEditingProject(null);
+                }}
+                onSuccess={handleEditSuccess}
             />
         </Layout>
     );
