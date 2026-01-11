@@ -1,4 +1,4 @@
-use crate::modules::department::handlers;
+use crate::modules::organization::department::handlers;
 use axum::{
     routing::{delete, get, post, put},
     Router,

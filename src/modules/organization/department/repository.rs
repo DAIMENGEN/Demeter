@@ -1,5 +1,5 @@
 use crate::common::error::AppResult;
-use crate::modules::department::models::{
+use crate::modules::organization::department::models::{
     CreateDepartmentParams, Department, DepartmentQueryParams, UpdateDepartmentParams,
 };
 use sqlx::PgPool;

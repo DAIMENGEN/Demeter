@@ -1,5 +1,5 @@
 ﻿use crate::common::error::AppResult;
-use crate::modules::team::models::{
+use crate::modules::organization::team::models::{
     CreateTeamParams, Team, TeamQueryParams, UpdateTeamParams,
 };
 use sqlx::PgPool;

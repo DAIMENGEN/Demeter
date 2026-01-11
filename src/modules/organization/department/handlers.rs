@@ -1,10 +1,10 @@
 use crate::common::error::{AppError, AppResult};
 use crate::common::response::{ApiResponse, PageResponse};
-use crate::modules::department::models::{
+use crate::modules::organization::department::models::{
     BatchDeleteDepartmentsParams, CreateDepartmentParams, Department, DepartmentQueryParams,
     UpdateDepartmentParams,
 };
-use crate::modules::department::repository::DepartmentRepository;
+use crate::modules::organization::department::repository::DepartmentRepository;
 use axum::{
     extract::{Path, Query, State},
     http::StatusCode,

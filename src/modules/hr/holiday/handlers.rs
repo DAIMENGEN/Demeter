@@ -1,10 +1,10 @@
 use crate::common::error::{AppError, AppResult};
 use crate::common::response::{ApiResponse, PageResponse};
-use crate::modules::holiday::models::{
+use crate::modules::hr::holiday::models::{
     BatchDeleteHolidaysParams, CreateHolidayParams, Holiday, HolidayQueryParams,
     UpdateHolidayParams,
 };
-use crate::modules::holiday::repository::HolidayRepository;
+use crate::modules::hr::holiday::repository::HolidayRepository;
 use axum::{
     extract::{Path, Query, State},
     http::StatusCode,

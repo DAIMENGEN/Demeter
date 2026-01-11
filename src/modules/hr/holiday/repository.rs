@@ -1,5 +1,5 @@
 use crate::common::error::AppResult;
-use crate::modules::holiday::models::{CreateHolidayParams, Holiday, HolidayQueryParams, UpdateHolidayParams};
+use crate::modules::hr::holiday::models::{CreateHolidayParams, Holiday, HolidayQueryParams, UpdateHolidayParams};
 use sqlx::PgPool;
 
 /// 假期数据访问层

@@ -1,10 +1,10 @@
 ﻿use crate::common::error::{AppError, AppResult};
 use crate::common::response::{ApiResponse, PageResponse};
-use crate::modules::team::models::{
+use crate::modules::organization::team::models::{
     BatchDeleteTeamsParams, CreateTeamParams, Team, TeamQueryParams,
     UpdateTeamParams,
 };
-use crate::modules::team::repository::TeamRepository;
+use crate::modules::organization::team::repository::TeamRepository;
 use axum::{
     extract::{Path, Query, State},
     http::StatusCode,

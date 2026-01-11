@@ -1,4 +1,4 @@
-use crate::modules::holiday::handlers;
+use crate::modules::hr::holiday::handlers;
 use axum::{
     routing::{delete, get, post, put},
     Router,

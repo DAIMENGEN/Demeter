@@ -4,6 +4,7 @@ mod modules;
 
 use axum::http::{header, HeaderValue, Method};
 use axum::Router;
+use modules::{hr, organization};
 use sqlx::postgres::PgPoolOptions;
 use tower_http::cors::CorsLayer;
 
@@ -36,7 +37,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // 配置 CORS
     let cors = CorsLayer::new()
-        .allow_origin("http://127.0.0.1:3000".parse::<HeaderValue>().unwrap())
+        .allow_origin("http://127.0.0.1:3000".parse::<HeaderValue>()?)
         .allow_methods([
             Method::GET,
             Method::POST,
@@ -51,9 +52,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let api_routes = Router::new()
         .merge(modules::auth::auth_routes(app_state))
         .merge(modules::user::user_routes().with_state(pool.clone()))
-        .merge(modules::department::department_routes().with_state(pool.clone()))
-        .merge(modules::holiday::holiday_routes().with_state(pool.clone()))
-        .merge(modules::team::team_routes().with_state(pool));
+        .merge(organization::department::department_routes().with_state(pool.clone()))
+        .merge(hr::holiday::holiday_routes().with_state(pool.clone()))
+        .merge(organization::team::team_routes().with_state(pool));
 
     let app = Router::new().nest("/api", api_routes).layer(cors);
 

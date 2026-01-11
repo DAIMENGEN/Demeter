@@ -8,17 +8,49 @@ src/
 ├── common/                    # 公共基础设施模块
 │   ├── mod.rs
 │   ├── error.rs              # 统一错误类型定义和错误响应转换
-│   └── response.rs           # 统一 API 响应格式（ApiResponse, PageResponse）
+│   ├── response.rs           # 统一 API 响应格式（ApiResponse, PageResponse）
+│   ├── jwt.rs                # JWT 工具类
+│   └── middleware.rs         # 中间件（认证等）
 ├── config/                   # 配置管理模块
 │   └── mod.rs                # 从环境变量加载应用配置
 └── modules/                  # 业务模块
     ├── mod.rs                # 模块注册
-    └── user/                 # 用户管理模块
-        ├── mod.rs            # 用户模块导出
-        ├── models.rs         # 数据模型、请求/响应 DTO
-        ├── repository.rs     # 数据访问层（Repository Pattern）
-        ├── handlers.rs       # HTTP 请求处理器
-        └── routes.rs         # 路由配置
+    ├── auth/                 # 认证授权模块
+    │   ├── mod.rs
+    │   ├── models.rs
+    │   ├── repository.rs
+    │   ├── handlers.rs
+    │   └── routes.rs
+    ├── user/                 # 用户管理模块
+    │   ├── mod.rs
+    │   ├── models.rs
+    │   ├── repository.rs
+    │   ├── handlers.rs
+    │   └── routes.rs
+    ├── organization/         # 组织架构子模块
+    │   ├── mod.rs
+    │   ├── department/       # 部门管理
+    │   │   ├── mod.rs
+    │   │   ├── models.rs
+    │   │   ├── repository.rs
+    │   │   ├── handlers.rs
+    │   │   └── routes.rs
+    │   └── team/             # 团队管理
+    │       ├── mod.rs
+    │       ├── models.rs
+    │       ├── repository.rs
+    │       ├── handlers.rs
+    │       └── routes.rs
+    ├── hr/                   # 人力资源子模块
+    │   ├── mod.rs
+    │   └── holiday/          # 假期管理
+    │       ├── mod.rs
+    │       ├── models.rs
+    │       ├── repository.rs
+    │       ├── handlers.rs
+    │       └── routes.rs
+    └── business/             # 业务子模块（待扩展）
+        └── mod.rs
 ```
 
 ## 架构分层
@@ -26,25 +58,25 @@ src/
 ### 1. Handler 层（handlers.rs）
 - **职责**: 处理 HTTP 请求和响应
 - **功能**:
-  - 提取请求参数（Path, Query, Json）
-  - 调用 Repository 层执行业务逻辑
-  - 构造统一格式的响应
-  - 错误处理和状态码映射
+    - 提取请求参数（Path, Query, Json）
+    - 调用 Repository 层执行业务逻辑
+    - 构造统一格式的响应
+    - 错误处理和状态码映射
 
 ### 2. Repository 层（repository.rs）
 - **职责**: 封装数据库操作
 - **功能**:
-  - 执行 SQL 查询（使用 SQLx）
-  - 数据持久化和检索
-  - 事务管理（未来扩展）
-  - 数据库错误处理
+    - 执行 SQL 查询（使用 SQLx）
+    - 数据持久化和检索
+    - 事务管理（未来扩展）
+    - 数据库错误处理
 
 ### 3. Model 层（models.rs）
 - **职责**: 定义数据结构
 - **包含**:
-  - 数据库实体（User）
-  - 请求 DTO（CreateUserParams, UpdateUserParams）
-  - 查询参数（UserQueryParams）
+    - 数据库实体（User）
+    - 请求 DTO（CreateUserParams, UpdateUserParams）
+    - 查询参数（UserQueryParams）
 
 ## 设计模式
 
@@ -88,8 +120,12 @@ pub enum AppError {
 ```
 main.rs
   ├─> config (加载配置)
-  ├─> modules::user::routes (注册路由)
-  └─> common (错误处理)
+  ├─> modules::auth::routes (认证路由)
+  ├─> modules::user::routes (用户路由)
+  ├─> modules::organization::department::routes (部门路由)
+  ├─> modules::organization::team::routes (团队路由)
+  ├─> modules::hr::holiday::routes (假期路由)
+  └─> common (错误处理、中间件)
 
 user::handlers
   ├─> user::repository (数据访问)
@@ -99,6 +135,12 @@ user::handlers
 user::repository
   ├─> user::models (数据结构)
   └─> common::error (错误类型)
+  
+organization::department / team
+  └─> 相同的分层结构
+
+hr::holiday
+  └─> 相同的分层结构
 ```
 
 ## 数据流
@@ -129,15 +171,33 @@ HTTP Response (JSON)
 
 ### 添加新的业务模块
 
+#### 方式一：在顶层 modules 下添加独立模块
+
 1. **创建模块目录**: `src/modules/your_module/`
 2. **实现核心文件**:
-   - `models.rs` - 定义数据模型
-   - `repository.rs` - 实现数据访问
-   - `handlers.rs` - 实现请求处理
-   - `routes.rs` - 配置路由
-   - `mod.rs` - 导出模块
+    - `models.rs` - 定义数据模型
+    - `repository.rs` - 实现数据访问
+    - `handlers.rs` - 实现请求处理
+    - `routes.rs` - 配置路由
+    - `mod.rs` - 导出模块
 3. **注册模块**: 在 `src/modules/mod.rs` 添加 `pub mod your_module;`
 4. **挂载路由**: 在 `main.rs` 添加 `.merge(modules::your_module::routes())`
+
+#### 方式二：在子模块下添加新模块
+
+1. **在对应子模块创建目录**:
+    - 组织架构相关 → `src/modules/organization/your_module/`
+    - 人力资源相关 → `src/modules/hr/your_module/`
+    - 业务逻辑相关 → `src/modules/business/your_module/`
+2. **实现核心文件** (同上)
+3. **注册到子模块**: 在对应的 `mod.rs` 添加 `pub mod your_module;`
+4. **挂载路由**: 在 `main.rs` 添加 `.merge(modules::submodule::your_module::routes())`
+
+### 现有子模块说明
+
+- **organization**: 组织架构相关功能（部门、团队等）
+- **hr**: 人力资源相关功能（假期、考勤、请假等）
+- **business**: 业务逻辑相关功能（待扩展）
 
 ### 添加中间件
 
@@ -147,9 +207,9 @@ HTTP Response (JSON)
 use tower_http::cors::CorsLayer;
 
 let app = Router::new()
-    .merge(modules::user::user_routes())
-    .layer(CorsLayer::permissive())
-    .with_state(pool);
+.merge(modules::user::user_routes())
+.layer(CorsLayer::permissive())
+.with_state(pool);
 ```
 
 ## 性能考虑
