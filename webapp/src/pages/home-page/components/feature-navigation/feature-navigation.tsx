@@ -1,8 +1,8 @@
 import {Card, Col, Row, Typography} from "antd";
 import {useNavigate} from "react-router-dom";
 import "./feature-navigation.scss";
-import scheduleImage from "@Webapp/assets/nv/schedule-nv.jpg";
-import calendarImage from "@Webapp/assets/nv/calendar-nv.jpg";
+import projectManagementImage from "@Webapp/assets/nv/project-management-nv.gif";
+import calendarImage from "@Webapp/assets/nv/calendar-nv.gif";
 
 const {Title, Paragraph} = Typography;
 
@@ -16,11 +16,11 @@ interface FeatureItem {
 
 const features: FeatureItem[] = [
     {
-        key: "schedule",
-        title: "日程管理",
+        key: "project-management",
+        title: "项目管理",
         description: "例如：创建和跟踪项目进度，管理项目资源和任务分配。",
-        path: "/schedule",
-        image: scheduleImage,
+        path: "/project-management",
+        image: projectManagementImage,
     },
     {
         key: "calendar",
