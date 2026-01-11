@@ -25,12 +25,13 @@ export const LoginPage = () => {
         sessionStorage.setItem("token", response.data.accessToken);
         sessionStorage.setItem("refreshToken", response.data.refreshToken);
 
-        // 更新 Redux store
+        // Update Redux store
         dispatch(
           loginSuccess({
             id: response.data.user.id,
             username: response.data.user.username,
             email: response.data.user.email,
+            fullName: response.data.user.fullName,
           })
         );
 
