@@ -64,7 +64,10 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({
             icon: <DeleteOutlined/>,
             label: "删除",
             danger: true,
-            onClick: () => onDelete?.(project)
+            onClick: (e) => {
+                e?.domEvent?.stopPropagation();
+                onDelete?.(project);
+            }
         }
     ];
 
