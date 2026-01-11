@@ -65,6 +65,7 @@ export const CreateProjectDrawer: React.FC<CreateProjectDrawerProps> = ({
       onClose={handleCancel}
       open={open}
       resizable
+      size={500}
       classNames={{
         body: "create-project-drawer-body"
       }}

@@ -89,6 +89,7 @@ export const EditProjectDrawer: React.FC<EditProjectDrawerProps> = ({
       placement="right"
       onClose={handleCancel}
       open={open}
+      size={500}
       resizable
       loading={loading}
       classNames={{
