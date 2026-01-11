@@ -1,4 +1,5 @@
 use crate::common::error::{AppError, AppResult};
+use crate::common::jwt::Claims;
 use crate::common::response::{ApiResponse, PageResponse};
 use crate::modules::business::project::models::{
     BatchDeleteProjectsParams, CreateProjectParams, Project, ProjectQueryParams,
@@ -8,7 +9,7 @@ use crate::modules::business::project::repository::ProjectRepository;
 use axum::{
     extract::{Path, Query, State},
     http::StatusCode,
-    Json,
+    Extension, Json,
 };
 use sqlx::PgPool;
 
@@ -61,10 +62,11 @@ pub async fn get_project_by_name(
 /// 创建项目
 pub async fn create_project(
     State(pool): State<PgPool>,
+    Extension(claims): Extension<Claims>,
     Json(params): Json<CreateProjectParams>,
 ) -> AppResult<(StatusCode, Json<ApiResponse<Project>>)> {
-    // TODO: 从认证中间件获取当前用户ID
-    let creator_id = 1i64;
+    // 从JWT令牌中获取当前用户ID（UUID格式）
+    let creator_id = &claims.sub;
 
     let project = ProjectRepository::create_project(&pool, params, creator_id).await?;
 
@@ -74,11 +76,12 @@ pub async fn create_project(
 /// 更新项目
 pub async fn update_project(
     State(pool): State<PgPool>,
+    Extension(claims): Extension<Claims>,
     Path(id): Path<i64>,
     Json(params): Json<UpdateProjectParams>,
 ) -> AppResult<Json<ApiResponse<Project>>> {
-    // TODO: 从认证中间件获取当前用户ID
-    let updater_id = 1i64;
+    // 从JWT令牌中获取当前用户ID（UUID格式）
+    let updater_id = &claims.sub;
 
     let project = ProjectRepository::update_project(&pool, id, params, updater_id)
         .await?

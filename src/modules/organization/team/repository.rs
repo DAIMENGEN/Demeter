@@ -120,7 +120,7 @@ impl TeamRepository {
         pool: &PgPool,
         id: i64,
         params: UpdateTeamParams,
-        updater_id: i64,
+        updater_id: &str,
     ) -> AppResult<Option<Team>> {
         // 首先检查团队是否存在
         let existing = Self::get_team_by_id(pool, id).await?;

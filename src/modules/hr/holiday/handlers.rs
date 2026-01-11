@@ -1,4 +1,5 @@
 use crate::common::error::{AppError, AppResult};
+use crate::common::jwt::Claims;
 use crate::common::response::{ApiResponse, PageResponse};
 use crate::modules::hr::holiday::models::{
     BatchDeleteHolidaysParams, CreateHolidayParams, Holiday, HolidayQueryParams,
@@ -8,7 +9,7 @@ use crate::modules::hr::holiday::repository::HolidayRepository;
 use axum::{
     extract::{Path, Query, State},
     http::StatusCode,
-    Json,
+    Extension, Json,
 };
 use sqlx::PgPool;
 
@@ -62,11 +63,12 @@ pub async fn create_holiday(
 /// 更新假期
 pub async fn update_holiday(
     State(pool): State<PgPool>,
+    Extension(claims): Extension<Claims>,
     Path(id): Path<i64>,
     Json(params): Json<UpdateHolidayParams>,
 ) -> AppResult<Json<ApiResponse<Holiday>>> {
-    // TODO: 从认证中间件获取当前用户ID
-    let updater_id = 1i64;
+    // 从JWT令牌中获取当前用户ID（UUID格式）
+    let updater_id = &claims.sub;
 
     let holiday = HolidayRepository::update_holiday(&pool, id, params, updater_id)
         .await?

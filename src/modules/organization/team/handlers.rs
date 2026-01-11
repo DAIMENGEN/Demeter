@@ -1,4 +1,5 @@
 ﻿use crate::common::error::{AppError, AppResult};
+use crate::common::jwt::Claims;
 use crate::common::response::{ApiResponse, PageResponse};
 use crate::modules::organization::team::models::{
     BatchDeleteTeamsParams, CreateTeamParams, Team, TeamQueryParams,
@@ -8,7 +9,7 @@ use crate::modules::organization::team::repository::TeamRepository;
 use axum::{
     extract::{Path, Query, State},
     http::StatusCode,
-    Json,
+    Extension, Json,
 };
 use sqlx::PgPool;
 /// 获取团队列表（分页）
@@ -66,11 +67,13 @@ pub async fn create_team(
 /// 更新团队
 pub async fn update_team(
     State(pool): State<PgPool>,
+    Extension(claims): Extension<Claims>,
     Path(id): Path<i64>,
     Json(params): Json<UpdateTeamParams>,
 ) -> AppResult<Json<ApiResponse<Team>>> {
-    // TODO: 从认证中间件获取当前用户ID
-    let updater_id = 1; // 临时使用默认值
+    // 从JWT令牌中获取当前用户ID（UUID格式）
+    let updater_id = &claims.sub;
+    
     let team = TeamRepository::update_team(&pool, id, params, updater_id)
         .await?
         .ok_or(AppError::NotFound(format!("团队不存在: {}", id)))?;

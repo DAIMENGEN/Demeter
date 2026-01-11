@@ -7,8 +7,8 @@ pub struct Team {
     pub id: i64,
     pub team_name: String,
     pub description: Option<String>,
-    pub creator_id: i64,
-    pub updater_id: Option<i64>,
+    pub creator_id: String,
+    pub updater_id: Option<String>,
     pub create_date_time: chrono::NaiveDateTime,
     pub update_date_time: Option<chrono::NaiveDateTime>,
 }

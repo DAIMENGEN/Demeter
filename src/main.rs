@@ -53,10 +53,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let api_routes = Router::new()
         .merge(modules::auth::auth_routes(app_state))
         .merge(modules::user::user_routes().with_state(pool.clone()))
-        .merge(organization::department::department_routes().with_state(pool.clone()))
-        .merge(hr::holiday::holiday_routes().with_state(pool.clone()))
-        .merge(organization::team::team_routes().with_state(pool.clone()))
-        .merge(business::project::project_routes().with_state(pool));
+        .merge(organization::department::department_routes(config.jwt.clone()).with_state(pool.clone()))
+        .merge(hr::holiday::holiday_routes(config.jwt.clone()).with_state(pool.clone()))
+        .merge(organization::team::team_routes(config.jwt.clone()).with_state(pool.clone()))
+        .merge(business::project::project_routes(config.jwt.clone()).with_state(pool));
 
     let app = Router::new().nest("/api", api_routes).layer(cors);
 

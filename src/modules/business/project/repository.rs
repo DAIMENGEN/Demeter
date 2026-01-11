@@ -136,7 +136,7 @@ impl ProjectRepository {
     pub async fn create_project(
         pool: &PgPool,
         params: CreateProjectParams,
-        creator_id: i64,
+        creator_id: &str,
     ) -> AppResult<Project> {
         let project = sqlx::query_as::<_, Project>(
             r#"
@@ -167,7 +167,7 @@ impl ProjectRepository {
         pool: &PgPool,
         id: i64,
         params: UpdateProjectParams,
-        updater_id: i64,
+        updater_id: &str,
     ) -> AppResult<Option<Project>> {
         // 先检查项目是否存在
         let existing = Self::get_project_by_id(pool, id).await?;

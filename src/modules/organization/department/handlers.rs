@@ -1,4 +1,5 @@
 use crate::common::error::{AppError, AppResult};
+use crate::common::jwt::Claims;
 use crate::common::response::{ApiResponse, PageResponse};
 use crate::modules::organization::department::models::{
     BatchDeleteDepartmentsParams, CreateDepartmentParams, Department, DepartmentQueryParams,
@@ -8,7 +9,7 @@ use crate::modules::organization::department::repository::DepartmentRepository;
 use axum::{
     extract::{Path, Query, State},
     http::StatusCode,
-    Json,
+    Extension, Json,
 };
 use sqlx::PgPool;
 
@@ -77,11 +78,12 @@ pub async fn create_department(
 /// 更新部门
 pub async fn update_department(
     State(pool): State<PgPool>,
+    Extension(claims): Extension<Claims>,
     Path(id): Path<String>,
     Json(params): Json<UpdateDepartmentParams>,
 ) -> AppResult<Json<ApiResponse<Department>>> {
-    // TODO: 从认证中间件获取当前用户ID
-    let updater_id = "system";
+    // 从JWT令牌中获取当前用户ID（UUID格式）
+    let updater_id = &claims.sub;
 
     let department = DepartmentRepository::update_department(&pool, &id, params, updater_id)
         .await?

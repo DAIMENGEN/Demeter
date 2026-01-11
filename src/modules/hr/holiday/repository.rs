@@ -163,7 +163,7 @@ impl HolidayRepository {
         pool: &PgPool,
         id: i64,
         params: UpdateHolidayParams,
-        updater_id: i64,
+        updater_id: &str,
     ) -> AppResult<Option<Holiday>> {
         // 先检查假期是否存在
         let existing = Self::get_holiday_by_id(pool, id).await?;

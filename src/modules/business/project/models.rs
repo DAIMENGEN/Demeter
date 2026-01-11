@@ -13,8 +13,8 @@ pub struct Project {
     pub project_status: i32,
     pub version: Option<i32>,
     pub order: Option<f64>,
-    pub creator_id: i64,
-    pub updater_id: Option<i64>,
+    pub creator_id: String,
+    pub updater_id: Option<String>,
     pub create_date_time: chrono::NaiveDateTime,
     pub update_date_time: Option<chrono::NaiveDateTime>,
 }
