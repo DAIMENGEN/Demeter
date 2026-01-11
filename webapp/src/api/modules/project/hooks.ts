@@ -1,5 +1,4 @@
 import { useState, useEffect, useCallback } from "react";
-import { message } from "antd";
 import { projectApi } from "./api";
 import type {
   Project,
@@ -21,7 +20,8 @@ export const useProjects = (params?: ProjectQueryParams) => {
       const response = await projectApi.getProjects(params);
       setProjects(response.data);
     } catch (error) {
-      message.error("获取项目列表失败");
+      // 由组件层处理 message
+      throw error;
     } finally {
       setLoading(false);
     }
@@ -48,7 +48,7 @@ export const useMyCreatedProjects = () => {
       // 临时实现：获取所有项目，后端需要实现过滤逻辑
       setProjects(response.data);
     } catch (error) {
-      message.error("获取我创建的项目失败");
+      throw error;
     } finally {
       setLoading(false);
     }
@@ -75,7 +75,7 @@ export const useMyAccessibleProjects = () => {
       // 临时实现：获取所有项目，后端需要实现权限过滤逻辑
       setProjects(response.data);
     } catch (error) {
-      message.error("获取我有权限的项目失败");
+      throw error;
     } finally {
       setLoading(false);
     }
@@ -99,10 +99,9 @@ export const useRecentlyAccessedProjects = (limit = 10) => {
     setLoading(true);
     try {
       const response = await projectApi.getAllProjects();
-      // 临时实现：获取最新的项目，后端需要实现最近访问逻辑
       setProjects(response.data.slice(0, limit));
     } catch (error) {
-      message.error("获取最近访问的项目失败");
+      throw error;
     } finally {
       setLoading(false);
     }
@@ -125,10 +124,8 @@ export const useCreateProject = () => {
     setLoading(true);
     try {
       const response = await projectApi.createProject(data);
-      message.success("创建项目成功");
       return response.data;
     } catch (error) {
-      message.error("创建项目失败");
       throw error;
     } finally {
       setLoading(false);
@@ -148,10 +145,8 @@ export const useUpdateProject = () => {
     setLoading(true);
     try {
       const response = await projectApi.updateProject(id, data);
-      message.success("更新项目成功");
       return response.data;
     } catch (error) {
-      message.error("更新项目失败");
       throw error;
     } finally {
       setLoading(false);
@@ -171,9 +166,7 @@ export const useDeleteProject = () => {
     setLoading(true);
     try {
       await projectApi.deleteProject(id);
-      message.success("删除项目成功");
     } catch (error) {
-      message.error("删除项目失败");
       throw error;
     } finally {
       setLoading(false);
@@ -182,4 +175,3 @@ export const useDeleteProject = () => {
 
   return { deleteProject, loading };
 };
-

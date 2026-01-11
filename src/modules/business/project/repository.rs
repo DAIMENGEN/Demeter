@@ -37,13 +37,13 @@ impl ProjectRepository {
         }
 
         if let Some(start_date_time) = &params.start_date_time {
-            query.push_str(&format!(" AND start_date_time >= '{}'", start_date_time));
-            count_query.push_str(&format!(" AND start_date_time >= '{}'", start_date_time));
+            query.push_str(&format!(" AND start_date_time >= '{}'", start_date_time.format("%Y-%m-%d %H:%M:%S")));
+            count_query.push_str(&format!(" AND start_date_time >= '{}'", start_date_time.format("%Y-%m-%d %H:%M:%S")));
         }
 
         if let Some(end_date_time) = &params.end_date_time {
-            query.push_str(&format!(" AND end_date_time <= '{}'", end_date_time));
-            count_query.push_str(&format!(" AND end_date_time <= '{}'", end_date_time));
+            query.push_str(&format!(" AND end_date_time <= '{}'", end_date_time.format("%Y-%m-%d %H:%M:%S")));
+            count_query.push_str(&format!(" AND end_date_time <= '{}'", end_date_time.format("%Y-%m-%d %H:%M:%S")));
         }
 
         query.push_str(&format!(
@@ -79,11 +79,11 @@ impl ProjectRepository {
         }
 
         if let Some(start_date_time) = &params.start_date_time {
-            query.push_str(&format!(" AND start_date_time >= '{}'", start_date_time));
+            query.push_str(&format!(" AND start_date_time >= '{}'", start_date_time.format("%Y-%m-%d %H:%M:%S")));
         }
 
         if let Some(end_date_time) = &params.end_date_time {
-            query.push_str(&format!(" AND end_date_time <= '{}'", end_date_time));
+            query.push_str(&format!(" AND end_date_time <= '{}'", end_date_time.format("%Y-%m-%d %H:%M:%S")));
         }
 
         query.push_str(r#" ORDER BY "order" ASC NULLS LAST, create_date_time DESC"#);

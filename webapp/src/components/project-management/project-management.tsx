@@ -1,5 +1,5 @@
 import React, {useState} from "react";
-import {Layout, message, Modal, Menu} from "antd";
+import {Layout, Modal, Menu, App} from "antd";
 import {ExclamationCircleOutlined, ClockCircleOutlined, FolderOutlined, TeamOutlined} from "@ant-design/icons";
 import type {Project} from "@Webapp/api/modules/project";
 import {
@@ -10,6 +10,7 @@ import {
 } from "@Webapp/api/modules/project";
 import "./project-management.scss";
 import {ProjectList} from "./components/project-list/project-list.tsx";
+import {CreateProjectDrawer} from "./components/create-project-drawer/create-project-drawer.tsx";
 
 const {Sider, Content} = Layout;
 
@@ -18,6 +19,8 @@ export type ProjectViewType = "myCreated" | "myAccessible" | "recentlyAccessed";
 export const ProjectManagement: React.FC = () => {
     const [selectedView, setSelectedView] = useState<ProjectViewType>("myCreated");
     const [collapsed, setCollapsed] = useState(false);
+    const [createDrawerOpen, setCreateDrawerOpen] = useState(false);
+    const { message } = App.useApp();
 
     // 获取不同视图的项目数据
     const myCreatedProjects = useMyCreatedProjects();
@@ -27,22 +30,26 @@ export const ProjectManagement: React.FC = () => {
 
     // 根据当前视图获取对应的数据
     const getCurrentViewData = () => {
+        const safeProjects = (data: any) => Array.isArray(data?.projects) ? data.projects : [];
         switch (selectedView) {
             case "myCreated":
                 return {
                     ...myCreatedProjects,
+                    projects: safeProjects(myCreatedProjects),
                     title: "我创建的项目",
                     emptyDescription: "您还没有创建任何项目"
                 };
             case "myAccessible":
                 return {
                     ...myAccessibleProjects,
+                    projects: safeProjects(myAccessibleProjects),
                     title: "我可访问的项目",
                     emptyDescription: "暂无可访问的项目"
                 };
             case "recentlyAccessed":
                 return {
                     ...recentlyAccessedProjects,
+                    projects: safeProjects(recentlyAccessedProjects),
                     title: "最近访问的项目",
                     emptyDescription: "暂无最近访问的项目"
                 };
@@ -50,8 +57,7 @@ export const ProjectManagement: React.FC = () => {
                 return {
                     projects: [],
                     loading: false,
-                    refetch: () => {
-                    },
+                    refetch: () => {},
                     title: "项目列表",
                     emptyDescription: "暂无项目"
                 };
@@ -94,8 +100,12 @@ export const ProjectManagement: React.FC = () => {
 
     // 处理新建项目
     const handleCreateProject = () => {
-        message.info("新建项目");
-        // TODO: 打开新建项目弹窗
+        setCreateDrawerOpen(true);
+    };
+
+    // 处理创建项目成功
+    const handleCreateSuccess = () => {
+        currentViewData.refetch();
     };
 
     // 处理刷新
@@ -122,9 +132,7 @@ export const ProjectManagement: React.FC = () => {
         }
     ];
 
-    const handleMenuClick = ({key}: {
-        key: string
-    }) => {
+    const handleMenuClick = ({key}: { key: string }) => {
         setSelectedView(key as ProjectViewType);
     };
 
@@ -160,6 +168,11 @@ export const ProjectManagement: React.FC = () => {
                     onCreateNew={selectedView === "myCreated" ? handleCreateProject : undefined}
                 />
             </Content>
+            <CreateProjectDrawer
+                open={createDrawerOpen}
+                onClose={() => setCreateDrawerOpen(false)}
+                onSuccess={handleCreateSuccess}
+            />
         </Layout>
     );
 };

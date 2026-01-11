@@ -8,8 +8,8 @@ pub struct Project {
     pub id: i64,
     pub project_name: String,
     pub description: Option<String>,
-    pub start_date_time: String,
-    pub end_date_time: Option<String>,
+    pub start_date_time: chrono::NaiveDateTime,
+    pub end_date_time: Option<chrono::NaiveDateTime>,
     pub project_status: i32,
     pub version: Option<i32>,
     pub order: Option<f64>,
@@ -25,8 +25,8 @@ pub struct Project {
 pub struct CreateProjectParams {
     pub project_name: String,
     pub description: Option<String>,
-    pub start_date_time: String,
-    pub end_date_time: Option<String>,
+    pub start_date_time: chrono::NaiveDateTime,
+    pub end_date_time: Option<chrono::NaiveDateTime>,
     pub project_status: i32,
     pub version: Option<i32>,
     pub order: Option<f64>,
@@ -38,8 +38,8 @@ pub struct CreateProjectParams {
 pub struct UpdateProjectParams {
     pub project_name: Option<String>,
     pub description: Option<String>,
-    pub start_date_time: Option<String>,
-    pub end_date_time: Option<String>,
+    pub start_date_time: Option<chrono::NaiveDateTime>,
+    pub end_date_time: Option<chrono::NaiveDateTime>,
     pub project_status: Option<i32>,
     pub version: Option<i32>,
     pub order: Option<f64>,
@@ -53,8 +53,8 @@ pub struct ProjectQueryParams {
     pub page_size: Option<i64>,
     pub project_name: Option<String>,
     pub project_status: Option<i32>,
-    pub start_date_time: Option<String>,
-    pub end_date_time: Option<String>,
+    pub start_date_time: Option<chrono::NaiveDateTime>,
+    pub end_date_time: Option<chrono::NaiveDateTime>,
 }
 
 /// 批量删除项目请求参数
