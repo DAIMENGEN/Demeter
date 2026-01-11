@@ -3,7 +3,7 @@ import {PlusOutlined, ReloadOutlined} from "@ant-design/icons";
 import type {Project} from "@Webapp/api/modules/project";
 import "./project-list.scss";
 import React from "react";
-import {ProjectCard} from "../project-card/project-card.tsx";
+import {ProjectCard} from "../project-card";
 
 interface ProjectListProps {
     projects: Project[];

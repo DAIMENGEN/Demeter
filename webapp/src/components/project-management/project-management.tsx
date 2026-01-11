@@ -9,9 +9,9 @@ import {
     useRecentlyAccessedProjects
 } from "@Webapp/api/modules/project";
 import "./project-management.scss";
-import {ProjectList} from "./components/project-list/project-list.tsx";
-import {CreateProjectDrawer} from "./components/create-project-drawer/create-project-drawer.tsx";
-import {EditProjectDrawer} from "./components/edit-project-drawer/edit-project-drawer.tsx";
+import {ProjectList} from "./components/project-list";
+import {CreateProjectDrawer} from "./components/create-project-drawer";
+import {EditProjectDrawer} from "./components/edit-project-drawer";
 
 const {Sider, Content} = Layout;
 
