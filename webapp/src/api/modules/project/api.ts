@@ -68,25 +68,16 @@ export const projectApi = {
   },
 
   /**
-   * 获取我创建的项目
+   * 获取我创建的项目列表（分页）
    */
-  getMyCreatedProjects: (params?: Omit<ProjectQueryParams, "page" | "pageSize">) => {
-    return get<Project[]>("/projects/my-created", { params });
+  getMyProjects: (params?: ProjectQueryParams) => {
+    return get<Project[]>("/projects/my", { params });
   },
 
   /**
-   * 获取我有权限的所有项目
+   * 获取我创建的所有项目（不分页）
    */
-  getMyAccessibleProjects: (params?: Omit<ProjectQueryParams, "page" | "pageSize">) => {
-    return get<Project[]>("/projects/my-accessible", { params });
-  },
-
-  /**
-   * 获取最近访问的项目
-   */
-  getRecentlyAccessedProjects: (limit?: number) => {
-    return get<Project[]>("/projects/recently-accessed", {
-      params: { limit }
-    });
+  getMyAllProjects: (params?: Omit<ProjectQueryParams, "page" | "pageSize">) => {
+    return get<Project[]>("/projects/my/all", { params });
   }
 };

@@ -46,6 +46,11 @@ impl ProjectRepository {
             count_query.push_str(&format!(" AND end_date_time <= '{}'", end_date_time.format("%Y-%m-%d %H:%M:%S")));
         }
 
+        if let Some(creator_id) = &params.creator_id {
+            query.push_str(&format!(" AND creator_id = '{}'", creator_id));
+            count_query.push_str(&format!(" AND creator_id = '{}'", creator_id));
+        }
+
         query.push_str(&format!(
             r#" ORDER BY "order" ASC NULLS LAST, create_date_time DESC LIMIT {} OFFSET {}"#,
             page_size, offset
@@ -84,6 +89,10 @@ impl ProjectRepository {
 
         if let Some(end_date_time) = &params.end_date_time {
             query.push_str(&format!(" AND end_date_time <= '{}'", end_date_time.format("%Y-%m-%d %H:%M:%S")));
+        }
+
+        if let Some(creator_id) = &params.creator_id {
+            query.push_str(&format!(" AND creator_id = '{}'", creator_id));
         }
 
         query.push_str(r#" ORDER BY "order" ASC NULLS LAST, create_date_time DESC"#);

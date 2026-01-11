@@ -55,6 +55,7 @@ pub struct ProjectQueryParams {
     pub project_status: Option<i32>,
     pub start_date_time: Option<chrono::NaiveDateTime>,
     pub end_date_time: Option<chrono::NaiveDateTime>,
+    pub creator_id: Option<String>,
 }
 
 /// 批量删除项目请求参数

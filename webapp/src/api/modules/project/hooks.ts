@@ -35,24 +35,49 @@ export const useProjects = (params?: ProjectQueryParams) => {
 };
 
 /**
- * 我创建的项目 Hook
+ * 我创建的项目列表 Hook（分页）
  */
-export const useMyCreatedProjects = () => {
+export const useMyProjects = (params?: ProjectQueryParams) => {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(false);
 
   const fetchProjects = useCallback(async () => {
     setLoading(true);
     try {
-      const response = await projectApi.getAllProjects();
-      // 临时实现：获取所有项目，后端需要实现过滤逻辑
+      const response = await projectApi.getMyProjects(params);
       setProjects(response.data);
     } catch (error) {
       throw error;
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [params]);
+
+  useEffect(() => {
+    void fetchProjects();
+  }, [fetchProjects]);
+
+  return { projects, loading, refetch: fetchProjects };
+};
+
+/**
+ * 我创建的项目 Hook
+ */
+export const useMyCreatedProjects = (params?: Omit<ProjectQueryParams, "page" | "pageSize">) => {
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  const fetchProjects = useCallback(async () => {
+    setLoading(true);
+    try {
+      const response = await projectApi.getMyAllProjects(params);
+      setProjects(response.data);
+    } catch (error) {
+      throw error;
+    } finally {
+      setLoading(false);
+    }
+  }, [params]);
 
   useEffect(() => {
     void fetchProjects();
@@ -63,23 +88,24 @@ export const useMyCreatedProjects = () => {
 
 /**
  * 我有权限的所有项目 Hook
+ * TODO: 后续需要后端支持项目成员功能后扩展
  */
-export const useMyAccessibleProjects = () => {
+export const useMyAccessibleProjects = (params?: Omit<ProjectQueryParams, "page" | "pageSize">) => {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(false);
 
   const fetchProjects = useCallback(async () => {
     setLoading(true);
     try {
-      const response = await projectApi.getAllProjects();
-      // 临时实现：获取所有项目，后端需要实现权限过滤逻辑
+      // 暂时返回我创建的项目，后续需要包含我作为成员的项目
+      const response = await projectApi.getMyAllProjects(params);
       setProjects(response.data);
     } catch (error) {
       throw error;
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [params]);
 
   useEffect(() => {
     void fetchProjects();
@@ -90,6 +116,7 @@ export const useMyAccessibleProjects = () => {
 
 /**
  * 最近访问的项目 Hook
+ * TODO: 可以基于本地存储或后端实现
  */
 export const useRecentlyAccessedProjects = (limit = 10) => {
   const [projects, setProjects] = useState<Project[]>([]);
@@ -98,7 +125,8 @@ export const useRecentlyAccessedProjects = (limit = 10) => {
   const fetchProjects = useCallback(async () => {
     setLoading(true);
     try {
-      const response = await projectApi.getAllProjects();
+      // 暂时从我创建的项目中获取前 N 个
+      const response = await projectApi.getMyAllProjects();
       setProjects(response.data.slice(0, limit));
     } catch (error) {
       throw error;

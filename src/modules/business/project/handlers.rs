@@ -26,11 +26,41 @@ pub async fn get_project_list(
     })))
 }
 
+/// 获取当前用户创建的项目列表（分页）
+pub async fn get_my_project_list(
+    State(pool): State<PgPool>,
+    Extension(claims): Extension<Claims>,
+    Query(mut params): Query<ProjectQueryParams>,
+) -> AppResult<Json<ApiResponse<PageResponse<Project>>>> {
+    // 从JWT令牌中获取当前用户ID，只查询该用户创建的项目
+    params.creator_id = Some(claims.sub.clone());
+
+    let (projects, total) = ProjectRepository::get_project_list(&pool, params).await?;
+
+    Ok(Json(ApiResponse::success(PageResponse {
+        list: projects,
+        total,
+    })))
+}
+
 /// 获取所有项目（不分页）
 pub async fn get_all_projects(
     State(pool): State<PgPool>,
     Query(params): Query<ProjectQueryParams>,
 ) -> AppResult<Json<ApiResponse<Vec<Project>>>> {
+    let projects = ProjectRepository::get_all_projects(&pool, params).await?;
+    Ok(Json(ApiResponse::success(projects)))
+}
+
+/// 获取当前用户创建的所有项目（不分页）
+pub async fn get_my_all_projects(
+    State(pool): State<PgPool>,
+    Extension(claims): Extension<Claims>,
+    Query(mut params): Query<ProjectQueryParams>,
+) -> AppResult<Json<ApiResponse<Vec<Project>>>> {
+    // 从JWT令牌中获取当前用户ID，只查询该用户创建的项目
+    params.creator_id = Some(claims.sub.clone());
+
     let projects = ProjectRepository::get_all_projects(&pool, params).await?;
     Ok(Json(ApiResponse::success(projects)))
 }

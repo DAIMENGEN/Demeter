@@ -13,6 +13,8 @@ pub fn project_routes(jwt_config: JwtConfig) -> Router<PgPool> {
     Router::new()
         .route("/projects", get(handlers::get_project_list))
         .route("/projects/all", get(handlers::get_all_projects))
+        .route("/projects/my", get(handlers::get_my_project_list))
+        .route("/projects/my/all", get(handlers::get_my_all_projects))
         .route("/projects", post(handlers::create_project))
         .route("/projects/{id}", get(handlers::get_project_by_id))
         .route("/projects/{id}", put(handlers::update_project))
