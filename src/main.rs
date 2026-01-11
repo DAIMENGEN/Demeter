@@ -4,7 +4,7 @@ mod modules;
 
 use axum::http::{header, HeaderValue, Method};
 use axum::Router;
-use modules::{hr, organization};
+use modules::{business, hr, organization};
 use sqlx::postgres::PgPoolOptions;
 use tower_http::cors::CorsLayer;
 
@@ -54,7 +54,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .merge(modules::user::user_routes().with_state(pool.clone()))
         .merge(organization::department::department_routes().with_state(pool.clone()))
         .merge(hr::holiday::holiday_routes().with_state(pool.clone()))
-        .merge(organization::team::team_routes().with_state(pool));
+        .merge(organization::team::team_routes().with_state(pool.clone()))
+        .merge(business::project::project_routes().with_state(pool));
 
     let app = Router::new().nest("/api", api_routes).layer(cors);
 

@@ -1,0 +1,64 @@
+use serde::{Deserialize, Serialize};
+use sqlx::FromRow;
+
+/// 项目数据模型
+#[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
+#[serde(rename_all = "camelCase")]
+pub struct Project {
+    pub id: i64,
+    pub project_name: String,
+    pub description: Option<String>,
+    pub start_date_time: String,
+    pub end_date_time: Option<String>,
+    pub project_status: i32,
+    pub version: Option<i32>,
+    pub order: Option<i32>,
+    pub creator_id: i64,
+    pub updater_id: Option<i64>,
+    pub create_date_time: chrono::NaiveDateTime,
+    pub update_date_time: Option<chrono::NaiveDateTime>,
+}
+
+/// 创建项目请求参数
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CreateProjectParams {
+    pub project_name: String,
+    pub description: Option<String>,
+    pub start_date_time: String,
+    pub end_date_time: Option<String>,
+    pub project_status: i32,
+    pub version: Option<i32>,
+    pub order: Option<i32>,
+}
+
+/// 更新项目请求参数
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct UpdateProjectParams {
+    pub project_name: Option<String>,
+    pub description: Option<String>,
+    pub start_date_time: Option<String>,
+    pub end_date_time: Option<String>,
+    pub project_status: Option<i32>,
+    pub version: Option<i32>,
+    pub order: Option<i32>,
+}
+
+/// 项目查询参数
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ProjectQueryParams {
+    pub page: Option<i64>,
+    pub page_size: Option<i64>,
+    pub project_name: Option<String>,
+    pub project_status: Option<i32>,
+    pub start_date_time: Option<String>,
+    pub end_date_time: Option<String>,
+}
+
+/// 批量删除项目请求参数
+#[derive(Debug, Deserialize)]
+pub struct BatchDeleteProjectsParams {
+    pub ids: Vec<i64>,
+}
