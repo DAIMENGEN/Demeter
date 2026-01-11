@@ -23,6 +23,7 @@ export interface LoginResponse {
         email: string;
         phone?: string;
         isActive: boolean;
+        createDateTime?: string;
     };
 }
 

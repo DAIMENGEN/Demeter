@@ -1,4 +1,4 @@
-import {FeatureNavigation} from "../components/feature-navigation";
+import {FeatureNavigation} from "../feature-navigation/feature-navigation.tsx";
 import "./home-content.scss";
 
 export const HomeContent = () => {

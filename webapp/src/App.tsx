@@ -1,7 +1,7 @@
 import "@Webapp/App.css"
 import {BrowserRouter} from "react-router-dom"
 import {AppRoutes} from "@Webapp/AppRoutes.tsx";
-import {ConfigProvider} from "antd";
+import {ConfigProvider, App as AntdApp} from "antd";
 
 function App() {
     return (
@@ -22,12 +22,18 @@ function App() {
                         darkItemSelectedBg: "rgba(255, 255, 255, 0.2)",
                         darkItemHoverBg: "rgba(255, 255, 255, 0.1)",
                     },
+                    Button: {
+                        primaryShadow: "none",
+                        defaultShadow: "none",
+                    },
                 },
             }}
         >
-            <BrowserRouter>
-                <AppRoutes/>
-            </BrowserRouter>
+            <AntdApp>
+                <BrowserRouter>
+                    <AppRoutes/>
+                </BrowserRouter>
+            </AntdApp>
         </ConfigProvider>
     )
 }

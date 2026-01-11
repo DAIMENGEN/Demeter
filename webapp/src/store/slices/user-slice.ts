@@ -9,9 +9,10 @@ export interface User {
     username: string;        // 用户名
     email: string;           // 邮箱地址
     fullName?: string;       // 完整姓名(可选)
+    phone?: string;          // 手机号(可选)
     avatar?: string;         // 头像 URL(可选)
     role?: string;           // 用户角色(可选)
-    createdAt?: string;      // 创建时间(可选)
+    createDateTime?: string; // 创建时间(可选)
 }
 
 /**

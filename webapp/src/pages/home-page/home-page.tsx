@@ -1,11 +1,12 @@
 import "./home-page.scss";
-import React, {useCallback} from "react";
+import React, {useCallback, useState} from "react";
 import {Layout, Menu, Space, Avatar, Dropdown, Button, Typography, theme} from "antd";
 import type {MenuProps} from "antd";
 import {Outlet, useNavigate} from "react-router-dom";
 import {HomeOutlined, LogoutOutlined, UserOutlined, SettingOutlined} from "@ant-design/icons";
 import {useAppDispatch, useAppSelector} from "@Webapp/store/hooks";
 import {logout as logoutAction, selectCurrentUser, selectIsAuthenticated} from "@Webapp/store/slices/user-slice";
+import {ProfileDrawer} from "@Webapp/pages/home-page/components/profile-drawer/profile-drawer.tsx";
 
 const {Header, Content} = Layout;
 const {Text} = Typography;
@@ -16,6 +17,7 @@ export const HomePage: React.FC = () => {
     const currentUser = useAppSelector(selectCurrentUser);
     const isAuthenticated = useAppSelector(selectIsAuthenticated);
     const {token} = theme.useToken(); // 获取主题 token
+    const [profileDrawerOpen, setProfileDrawerOpen] = useState(false);
 
     const onClick: MenuProps["onClick"] = useCallback((e: {key: string}) => {
         const {key} = e;
@@ -41,8 +43,8 @@ export const HomePage: React.FC = () => {
     }, [navigate]);
 
     const handleProfile = useCallback(() => {
-        navigate("/profile");
-    }, [navigate]);
+        setProfileDrawerOpen(true);
+    }, []);
 
     // User dropdown menu items
     const userMenuItems: MenuProps["items"] = [
@@ -128,6 +130,11 @@ export const HomePage: React.FC = () => {
             <Content className="content">
                 <Outlet/>
             </Content>
+
+            <ProfileDrawer
+                open={profileDrawerOpen}
+                onClose={() => setProfileDrawerOpen(false)}
+            />
         </Layout>
     );
 };
