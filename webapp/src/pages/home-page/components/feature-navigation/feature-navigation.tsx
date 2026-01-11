@@ -19,14 +19,14 @@ const features: FeatureItem[] = [
         key: "project-management",
         title: "项目管理",
         description: "例如：创建和跟踪项目进度，管理项目资源和任务分配。",
-        path: "/project-management",
+        path: "/home/project-management",
         image: projectManagementImage,
     },
     {
         key: "calendar",
         title: "公司日历",
         description: "例如：查看公司假期和国家法定假期。",
-        path: "/calendar",
+        path: "/home/calendar",
         image: calendarImage,
     }
 ];
