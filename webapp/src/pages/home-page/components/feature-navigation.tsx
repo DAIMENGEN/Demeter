@@ -1,7 +1,8 @@
 import {Card, Col, Row, Typography} from "antd";
 import {useNavigate} from "react-router-dom";
 import "./feature-navigation.scss";
-import projectImage from "../../../assets/nv/schedule-nv.jpg";
+import scheduleImage from "@Webapp/assets/nv/schedule-nv.jpg";
+import calendarImage from "@Webapp/assets/nv/calendar-nv.jpg";
 
 const {Title, Paragraph} = Typography;
 
@@ -15,47 +16,19 @@ interface FeatureItem {
 
 const features: FeatureItem[] = [
     {
-        key: "users",
-        title: "用户管理",
-        description: "管理系统用户，包括用户创建、编辑、权限分配等功能。",
-        path: "/users",
-        image: projectImage, // TODO: 替换为对应的图片
+        key: "schedule",
+        title: "日程管理",
+        description: "例如：创建和跟踪项目进度，管理项目资源和任务分配。",
+        path: "/schedule",
+        image: scheduleImage,
     },
     {
-        key: "departments",
-        title: "部门管理",
-        description: "组织架构管理，创建和维护公司部门结构。",
-        path: "/departments",
-        image: projectImage, // TODO: 替换为对应的图片
-    },
-    {
-        key: "teams",
-        title: "团队管理",
-        description: "管理团队信息，维护团队成员关系和协作。",
-        path: "/teams",
-        image: projectImage, // TODO: 替换为对应的图片
-    },
-    {
-        key: "projects",
-        title: "项目管理",
-        description: "创建和跟踪项目进度，管理项目资源和任务分配。",
-        path: "/projects",
-        image: projectImage,
-    },
-    {
-        key: "holidays",
-        title: "假期管理",
-        description: "管理员工假期申请、审批和假期日历查看。",
-        path: "/holidays",
-        image: projectImage, // TODO: 替换为对应的图片
-    },
-    {
-        key: "settings",
-        title: "系统设置",
-        description: "配置系统参数、权限设置和其他系统级功能。",
-        path: "/settings",
-        image: projectImage, // TODO: 替换为对应的图片
-    },
+        key: "calendar",
+        title: "公司日历",
+        description: "例如：查看公司假期和国家法定假期。",
+        path: "/calendar",
+        image: calendarImage,
+    }
 ];
 
 export const FeatureNavigation = () => {
