@@ -35,7 +35,7 @@ export const LoginPage = () => {
           })
         );
 
-        await messageApi.success("登录成功");
+        await messageApi.success("登录成功", 0.5);
         navigate("/home");
       } catch (error) {
         const errorMessage =
