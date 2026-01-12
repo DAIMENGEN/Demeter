@@ -1,6 +1,6 @@
 import React, {useState, useEffect, useRef} from "react";
 import {useNavigate, useParams} from "react-router-dom";
-import {Button, Card, Checkbox, DatePicker, Popover, Result, Space, Spin, Tooltip} from "antd";
+import {Button, Card, Checkbox, DatePicker, Popover, Result, Select, Space, Spin, Tooltip} from "antd";
 import {ArrowLeftOutlined, CalendarOutlined, LeftOutlined, RightOutlined, SettingOutlined} from "@ant-design/icons";
 import dayjs from "dayjs";
 import {
@@ -481,6 +481,45 @@ const legendItems = [
     { color: "#955251", label: "分析优化" },
 ];
 
+// 视图类型定义
+type ViewType = "Day" | "Week" | "Month" | "Quarter" | "Year";
+
+// 视图选项
+const viewOptions = [
+    { label: "日", value: "Day" as ViewType },
+    { label: "周", value: "Week" as ViewType },
+    { label: "月", value: "Month" as ViewType },
+    { label: "季", value: "Quarter" as ViewType },
+    { label: "年", value: "Year" as ViewType },
+];
+
+// 视图对应的时间单位
+const viewUnitMap: Record<ViewType, "day" | "week" | "month" | "quarter" | "year"> = {
+    Day: "day",
+    Week: "week",
+    Month: "month",
+    Quarter: "quarter",
+    Year: "year",
+};
+
+// 视图对应的 DatePicker picker 类型
+const viewPickerMap: Record<ViewType, "date" | "week" | "month" | "quarter" | "year"> = {
+    Day: "date",
+    Week: "week",
+    Month: "month",
+    Quarter: "quarter",
+    Year: "year",
+};
+
+// 视图对应的默认时间范围（用于"跳转到今天"功能）
+const viewDefaultRangeMap: Record<ViewType, number> = {
+    Day: 30,      // 30天
+    Week: 12,     // 12周
+    Month: 3,     // 3个月
+    Quarter: 4,   // 4个季度
+    Year: 1,      // 1年
+};
+
 
 export const ProjectDetail: React.FC = () => {
     const {id} = useParams<{ id: string }>();
@@ -495,6 +534,9 @@ export const ProjectDetail: React.FC = () => {
     // 甘特图时间范围状态
     const [ganttStartDate, setGanttStartDate] = useState<dayjs.Dayjs | null>(null);
     const [ganttEndDate, setGanttEndDate] = useState<dayjs.Dayjs | null>(null);
+
+    // 视图类型状态
+    const [viewType, setViewType] = useState<ViewType>("Day");
 
     // 列配置状态
     const [columnConfigOpen, setColumnConfigOpen] = useState(false);
@@ -533,17 +575,19 @@ export const ProjectDetail: React.FC = () => {
     // 向前移动时间范围（向左）
     const handleShiftLeft = () => {
         if (!ganttStartDate || !ganttEndDate) return;
-        const duration = ganttEndDate.diff(ganttStartDate, "day");
-        setGanttStartDate(ganttStartDate.subtract(duration, "day"));
-        setGanttEndDate(ganttEndDate.subtract(duration, "day"));
+        const unit = viewUnitMap[viewType];
+        const duration = ganttEndDate.diff(ganttStartDate, unit as any);
+        setGanttStartDate(ganttStartDate.subtract(duration, unit as any));
+        setGanttEndDate(ganttEndDate.subtract(duration, unit as any));
     };
 
     // 向后移动时间范围（向右）
     const handleShiftRight = () => {
         if (!ganttStartDate || !ganttEndDate) return;
-        const duration = ganttEndDate.diff(ganttStartDate, "day");
-        setGanttStartDate(ganttStartDate.add(duration, "day"));
-        setGanttEndDate(ganttEndDate.add(duration, "day"));
+        const unit = viewUnitMap[viewType];
+        const duration = ganttEndDate.diff(ganttStartDate, unit as any);
+        setGanttStartDate(ganttStartDate.add(duration, unit as any));
+        setGanttEndDate(ganttEndDate.add(duration, unit as any));
     };
 
     const handleEventResize = (eventResizeMountArg: EventResizeMountArg, field: "start" | "end") => {
@@ -624,6 +668,14 @@ export const ProjectDetail: React.FC = () => {
                         </Space>
                         <Space size="middle" align="center" style={{flex: "1 1 auto", justifyContent: "flex-end"}}>
                             <Space size="small">
+                                <Tooltip title="视图切换">
+                                    <Select
+                                        value={viewType}
+                                        onChange={(value) => setViewType(value)}
+                                        options={viewOptions}
+                                        style={{ width: 80 }}
+                                    />
+                                </Tooltip>
                                 <Popover
                                     trigger="click"
                                     placement={"bottomLeft"}
@@ -718,20 +770,35 @@ export const ProjectDetail: React.FC = () => {
                                 <DatePicker
                                     value={ganttStartDate}
                                     onChange={(date) => setGanttStartDate(date)}
+                                    picker={viewPickerMap[viewType]}
                                     placeholder="开始时间"
-                                    format="YYYY-MM-DD"
+                                    format={
+                                        viewType === "Day" ? "YYYY-MM-DD" :
+                                        viewType === "Week" ? "YYYY-wo" :
+                                        viewType === "Month" ? "YYYY-MM" :
+                                        viewType === "Quarter" ? "YYYY-Q" :
+                                        "YYYY"
+                                    }
                                     style={{width: 140}}
                                 />
                                 <span>-</span>
                                 <DatePicker
                                     value={ganttEndDate}
                                     onChange={(date) => setGanttEndDate(date)}
+                                    picker={viewPickerMap[viewType]}
                                     placeholder="结束时间"
-                                    format="YYYY-MM-DD"
+                                    format={
+                                        viewType === "Day" ? "YYYY-MM-DD" :
+                                        viewType === "Week" ? "YYYY-wo" :
+                                        viewType === "Month" ? "YYYY-MM" :
+                                        viewType === "Quarter" ? "YYYY-Q" :
+                                        "YYYY"
+                                    }
                                     style={{width: 140}}
                                     disabledDate={(current) => {
                                         if (!ganttStartDate) return false;
-                                        return current && current.isBefore(ganttStartDate, "day");
+                                        const unit = viewUnitMap[viewType];
+                                        return current && current.isBefore(ganttStartDate, unit as any);
                                     }}
                                 />
                                 <Tooltip title="跳转到今天">
@@ -739,8 +806,10 @@ export const ProjectDetail: React.FC = () => {
                                         type="primary"
                                         icon={<CalendarOutlined />}
                                         onClick={() => {
+                                            const unit = viewUnitMap[viewType];
+                                            const range = viewDefaultRangeMap[viewType];
                                             setGanttStartDate(dayjs());
-                                            setGanttEndDate(dayjs().add(1, "month"));
+                                            setGanttEndDate(dayjs().add(range, unit as any));
                                         }}
                                     />
                                 </Tooltip>
@@ -765,7 +834,7 @@ export const ProjectDetail: React.FC = () => {
                             selectable={true}
                             lineHeight={40}
                             slotMinWidth={50}
-                            schedulantViewType="Day"
+                            schedulantViewType={viewType}
                             schedulantMaxHeight={schedulantHeight}
                             resources={resources}
                             events={events}
