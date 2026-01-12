@@ -1,4 +1,4 @@
-import React, {useState} from "react";
+import React, {useState, useEffect, useRef} from "react";
 import {useNavigate, useParams} from "react-router-dom";
 import {Button, Card, Checkbox, DatePicker, Popover, Result, Space, Spin, Tooltip} from "antd";
 import {ArrowLeftOutlined, CalendarOutlined, LeftOutlined, RightOutlined, SettingOutlined} from "@ant-design/icons";
@@ -16,6 +16,7 @@ import isSameOrBefore from "dayjs/plugin/isSameOrBefore";
 import quarterOfYear from "dayjs/plugin/quarterOfYear";
 import weekOfYear from "dayjs/plugin/weekOfYear";
 import weekYear from "dayjs/plugin/weekYear";
+import {useSchedulantHeight} from "./hooks";
 import "schedulant/dist/schedulant.css";
 import "./project-detail.scss";
 
@@ -470,6 +471,17 @@ const generateMockCheckpoints = (): Checkpoint[] => {
     ];
 };
 
+// 图例数据
+const legendItems = [
+    { color: "#FF6F61", label: "核心开发任务" },
+    { color: "#6B5B95", label: "产品原型设计" },
+    { color: "#88B04B", label: "数据处理" },
+    { color: "#F7CAC9", label: "研究实验项目" },
+    { color: "#92A8D1", label: "系统集成" },
+    { color: "#955251", label: "分析优化" },
+];
+
+
 export const ProjectDetail: React.FC = () => {
     const {id} = useParams<{ id: string }>();
     const navigate = useNavigate();
@@ -492,8 +504,16 @@ export const ProjectDetail: React.FC = () => {
         parentId: false
     });
 
+    // 动态高度计算 - 使用 refs
+    const cardHeaderRef = useRef<HTMLDivElement>(null);
+    const legendRef = useRef<HTMLDivElement>(null);
+    const projectInfoRef = useRef<HTMLDivElement>(null);
+
+    // 使用自定义 Hook 计算动态高度
+    const { height: schedulantHeight, containerRef } = useSchedulantHeight(cardHeaderRef, legendRef);
+
     // 当项目数据加载完成后，初始化事件、里程碑和检查点
-    React.useEffect(() => {
+    useEffect(() => {
         if (project) {
             setEvents(generateMockEvents());
             setMilestones(generateMockMilestones());
@@ -504,6 +524,7 @@ export const ProjectDetail: React.FC = () => {
             setGanttEndDate(project.endDateTime ? dayjs(project.endDateTime) : dayjs(project.startDateTime).add(3, "month"));
         }
     }, [project]);
+
 
     const handleBack = () => {
         navigate("/home/project-management");
@@ -591,11 +612,11 @@ export const ProjectDetail: React.FC = () => {
 
 
     return (
-        <div className="project-detail">
+        <div ref={containerRef} className="project-detail">
             <Card
                 className="gantt-chart-card"
                 title={
-                    <div style={{display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%", flexWrap: "wrap", gap: "12px"}}>
+                    <div ref={cardHeaderRef} style={{display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%", flexWrap: "wrap", gap: "12px"}}>
                         <Space size="middle" align="center" style={{flex: "0 0 auto"}}>
                             <span style={{fontSize: "14px", fontWeight: 500}}>
                                 项目名称：{project.projectName}
@@ -735,93 +756,137 @@ export const ProjectDetail: React.FC = () => {
                     </div>
                 }
             >
-                <div className="schedulant-container" style={{position: "relative"}}>
-                    <Schedulant
-                        start={displayStartDate}
-                        end={displayEndDate}
-                        editable={true}
-                        selectable={true}
-                        lineHeight={40}
-                        slotMinWidth={50}
-                        schedulantViewType="Day"
-                        schedulantMaxHeight={800}
-                        resources={resources}
-                        events={events}
-                        checkpoints={checkpoints}
-                        milestones={milestones}
-                        dragHintColor="rgb(66, 133, 244, 0.08)"
-                        selectionColor="rgba(66, 133, 244, 0.08)"
-                        resourceAreaColumns={resourceAreaColumns}
-                        milestoneMove={(milestoneMoveMountArg) => {
-                            const {date, milestoneApi} = milestoneMoveMountArg;
-                            const targetId = milestoneApi.getId();
-                            setMilestones(milestones => {
-                                const index = milestones.findIndex(m => m.id === targetId);
-                                if (index === -1) return milestones;
-                                const newMilestones = [...milestones];
-                                newMilestones[index] = {...milestones[index], time: date};
-                                return newMilestones;
-                            });
-                        }}
-                        checkpointMove={(checkpointMoveMountArg) => {
-                            const {date, checkpointApi} = checkpointMoveMountArg;
-                            const targetId = checkpointApi.getId();
-                            setCheckpoints(checkpoints => {
-                                const index = checkpoints.findIndex(c => c.id === targetId);
-                                if (index === -1) return checkpoints;
-                                const newCheckpoints = [...checkpoints];
-                                newCheckpoints[index] = {...checkpoints[index], time: date};
-                                return newCheckpoints;
-                            });
-                        }}
-                        eventMove={(eventMoveMountArg) => {
-                            const {startDate, endDate, eventApi} = eventMoveMountArg;
-                            const targetId = eventApi.getId();
-                            setEvents(events => {
-                                const index = events.findIndex(e => e.id === targetId);
-                                if (index === -1) return events;
-                                const newEvents = [...events];
-                                newEvents[index] = {...events[index], start: startDate, end: endDate};
-                                return newEvents;
-                            });
-                        }}
-                        eventResizeStart={(eventResizeMountArg) => handleEventResize(eventResizeMountArg, "start")}
-                        eventResizeEnd={(eventResizeMountArg) => handleEventResize(eventResizeMountArg, "end")}
-                        resourceLaneMove={(resourceLaneMoveArg) => {
-                            const {draggedResourceApi, targetResourceApi, position} = resourceLaneMoveArg;
-                            const draggedId = draggedResourceApi.getId();
-                            const targetId = targetResourceApi.getId();
+                <div className="schedulant-container">
+                    <div style={{position: "relative"}}>
+                        <Schedulant
+                            start={displayStartDate}
+                            end={displayEndDate}
+                            editable={true}
+                            selectable={true}
+                            lineHeight={40}
+                            slotMinWidth={50}
+                            schedulantViewType="Day"
+                            schedulantMaxHeight={schedulantHeight}
+                            resources={resources}
+                            events={events}
+                            checkpoints={checkpoints}
+                            milestones={milestones}
+                            dragHintColor="rgb(66, 133, 244, 0.08)"
+                            selectionColor="rgba(66, 133, 244, 0.08)"
+                            resourceAreaWidth={"20%"}
+                            resourceAreaColumns={resourceAreaColumns}
+                            milestoneMove={(milestoneMoveMountArg) => {
+                                const {date, milestoneApi} = milestoneMoveMountArg;
+                                const targetId = milestoneApi.getId();
+                                setMilestones(milestones => {
+                                    const index = milestones.findIndex(m => m.id === targetId);
+                                    if (index === -1) return milestones;
+                                    const newMilestones = [...milestones];
+                                    newMilestones[index] = {...milestones[index], time: date};
+                                    return newMilestones;
+                                });
+                            }}
+                            checkpointMove={(checkpointMoveMountArg) => {
+                                const {date, checkpointApi} = checkpointMoveMountArg;
+                                const targetId = checkpointApi.getId();
+                                setCheckpoints(checkpoints => {
+                                    const index = checkpoints.findIndex(c => c.id === targetId);
+                                    if (index === -1) return checkpoints;
+                                    const newCheckpoints = [...checkpoints];
+                                    newCheckpoints[index] = {...checkpoints[index], time: date};
+                                    return newCheckpoints;
+                                });
+                            }}
+                            eventMove={(eventMoveMountArg) => {
+                                const {startDate, endDate, eventApi} = eventMoveMountArg;
+                                const targetId = eventApi.getId();
+                                setEvents(events => {
+                                    const index = events.findIndex(e => e.id === targetId);
+                                    if (index === -1) return events;
+                                    const newEvents = [...events];
+                                    newEvents[index] = {...events[index], start: startDate, end: endDate};
+                                    return newEvents;
+                                });
+                            }}
+                            eventResizeStart={(eventResizeMountArg) => handleEventResize(eventResizeMountArg, "start")}
+                            eventResizeEnd={(eventResizeMountArg) => handleEventResize(eventResizeMountArg, "end")}
+                            resourceLaneMove={(resourceLaneMoveArg) => {
+                                const {draggedResourceApi, targetResourceApi, position} = resourceLaneMoveArg;
+                                const draggedId = draggedResourceApi.getId();
+                                const targetId = targetResourceApi.getId();
 
-                            setResources(resources => {
-                                const newResources = [...resources];
-                                const draggedIndex = newResources.findIndex(r => r.id === draggedId);
-                                if (draggedIndex === -1) return resources;
+                                setResources(resources => {
+                                    const newResources = [...resources];
+                                    const draggedIndex = newResources.findIndex(r => r.id === draggedId);
+                                    if (draggedIndex === -1) return resources;
 
-                                const draggedResource = {...newResources[draggedIndex]};
-                                const targetResource = newResources.find(r => r.id === targetId);
+                                    const draggedResource = {...newResources[draggedIndex]};
+                                    const targetResource = newResources.find(r => r.id === targetId);
 
-                                if (position === "child") {
-                                    draggedResource.parentId = targetId;
-                                } else {
-                                    draggedResource.parentId = targetResource?.parentId;
-                                }
+                                    if (position === "child") {
+                                        draggedResource.parentId = targetId;
+                                    } else {
+                                        draggedResource.parentId = targetResource?.parentId;
+                                    }
 
-                                newResources[draggedIndex] = draggedResource;
-                                return newResources;
-                            });
+                                    newResources[draggedIndex] = draggedResource;
+                                    return newResources;
+                                });
+                            }}
+                        />
+                    </div>
+
+                    {/* 图例 - 独立在 Schedulant 下方 */}
+                    <div
+                        ref={legendRef}
+                        style={{
+                            display: "flex",
+                            justifyContent: "center",
+                            alignItems: "center",
+                            padding: "10px 0 8px 0",
+                            gap: "24px",
+                            flexWrap: "wrap"
                         }}
-                    />
-                    <div style={{
-                        position: "absolute",
-                        bottom: "8px",
-                        right: "8px",
-                        fontSize: "12px",
-                        color: "rgba(0, 0, 0, 0.45)",
-                        backgroundColor: "rgba(255, 255, 255, 0.9)",
-                        padding: "4px 8px",
-                        borderRadius: "4px",
-                        pointerEvents: "none"
-                    }}>
+                    >
+                        {legendItems.map((item) => (
+                            <div
+                                key={item.color}
+                                style={{
+                                    display: "flex",
+                                    alignItems: "center",
+                                    gap: "8px"
+                                }}
+                            >
+                                <div style={{
+                                    width: "16px",
+                                    height: "16px",
+                                    backgroundColor: item.color,
+                                    borderRadius: "2px"
+                                }} />
+                                <span style={{
+                                    fontSize: "13px",
+                                    color: "rgba(0, 0, 0, 0.65)"
+                                }}>
+                                    {item.label}
+                                </span>
+                            </div>
+                        ))}
+                    </div>
+
+                    <div
+                        ref={projectInfoRef}
+                        style={{
+                            position: "absolute",
+                            bottom: "8px",
+                            right: "8px",
+                            fontSize: "12px",
+                            color: "rgba(0, 0, 0, 0.45)",
+                            backgroundColor: "rgba(255, 255, 255, 0.9)",
+                            padding: "4px 8px",
+                            borderRadius: "4px",
+                            pointerEvents: "none"
+                        }}
+                    >
                         项目时间：{dayjs(project.startDateTime).format("YYYY-MM-DD")}
                         {project.endDateTime && ` ~ ${dayjs(project.endDateTime).format("YYYY-MM-DD")}`}
                     </div>
