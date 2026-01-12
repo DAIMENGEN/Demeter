@@ -1,5 +1,6 @@
 import React, {useState} from "react";
-import {Layout, Modal, Menu, App} from "antd";
+import {Layout, Modal, Menu} from "antd";
+import {useNavigate} from "react-router-dom";
 import {ExclamationCircleOutlined, ClockCircleOutlined, FolderOutlined, TeamOutlined} from "@ant-design/icons";
 import type {Project} from "@Webapp/api/modules/project";
 import {
@@ -23,7 +24,7 @@ export const ProjectManagement: React.FC = () => {
     const [createDrawerOpen, setCreateDrawerOpen] = useState(false);
     const [editDrawerOpen, setEditDrawerOpen] = useState(false);
     const [editingProject, setEditingProject] = useState<Project | null>(null);
-    const { message } = App.useApp();
+    const navigate = useNavigate();
 
     // 获取不同视图的项目数据
     const myCreatedProjects = useMyCreatedProjects();
@@ -71,8 +72,7 @@ export const ProjectManagement: React.FC = () => {
 
     // 处理项目点击
     const handleProjectClick = (project: Project) => {
-        message.info(`点击了项目: ${project.projectName}`);
-        // TODO: 导航到项目详情页或执行其他操作
+        navigate(`/home/project/${project.id}`);
     };
 
     // 处理编辑项目

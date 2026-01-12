@@ -2289,6 +2289,13 @@ sass@^1.97.2:
   optionalDependencies:
     "@parcel/watcher" "^2.4.1"
 
+schedulant@^2.0.0:
+  version "2.0.0"
+  resolved "https://registry.yarnpkg.com/schedulant/-/schedulant-2.0.0.tgz#d7281f176f1c961837618cd78919e6e780529662"
+  integrity sha512-AgQjmEeaT71u+ViVkJvCSivpuSN6wtStsrLJdNr4S8JAL96UzAtr6mS+MEQ4rrlDAi5goVf9NfwO+lUv7PEDlw==
+  dependencies:
+    lodash "^4.17.21"
+
 scheduler@^0.27.0:
   version "0.27.0"
   resolved "https://registry.yarnpkg.com/scheduler/-/scheduler-0.27.0.tgz#0c4ef82d67d1e5c1e359e8fc76d3a87f045fe5bd"

@@ -35,6 +35,37 @@ export const useProjects = (params?: ProjectQueryParams) => {
 };
 
 /**
+ * 根据 ID 获取项目详情 Hook
+ */
+export const useProjectById = (id: string) => {
+  const [data, setData] = useState<Project | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<Error | null>(null);
+
+  const fetchProject = useCallback(async () => {
+    if (!id) return;
+
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await projectApi.getProjectById(id);
+      setData(response.data);
+    } catch (err) {
+      setError(err as Error);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  }, [id]);
+
+  useEffect(() => {
+    void fetchProject();
+  }, [fetchProject]);
+
+  return { data, loading, error, refetch: fetchProject };
+};
+
+/**
  * 我创建的项目列表 Hook（分页）
  */
 export const useMyProjects = (params?: ProjectQueryParams) => {
