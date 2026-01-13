@@ -1,7 +1,6 @@
 import React, {useState, useEffect, useRef} from "react";
 import {useNavigate, useParams} from "react-router-dom";
-import {Button, Card, Checkbox, Collapse, DatePicker, InputNumber, Popover, Result, Segmented, Select, Space, Spin, Tooltip} from "antd";
-import {ArrowLeftOutlined, CalendarOutlined, LeftOutlined, RightOutlined, SettingOutlined} from "@ant-design/icons";
+import {Button, Card, Result, Spin} from "antd";
 import dayjs from "dayjs";
 import {
     type Checkpoint,
@@ -17,6 +16,15 @@ import quarterOfYear from "dayjs/plugin/quarterOfYear";
 import weekOfYear from "dayjs/plugin/weekOfYear";
 import weekYear from "dayjs/plugin/weekYear";
 import {useSchedulantHeight} from "./hooks";
+import {
+    GanttToolbar,
+    GanttLegend,
+    ProjectInfo,
+    type ViewType,
+    type LegendItem,
+    viewUnitMap,
+    viewDefaultRangeMap
+} from "./components";
 import "schedulant/dist/schedulant.css";
 import "./project-detail.scss";
 
@@ -472,7 +480,7 @@ const generateMockCheckpoints = (): Checkpoint[] => {
 };
 
 // 图例数据
-const legendItems = [
+const legendItems: LegendItem[] = [
     { color: "#FF6F61", label: "核心开发任务" },
     { color: "#6B5B95", label: "产品原型设计" },
     { color: "#88B04B", label: "数据处理" },
@@ -480,45 +488,6 @@ const legendItems = [
     { color: "#92A8D1", label: "系统集成" },
     { color: "#955251", label: "分析优化" },
 ];
-
-// 视图类型定义
-type ViewType = "Day" | "Week" | "Month" | "Quarter" | "Year";
-
-// 视图选项
-const viewOptions = [
-    { label: "日", value: "Day" as ViewType },
-    { label: "周", value: "Week" as ViewType },
-    { label: "月", value: "Month" as ViewType },
-    { label: "季", value: "Quarter" as ViewType },
-    { label: "年", value: "Year" as ViewType },
-];
-
-// 视图对应的时间单位
-const viewUnitMap: Record<ViewType, "day" | "week" | "month" | "quarter" | "year"> = {
-    Day: "day",
-    Week: "week",
-    Month: "month",
-    Quarter: "quarter",
-    Year: "year",
-};
-
-// 视图对应的 DatePicker picker 类型
-const viewPickerMap: Record<ViewType, "date" | "week" | "month" | "quarter" | "year"> = {
-    Day: "date",
-    Week: "week",
-    Month: "month",
-    Quarter: "quarter",
-    Year: "year",
-};
-
-// 视图对应的默认时间范围（用于"跳转到今天"功能）
-const viewDefaultRangeMap: Record<ViewType, number> = {
-    Day: 30,      // 30天
-    Week: 12,     // 12周
-    Month: 3,     // 3个月
-    Quarter: 4,   // 4个季度
-    Year: 1,      // 1年
-};
 
 
 export const ProjectDetail: React.FC = () => {
@@ -545,8 +514,6 @@ export const ProjectDetail: React.FC = () => {
         parentId: false
     });
 
-    // 尺寸配置状态
-    const [sizeConfigOpen, setSizeConfigOpen] = useState(false);
 
     // lineHeight 配置
     const [lineHeightMode, setLineHeightMode] = useState<'small' | 'medium' | 'large' | 'custom'>('medium');
@@ -687,241 +654,37 @@ export const ProjectDetail: React.FC = () => {
             <Card
                 className="gantt-chart-card"
                 title={
-                    <div ref={cardHeaderRef} style={{display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%", flexWrap: "wrap", gap: "12px"}}>
-                        <Space size="middle" align="center" style={{flex: "0 0 auto"}}>
-                            <span style={{fontSize: "14px", fontWeight: 500}}>
-                                项目名称：{project.projectName}
-                            </span>
-                        </Space>
-                        <Space size="middle" align="center" style={{flex: "1 1 auto", justifyContent: "flex-end"}}>
-                            <Space size="small">
-                                <Tooltip title="视图切换">
-                                    <Select
-                                        value={viewType}
-                                        onChange={(value) => setViewType(value)}
-                                        options={viewOptions}
-                                        style={{ width: 80 }}
-                                    />
-                                </Tooltip>
-                                <Tooltip title="跳转到今天">
-                                    <Button
-                                        type="primary"
-                                        icon={<CalendarOutlined />}
-                                        onClick={() => {
-                                            const unit = viewUnitMap[viewType];
-                                            const range = viewDefaultRangeMap[viewType];
-                                            setGanttStartDate(dayjs());
-                                            setGanttEndDate(dayjs().add(range, unit as any));
-                                        }}
-                                    />
-                                </Tooltip>
-                                <Tooltip title="向前移动时间范围">
-                                    <Button
-                                        type="primary"
-                                        icon={<LeftOutlined/>}
-                                        onClick={handleShiftLeft}
-                                        disabled={!ganttStartDate || !ganttEndDate}
-                                    />
-                                </Tooltip>
-                                <Tooltip title="向后移动时间范围">
-                                    <Button
-                                        type="primary"
-                                        icon={<RightOutlined/>}
-                                        onClick={handleShiftRight}
-                                        disabled={!ganttStartDate || !ganttEndDate}
-                                    />
-                                </Tooltip>
-                                <DatePicker
-                                    value={ganttStartDate}
-                                    onChange={(date) => setGanttStartDate(date)}
-                                    picker={viewPickerMap[viewType]}
-                                    placeholder="开始时间"
-                                    format={
-                                        viewType === "Day" ? "YYYY-MM-DD" :
-                                        viewType === "Week" ? "YYYY-wo" :
-                                        viewType === "Month" ? "YYYY-MM" :
-                                        viewType === "Quarter" ? "YYYY-Q" :
-                                        "YYYY"
-                                    }
-                                    style={{width: 140}}
-                                />
-                                <span>-</span>
-                                <DatePicker
-                                    value={ganttEndDate}
-                                    onChange={(date) => setGanttEndDate(date)}
-                                    picker={viewPickerMap[viewType]}
-                                    placeholder="结束时间"
-                                    format={
-                                        viewType === "Day" ? "YYYY-MM-DD" :
-                                        viewType === "Week" ? "YYYY-wo" :
-                                        viewType === "Month" ? "YYYY-MM" :
-                                        viewType === "Quarter" ? "YYYY-Q" :
-                                        "YYYY"
-                                    }
-                                    style={{width: 140}}
-                                    disabledDate={(current) => {
-                                        if (!ganttStartDate) return false;
-                                        const unit = viewUnitMap[viewType];
-                                        return current && current.isBefore(ganttStartDate, unit as any);
-                                    }}
-                                />
-                                <Popover
-                                    trigger="click"
-                                    placement={"bottomLeft"}
-                                    open={sizeConfigOpen}
-                                    onOpenChange={(open) => setSizeConfigOpen(open)}
-                                    content={
-                                        <div style={{display: 'flex', flexDirection: 'column', gap: '16px', minWidth: '280px'}}>
-                                            {/* 行高配置 */}
-                                            <div>
-                                                <div style={{marginBottom: '8px', fontWeight: 500, fontSize: '14px'}}>行高</div>
-                                                <Segmented
-                                                    value={lineHeightMode}
-                                                    onChange={(value) => setLineHeightMode(value as any)}
-                                                    options={[
-                                                        {label: '小', value: 'small'},
-                                                        {label: '中', value: 'medium'},
-                                                        {label: '大', value: 'large'},
-                                                        {label: '自定义', value: 'custom'}
-                                                    ]}
-                                                    block
-                                                />
-                                                {lineHeightMode === 'custom' && (
-                                                    <div style={{marginTop: '8px'}}>
-                                                        <InputNumber
-                                                            value={customLineHeight}
-                                                            onChange={(value) => setCustomLineHeight(value || 40)}
-                                                            min={20}
-                                                            max={100}
-                                                            suffix="px"
-                                                            style={{width: '100%'}}
-                                                            placeholder="输入行高"
-                                                        />
-                                                    </div>
-                                                )}
-                                                <div style={{marginTop: '4px', fontSize: '12px', color: '#8c8c8c'}}>
-                                                    当前值: {actualLineHeight}px
-                                                </div>
-                                            </div>
-
-                                            {/* 时间槽最小宽度配置 */}
-                                            <div>
-                                                <div style={{marginBottom: '8px', fontWeight: 500, fontSize: '14px'}}>时间槽宽度</div>
-                                                <Segmented
-                                                    value={slotMinWidthMode}
-                                                    onChange={(value) => setSlotMinWidthMode(value as any)}
-                                                    options={[
-                                                        {label: '小', value: 'small'},
-                                                        {label: '中', value: 'medium'},
-                                                        {label: '大', value: 'large'},
-                                                        {label: '自定义', value: 'custom'}
-                                                    ]}
-                                                    block
-                                                />
-                                                {slotMinWidthMode === 'custom' && (
-                                                    <div style={{marginTop: '8px'}}>
-                                                        <InputNumber
-                                                            value={customSlotMinWidth}
-                                                            onChange={(value) => setCustomSlotMinWidth(value || 50)}
-                                                            min={30}
-                                                            max={200}
-                                                            suffix="px"
-                                                            style={{width: '100%'}}
-                                                            placeholder="输入时间槽宽度"
-                                                        />
-                                                    </div>
-                                                )}
-                                                <div style={{marginTop: '4px', fontSize: '12px', color: '#8c8c8c'}}>
-                                                    当前值: {actualSlotMinWidth}px
-                                                </div>
-                                            </div>
-
-                                            {/* 列配置 - 使用 Collapse 组件，默认折叠 */}
-                                            <Collapse
-                                                ghost
-                                                size="small"
-                                                items={[
-                                                    {
-                                                        key: 'columns',
-                                                        label: <span style={{fontWeight: 500, fontSize: '14px'}}>列配置</span>,
-                                                        children: (
-                                                            <div style={{display: 'flex', flexDirection: 'column', gap: '4px'}}>
-                                                                <div
-                                                                    style={{
-                                                                        padding: '5px 12px',
-                                                                        borderRadius: '4px',
-                                                                        cursor: 'pointer',
-                                                                        transition: 'background-color 0.2s',
-                                                                        display: 'flex',
-                                                                        alignItems: 'center',
-                                                                        gap: '8px'
-                                                                    }}
-                                                                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.04)'}
-                                                                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                                                                    onClick={() => setVisibleColumns({...visibleColumns, title: !visibleColumns.title})}
-                                                                >
-                                                                    <Checkbox checked={visibleColumns.title} />
-                                                                    <span>任务/团队</span>
-                                                                </div>
-                                                                <div
-                                                                    style={{
-                                                                        padding: '5px 12px',
-                                                                        borderRadius: '4px',
-                                                                        cursor: 'pointer',
-                                                                        transition: 'background-color 0.2s',
-                                                                        display: 'flex',
-                                                                        alignItems: 'center',
-                                                                        gap: '8px'
-                                                                    }}
-                                                                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.04)'}
-                                                                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                                                                    onClick={() => setVisibleColumns({...visibleColumns, order: !visibleColumns.order})}
-                                                                >
-                                                                    <Checkbox checked={visibleColumns.order} />
-                                                                    <span>排序</span>
-                                                                </div>
-                                                                <div
-                                                                    style={{
-                                                                        padding: '5px 12px',
-                                                                        borderRadius: '4px',
-                                                                        cursor: 'pointer',
-                                                                        transition: 'background-color 0.2s',
-                                                                        display: 'flex',
-                                                                        alignItems: 'center',
-                                                                        gap: '8px'
-                                                                    }}
-                                                                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.04)'}
-                                                                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                                                                    onClick={() => setVisibleColumns({...visibleColumns, parentId: !visibleColumns.parentId})}
-                                                                >
-                                                                    <Checkbox checked={visibleColumns.parentId} />
-                                                                    <span>父级ID</span>
-                                                                </div>
-                                                            </div>
-                                                        )
-                                                    }
-                                                ]}
-                                            />
-                                        </div>
-                                    }
-                                >
-                                    <Tooltip title="显示配置">
-                                        <Button
-                                            type="primary"
-                                            icon={<SettingOutlined/>}
-                                            onClick={() => setSizeConfigOpen(!sizeConfigOpen)}
-                                        />
-                                    </Tooltip>
-                                </Popover>
-                                <Tooltip title="返回项目列表">
-                                    <Button
-                                        type="primary"
-                                        icon={<ArrowLeftOutlined/>}
-                                        onClick={handleBack}
-                                    />
-                                </Tooltip>
-                            </Space>
-                        </Space>
+                    <div ref={cardHeaderRef}>
+                        <GanttToolbar
+                            projectName={project.projectName}
+                            viewType={viewType}
+                            ganttStartDate={ganttStartDate}
+                            ganttEndDate={ganttEndDate}
+                            onViewTypeChange={setViewType}
+                            onStartDateChange={setGanttStartDate}
+                            onEndDateChange={setGanttEndDate}
+                            onShiftLeft={handleShiftLeft}
+                            onShiftRight={handleShiftRight}
+                            onJumpToToday={() => {
+                                const unit = viewUnitMap[viewType];
+                                const range = viewDefaultRangeMap[viewType];
+                                setGanttStartDate(dayjs());
+                                setGanttEndDate(dayjs().add(range, unit as any));
+                            }}
+                            onBack={handleBack}
+                            lineHeightMode={lineHeightMode}
+                            customLineHeight={customLineHeight}
+                            slotMinWidthMode={slotMinWidthMode}
+                            customSlotMinWidth={customSlotMinWidth}
+                            actualLineHeight={actualLineHeight}
+                            actualSlotMinWidth={actualSlotMinWidth}
+                            visibleColumns={visibleColumns}
+                            onLineHeightModeChange={setLineHeightMode}
+                            onCustomLineHeightChange={setCustomLineHeight}
+                            onSlotMinWidthModeChange={setSlotMinWidthMode}
+                            onCustomSlotMinWidthChange={setCustomSlotMinWidth}
+                            onVisibleColumnsChange={setVisibleColumns}
+                        />
                     </div>
                 }>
                 <div className="schedulant-container">
@@ -1005,59 +768,14 @@ export const ProjectDetail: React.FC = () => {
                     </div>
 
                     {/* 图例 - 独立在 Schedulant 下方 */}
-                    <div
-                        ref={legendRef}
-                        style={{
-                            display: "flex",
-                            justifyContent: "center",
-                            alignItems: "center",
-                            padding: "10px 0 8px 0",
-                            gap: "24px",
-                            flexWrap: "wrap"
-                        }}
-                    >
-                        {legendItems.map((item) => (
-                            <div
-                                key={item.color}
-                                style={{
-                                    display: "flex",
-                                    alignItems: "center",
-                                    gap: "8px"
-                                }}
-                            >
-                                <div style={{
-                                    width: "16px",
-                                    height: "16px",
-                                    backgroundColor: item.color,
-                                    borderRadius: "2px"
-                                }} />
-                                <span style={{
-                                    fontSize: "13px",
-                                    color: "rgba(0, 0, 0, 0.65)"
-                                }}>
-                                    {item.label}
-                                </span>
-                            </div>
-                        ))}
-                    </div>
+                    <GanttLegend ref={legendRef} items={legendItems} />
 
-                    <div
+                    {/* 项目信息 */}
+                    <ProjectInfo
                         ref={projectInfoRef}
-                        style={{
-                            position: "absolute",
-                            bottom: "8px",
-                            right: "8px",
-                            fontSize: "12px",
-                            color: "rgba(0, 0, 0, 0.45)",
-                            backgroundColor: "rgba(255, 255, 255, 0.9)",
-                            padding: "4px 8px",
-                            borderRadius: "4px",
-                            pointerEvents: "none"
-                        }}
-                    >
-                        项目时间：{dayjs(project.startDateTime).format("YYYY-MM-DD")}
-                        {project.endDateTime && ` ~ ${dayjs(project.endDateTime).format("YYYY-MM-DD")}`}
-                    </div>
+                        startDateTime={project.startDateTime}
+                        endDateTime={project.endDateTime}
+                    />
                 </div>
             </Card>
         </div>
