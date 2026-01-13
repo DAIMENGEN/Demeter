@@ -56,7 +56,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .merge(organization::department::department_routes(config.jwt.clone()).with_state(pool.clone()))
         .merge(hr::holiday::holiday_routes(config.jwt.clone()).with_state(pool.clone()))
         .merge(organization::team::team_routes(config.jwt.clone()).with_state(pool.clone()))
-        .merge(business::project::project_routes(config.jwt.clone()).with_state(pool));
+        .merge(business::project::project_routes(config.jwt.clone()).with_state(pool.clone()))
+        .merge(business::project::task::task_routes(config.jwt.clone()).with_state(pool));
 
     let app = Router::new().nest("/api", api_routes).layer(cors);
 
