@@ -1,6 +1,6 @@
 import React, {useState, useEffect, useRef} from "react";
 import {useNavigate, useParams} from "react-router-dom";
-import {Button, Card, Checkbox, DatePicker, Popover, Result, Select, Space, Spin, Tooltip} from "antd";
+import {Button, Card, Checkbox, DatePicker, InputNumber, Popover, Result, Segmented, Select, Space, Spin, Tooltip} from "antd";
 import {ArrowLeftOutlined, CalendarOutlined, LeftOutlined, RightOutlined, SettingOutlined} from "@ant-design/icons";
 import dayjs from "dayjs";
 import {
@@ -539,12 +539,39 @@ export const ProjectDetail: React.FC = () => {
     const [viewType, setViewType] = useState<ViewType>("Day");
 
     // 列配置状态
-    const [columnConfigOpen, setColumnConfigOpen] = useState(false);
     const [visibleColumns, setVisibleColumns] = useState({
         title: true,
         order: false,
         parentId: false
     });
+
+    // 尺寸配置状态
+    const [sizeConfigOpen, setSizeConfigOpen] = useState(false);
+
+    // lineHeight 配置
+    const [lineHeightMode, setLineHeightMode] = useState<'small' | 'medium' | 'large' | 'custom'>('medium');
+    const [customLineHeight, setCustomLineHeight] = useState(40);
+
+    // slotMinWidth 配置
+    const [slotMinWidthMode, setSlotMinWidthMode] = useState<'small' | 'medium' | 'large' | 'custom'>('medium');
+    const [customSlotMinWidth, setCustomSlotMinWidth] = useState(50);
+
+    // 预设尺寸映射
+    const lineHeightPresets = {
+        small: 30,
+        medium: 40,
+        large: 50
+    };
+
+    const slotMinWidthPresets = {
+        small: 40,
+        medium: 50,
+        large: 60
+    };
+
+    // 计算实际使用的值
+    const actualLineHeight = lineHeightMode === 'custom' ? customLineHeight : lineHeightPresets[lineHeightMode];
+    const actualSlotMinWidth = slotMinWidthMode === 'custom' ? customSlotMinWidth : slotMinWidthPresets[slotMinWidthMode];
 
     // 动态高度计算 - 使用 refs
     const cardHeaderRef = useRef<HTMLDivElement>(null);
@@ -679,75 +706,151 @@ export const ProjectDetail: React.FC = () => {
                                 <Popover
                                     trigger="click"
                                     placement={"bottomLeft"}
-                                    open={columnConfigOpen}
-                                    onOpenChange={(open) => setColumnConfigOpen(open)}
+                                    open={sizeConfigOpen}
+                                    onOpenChange={(open) => setSizeConfigOpen(open)}
                                     content={
-                                        <div style={{display: 'flex', flexDirection: 'column', gap: '4px'}}>
-                                            <div
-                                                style={{
-                                                    padding: '5px 12px',
-                                                    borderRadius: '4px',
-                                                    cursor: 'pointer',
-                                                    transition: 'background-color 0.2s'
-                                                }}
-                                                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.04)'}
-                                                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                                            >
-                                                <Checkbox
-                                                    checked={visibleColumns.title}
-                                                    onChange={(e) => {
-                                                        setVisibleColumns({...visibleColumns, title: e.target.checked});
-                                                    }}
-                                                >
-                                                    任务/团队
-                                                </Checkbox>
+                                        <div style={{display: 'flex', flexDirection: 'column', gap: '16px', minWidth: '280px'}}>
+                                            {/* 行高配置 */}
+                                            <div>
+                                                <div style={{marginBottom: '8px', fontWeight: 500, fontSize: '14px'}}>行高</div>
+                                                <Segmented
+                                                    value={lineHeightMode}
+                                                    onChange={(value) => setLineHeightMode(value as any)}
+                                                    options={[
+                                                        {label: '小', value: 'small'},
+                                                        {label: '中', value: 'medium'},
+                                                        {label: '大', value: 'large'},
+                                                        {label: '自定义', value: 'custom'}
+                                                    ]}
+                                                    block
+                                                />
+                                                {lineHeightMode === 'custom' && (
+                                                    <div style={{marginTop: '8px'}}>
+                                                        <InputNumber
+                                                            value={customLineHeight}
+                                                            onChange={(value) => setCustomLineHeight(value || 40)}
+                                                            min={20}
+                                                            max={100}
+                                                            suffix="px"
+                                                            style={{width: '100%'}}
+                                                            placeholder="输入行高"
+                                                        />
+                                                    </div>
+                                                )}
+                                                <div style={{marginTop: '4px', fontSize: '12px', color: '#8c8c8c'}}>
+                                                    当前值: {actualLineHeight}px
+                                                </div>
                                             </div>
-                                            <div
-                                                style={{
-                                                    padding: '5px 12px',
-                                                    borderRadius: '4px',
-                                                    cursor: 'pointer',
-                                                    transition: 'background-color 0.2s'
-                                                }}
-                                                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.04)'}
-                                                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                                            >
-                                                <Checkbox
-                                                    checked={visibleColumns.order}
-                                                    onChange={(e) => {
-                                                        setVisibleColumns({...visibleColumns, order: e.target.checked});
-                                                    }}
-                                                >
-                                                    排序
-                                                </Checkbox>
+
+                                            {/* 时间槽最小宽度配置 */}
+                                            <div>
+                                                <div style={{marginBottom: '8px', fontWeight: 500, fontSize: '14px'}}>时间槽宽度</div>
+                                                <Segmented
+                                                    value={slotMinWidthMode}
+                                                    onChange={(value) => setSlotMinWidthMode(value as any)}
+                                                    options={[
+                                                        {label: '小', value: 'small'},
+                                                        {label: '中', value: 'medium'},
+                                                        {label: '大', value: 'large'},
+                                                        {label: '自定义', value: 'custom'}
+                                                    ]}
+                                                    block
+                                                />
+                                                {slotMinWidthMode === 'custom' && (
+                                                    <div style={{marginTop: '8px'}}>
+                                                        <InputNumber
+                                                            value={customSlotMinWidth}
+                                                            onChange={(value) => setCustomSlotMinWidth(value || 50)}
+                                                            min={30}
+                                                            max={200}
+                                                            suffix="px"
+                                                            style={{width: '100%'}}
+                                                            placeholder="输入时间槽宽度"
+                                                        />
+                                                    </div>
+                                                )}
+                                                <div style={{marginTop: '4px', fontSize: '12px', color: '#8c8c8c'}}>
+                                                    当前值: {actualSlotMinWidth}px
+                                                </div>
                                             </div>
-                                            <div
-                                                style={{
-                                                    padding: '5px 12px',
-                                                    borderRadius: '4px',
-                                                    cursor: 'pointer',
-                                                    transition: 'background-color 0.2s'
-                                                }}
-                                                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.04)'}
-                                                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                                            >
-                                                <Checkbox
-                                                    checked={visibleColumns.parentId}
-                                                    onChange={(e) => {
-                                                        setVisibleColumns({...visibleColumns, parentId: e.target.checked});
-                                                    }}
-                                                >
-                                                    父级ID
-                                                </Checkbox>
+
+                                            {/* 列配置 */}
+                                            <div>
+                                                <div style={{marginBottom: '8px', fontWeight: 500, fontSize: '14px'}}>列配置</div>
+                                                <div style={{display: 'flex', flexDirection: 'column', gap: '4px'}}>
+                                                    <div
+                                                        style={{
+                                                            padding: '5px 12px',
+                                                            borderRadius: '4px',
+                                                            cursor: 'pointer',
+                                                            transition: 'background-color 0.2s'
+                                                        }}
+                                                        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.04)'}
+                                                        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                                                        onClick={() => setVisibleColumns({...visibleColumns, title: !visibleColumns.title})}
+                                                    >
+                                                        <Checkbox
+                                                            checked={visibleColumns.title}
+                                                            onChange={(e) => {
+                                                                e.stopPropagation();
+                                                                setVisibleColumns({...visibleColumns, title: e.target.checked});
+                                                            }}
+                                                        >
+                                                            任务/团队
+                                                        </Checkbox>
+                                                    </div>
+                                                    <div
+                                                        style={{
+                                                            padding: '5px 12px',
+                                                            borderRadius: '4px',
+                                                            cursor: 'pointer',
+                                                            transition: 'background-color 0.2s'
+                                                        }}
+                                                        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.04)'}
+                                                        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                                                        onClick={() => setVisibleColumns({...visibleColumns, order: !visibleColumns.order})}
+                                                    >
+                                                        <Checkbox
+                                                            checked={visibleColumns.order}
+                                                            onChange={(e) => {
+                                                                e.stopPropagation();
+                                                                setVisibleColumns({...visibleColumns, order: e.target.checked});
+                                                            }}
+                                                        >
+                                                            排序
+                                                        </Checkbox>
+                                                    </div>
+                                                    <div
+                                                        style={{
+                                                            padding: '5px 12px',
+                                                            borderRadius: '4px',
+                                                            cursor: 'pointer',
+                                                            transition: 'background-color 0.2s'
+                                                        }}
+                                                        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.04)'}
+                                                        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                                                        onClick={() => setVisibleColumns({...visibleColumns, parentId: !visibleColumns.parentId})}
+                                                    >
+                                                        <Checkbox
+                                                            checked={visibleColumns.parentId}
+                                                            onChange={(e) => {
+                                                                e.stopPropagation();
+                                                                setVisibleColumns({...visibleColumns, parentId: e.target.checked});
+                                                            }}
+                                                        >
+                                                            父级ID
+                                                        </Checkbox>
+                                                    </div>
+                                                </div>
                                             </div>
                                         </div>
                                     }
                                 >
-                                    <Tooltip title="列配置">
+                                    <Tooltip title="显示配置">
                                         <Button
                                             type="primary"
                                             icon={<SettingOutlined/>}
-                                            onClick={() => setColumnConfigOpen(!columnConfigOpen)}
+                                            onClick={() => setSizeConfigOpen(!sizeConfigOpen)}
                                         />
                                     </Tooltip>
                                 </Popover>
@@ -832,8 +935,8 @@ export const ProjectDetail: React.FC = () => {
                             end={displayEndDate}
                             editable={true}
                             selectable={true}
-                            lineHeight={40}
-                            slotMinWidth={50}
+                            lineHeight={actualLineHeight}
+                            slotMinWidth={actualSlotMinWidth}
                             schedulantViewType={viewType}
                             schedulantMaxHeight={schedulantHeight}
                             resources={resources}
