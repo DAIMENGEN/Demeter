@@ -1,6 +1,6 @@
 import React, {useState, useEffect, useRef} from "react";
 import {useNavigate, useParams} from "react-router-dom";
-import {Button, Card, Checkbox, DatePicker, InputNumber, Popover, Result, Segmented, Select, Space, Spin, Tooltip} from "antd";
+import {Button, Card, Checkbox, Collapse, DatePicker, InputNumber, Popover, Result, Segmented, Select, Space, Spin, Tooltip} from "antd";
 import {ArrowLeftOutlined, CalendarOutlined, LeftOutlined, RightOutlined, SettingOutlined} from "@ant-design/icons";
 import dayjs from "dayjs";
 import {
@@ -703,6 +703,68 @@ export const ProjectDetail: React.FC = () => {
                                         style={{ width: 80 }}
                                     />
                                 </Tooltip>
+                                <Tooltip title="跳转到今天">
+                                    <Button
+                                        type="primary"
+                                        icon={<CalendarOutlined />}
+                                        onClick={() => {
+                                            const unit = viewUnitMap[viewType];
+                                            const range = viewDefaultRangeMap[viewType];
+                                            setGanttStartDate(dayjs());
+                                            setGanttEndDate(dayjs().add(range, unit as any));
+                                        }}
+                                    />
+                                </Tooltip>
+                                <Tooltip title="向前移动时间范围">
+                                    <Button
+                                        type="primary"
+                                        icon={<LeftOutlined/>}
+                                        onClick={handleShiftLeft}
+                                        disabled={!ganttStartDate || !ganttEndDate}
+                                    />
+                                </Tooltip>
+                                <Tooltip title="向后移动时间范围">
+                                    <Button
+                                        type="primary"
+                                        icon={<RightOutlined/>}
+                                        onClick={handleShiftRight}
+                                        disabled={!ganttStartDate || !ganttEndDate}
+                                    />
+                                </Tooltip>
+                                <DatePicker
+                                    value={ganttStartDate}
+                                    onChange={(date) => setGanttStartDate(date)}
+                                    picker={viewPickerMap[viewType]}
+                                    placeholder="开始时间"
+                                    format={
+                                        viewType === "Day" ? "YYYY-MM-DD" :
+                                        viewType === "Week" ? "YYYY-wo" :
+                                        viewType === "Month" ? "YYYY-MM" :
+                                        viewType === "Quarter" ? "YYYY-Q" :
+                                        "YYYY"
+                                    }
+                                    style={{width: 140}}
+                                />
+                                <span>-</span>
+                                <DatePicker
+                                    value={ganttEndDate}
+                                    onChange={(date) => setGanttEndDate(date)}
+                                    picker={viewPickerMap[viewType]}
+                                    placeholder="结束时间"
+                                    format={
+                                        viewType === "Day" ? "YYYY-MM-DD" :
+                                        viewType === "Week" ? "YYYY-wo" :
+                                        viewType === "Month" ? "YYYY-MM" :
+                                        viewType === "Quarter" ? "YYYY-Q" :
+                                        "YYYY"
+                                    }
+                                    style={{width: 140}}
+                                    disabledDate={(current) => {
+                                        if (!ganttStartDate) return false;
+                                        const unit = viewUnitMap[viewType];
+                                        return current && current.isBefore(ganttStartDate, unit as any);
+                                    }}
+                                />
                                 <Popover
                                     trigger="click"
                                     placement={"bottomLeft"}
@@ -774,75 +836,72 @@ export const ProjectDetail: React.FC = () => {
                                                 </div>
                                             </div>
 
-                                            {/* 列配置 */}
-                                            <div>
-                                                <div style={{marginBottom: '8px', fontWeight: 500, fontSize: '14px'}}>列配置</div>
-                                                <div style={{display: 'flex', flexDirection: 'column', gap: '4px'}}>
-                                                    <div
-                                                        style={{
-                                                            padding: '5px 12px',
-                                                            borderRadius: '4px',
-                                                            cursor: 'pointer',
-                                                            transition: 'background-color 0.2s'
-                                                        }}
-                                                        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.04)'}
-                                                        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                                                        onClick={() => setVisibleColumns({...visibleColumns, title: !visibleColumns.title})}
-                                                    >
-                                                        <Checkbox
-                                                            checked={visibleColumns.title}
-                                                            onChange={(e) => {
-                                                                e.stopPropagation();
-                                                                setVisibleColumns({...visibleColumns, title: e.target.checked});
-                                                            }}
-                                                        >
-                                                            任务/团队
-                                                        </Checkbox>
-                                                    </div>
-                                                    <div
-                                                        style={{
-                                                            padding: '5px 12px',
-                                                            borderRadius: '4px',
-                                                            cursor: 'pointer',
-                                                            transition: 'background-color 0.2s'
-                                                        }}
-                                                        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.04)'}
-                                                        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                                                        onClick={() => setVisibleColumns({...visibleColumns, order: !visibleColumns.order})}
-                                                    >
-                                                        <Checkbox
-                                                            checked={visibleColumns.order}
-                                                            onChange={(e) => {
-                                                                e.stopPropagation();
-                                                                setVisibleColumns({...visibleColumns, order: e.target.checked});
-                                                            }}
-                                                        >
-                                                            排序
-                                                        </Checkbox>
-                                                    </div>
-                                                    <div
-                                                        style={{
-                                                            padding: '5px 12px',
-                                                            borderRadius: '4px',
-                                                            cursor: 'pointer',
-                                                            transition: 'background-color 0.2s'
-                                                        }}
-                                                        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.04)'}
-                                                        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                                                        onClick={() => setVisibleColumns({...visibleColumns, parentId: !visibleColumns.parentId})}
-                                                    >
-                                                        <Checkbox
-                                                            checked={visibleColumns.parentId}
-                                                            onChange={(e) => {
-                                                                e.stopPropagation();
-                                                                setVisibleColumns({...visibleColumns, parentId: e.target.checked});
-                                                            }}
-                                                        >
-                                                            父级ID
-                                                        </Checkbox>
-                                                    </div>
-                                                </div>
-                                            </div>
+                                            {/* 列配置 - 使用 Collapse 组件，默认折叠 */}
+                                            <Collapse
+                                                ghost
+                                                size="small"
+                                                items={[
+                                                    {
+                                                        key: 'columns',
+                                                        label: <span style={{fontWeight: 500, fontSize: '14px'}}>列配置</span>,
+                                                        children: (
+                                                            <div style={{display: 'flex', flexDirection: 'column', gap: '4px'}}>
+                                                                <div
+                                                                    style={{
+                                                                        padding: '5px 12px',
+                                                                        borderRadius: '4px',
+                                                                        cursor: 'pointer',
+                                                                        transition: 'background-color 0.2s',
+                                                                        display: 'flex',
+                                                                        alignItems: 'center',
+                                                                        gap: '8px'
+                                                                    }}
+                                                                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.04)'}
+                                                                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                                                                    onClick={() => setVisibleColumns({...visibleColumns, title: !visibleColumns.title})}
+                                                                >
+                                                                    <Checkbox checked={visibleColumns.title} />
+                                                                    <span>任务/团队</span>
+                                                                </div>
+                                                                <div
+                                                                    style={{
+                                                                        padding: '5px 12px',
+                                                                        borderRadius: '4px',
+                                                                        cursor: 'pointer',
+                                                                        transition: 'background-color 0.2s',
+                                                                        display: 'flex',
+                                                                        alignItems: 'center',
+                                                                        gap: '8px'
+                                                                    }}
+                                                                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.04)'}
+                                                                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                                                                    onClick={() => setVisibleColumns({...visibleColumns, order: !visibleColumns.order})}
+                                                                >
+                                                                    <Checkbox checked={visibleColumns.order} />
+                                                                    <span>排序</span>
+                                                                </div>
+                                                                <div
+                                                                    style={{
+                                                                        padding: '5px 12px',
+                                                                        borderRadius: '4px',
+                                                                        cursor: 'pointer',
+                                                                        transition: 'background-color 0.2s',
+                                                                        display: 'flex',
+                                                                        alignItems: 'center',
+                                                                        gap: '8px'
+                                                                    }}
+                                                                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.04)'}
+                                                                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                                                                    onClick={() => setVisibleColumns({...visibleColumns, parentId: !visibleColumns.parentId})}
+                                                                >
+                                                                    <Checkbox checked={visibleColumns.parentId} />
+                                                                    <span>父级ID</span>
+                                                                </div>
+                                                            </div>
+                                                        )
+                                                    }
+                                                ]}
+                                            />
                                         </div>
                                     }
                                 >
@@ -854,68 +913,6 @@ export const ProjectDetail: React.FC = () => {
                                         />
                                     </Tooltip>
                                 </Popover>
-                                <Tooltip title="向前移动时间范围">
-                                    <Button
-                                        type="primary"
-                                        icon={<LeftOutlined/>}
-                                        onClick={handleShiftLeft}
-                                        disabled={!ganttStartDate || !ganttEndDate}
-                                    />
-                                </Tooltip>
-                                <Tooltip title="向后移动时间范围">
-                                    <Button
-                                        type="primary"
-                                        icon={<RightOutlined/>}
-                                        onClick={handleShiftRight}
-                                        disabled={!ganttStartDate || !ganttEndDate}
-                                    />
-                                </Tooltip>
-                                <DatePicker
-                                    value={ganttStartDate}
-                                    onChange={(date) => setGanttStartDate(date)}
-                                    picker={viewPickerMap[viewType]}
-                                    placeholder="开始时间"
-                                    format={
-                                        viewType === "Day" ? "YYYY-MM-DD" :
-                                        viewType === "Week" ? "YYYY-wo" :
-                                        viewType === "Month" ? "YYYY-MM" :
-                                        viewType === "Quarter" ? "YYYY-Q" :
-                                        "YYYY"
-                                    }
-                                    style={{width: 140}}
-                                />
-                                <span>-</span>
-                                <DatePicker
-                                    value={ganttEndDate}
-                                    onChange={(date) => setGanttEndDate(date)}
-                                    picker={viewPickerMap[viewType]}
-                                    placeholder="结束时间"
-                                    format={
-                                        viewType === "Day" ? "YYYY-MM-DD" :
-                                        viewType === "Week" ? "YYYY-wo" :
-                                        viewType === "Month" ? "YYYY-MM" :
-                                        viewType === "Quarter" ? "YYYY-Q" :
-                                        "YYYY"
-                                    }
-                                    style={{width: 140}}
-                                    disabledDate={(current) => {
-                                        if (!ganttStartDate) return false;
-                                        const unit = viewUnitMap[viewType];
-                                        return current && current.isBefore(ganttStartDate, unit as any);
-                                    }}
-                                />
-                                <Tooltip title="跳转到今天">
-                                    <Button
-                                        type="primary"
-                                        icon={<CalendarOutlined />}
-                                        onClick={() => {
-                                            const unit = viewUnitMap[viewType];
-                                            const range = viewDefaultRangeMap[viewType];
-                                            setGanttStartDate(dayjs());
-                                            setGanttEndDate(dayjs().add(range, unit as any));
-                                        }}
-                                    />
-                                </Tooltip>
                                 <Tooltip title="返回项目列表">
                                     <Button
                                         type="primary"
@@ -926,8 +923,7 @@ export const ProjectDetail: React.FC = () => {
                             </Space>
                         </Space>
                     </div>
-                }
-            >
+                }>
                 <div className="schedulant-container">
                     <div style={{position: "relative"}}>
                         <Schedulant
