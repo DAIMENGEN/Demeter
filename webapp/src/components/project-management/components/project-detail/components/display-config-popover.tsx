@@ -1,6 +1,6 @@
 import React, {useState} from "react";
 import {Button, Checkbox, Collapse, InputNumber, Popover, Segmented, Tooltip} from "antd";
-import {SettingOutlined} from "@ant-design/icons";
+import {ControlOutlined} from "@ant-design/icons";
 
 export interface DisplayConfigPopoverProps {
     lineHeightMode: "small" | "medium" | "large" | "custom";
@@ -181,7 +181,7 @@ export const DisplayConfigPopover: React.FC<DisplayConfigPopoverProps> = ({
             <Tooltip title="显示配置">
                 <Button
                     type="primary"
-                    icon={<SettingOutlined/>}
+                    icon={<ControlOutlined />}
                     onClick={() => setOpen(!open)}
                 />
             </Tooltip>
