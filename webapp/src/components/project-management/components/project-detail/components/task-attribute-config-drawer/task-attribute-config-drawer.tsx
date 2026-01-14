@@ -486,8 +486,8 @@ export const TaskAttributeConfigDrawer: React.FC<TaskAttributeConfigDrawerProps>
                                             </Form.Item>
                                         ) : null}
 
-                                        {type === "date" ? <DateTypeFields mode="date" form={form} /> : null}
-                                        {type === "datetime" ? <DateTypeFields mode="datetime" form={form} /> : null}
+                                        {type === "date" ? <DateTypeFields mode="date" /> : null}
+                                        {type === "datetime" ? <DateTypeFields mode="datetime" /> : null}
 
                                         {type === "user" ? (
                                             <UserTypeFields
