@@ -33,6 +33,7 @@ import {ValueColorMapFields} from "./value-color-map-fields";
 import {DateTypeFields} from "./date-type-fields";
 import {NumberTypeFields} from "./number-type-fields";
 import {BooleanTypeFields} from "./boolean-type-fields";
+import {TextTypeFields} from "./text-type-fields";
 import {
     normalizeColorMapToRows,
     normalizeOptionsToRows,
@@ -498,8 +499,9 @@ export const TaskAttributeConfigDrawer: React.FC<TaskAttributeConfigDrawerProps>
                                     }
                                     return (
                                         <>
-                                            {/* 通用默认值（除 select/user/date/datetime/number/boolean 外） */}
+                                            {/* 通用默认值（除 text/select/user/date/datetime/number/boolean 外） */}
                                             {type &&
+                                            type !== "text" &&
                                             type !== "select" &&
                                             type !== "user" &&
                                             type !== "date" &&
@@ -515,6 +517,7 @@ export const TaskAttributeConfigDrawer: React.FC<TaskAttributeConfigDrawerProps>
                                                 </Form.Item>
                                             ) : null}
 
+                                            {type === "text" ? <TextTypeFields disabled={isSubmitting} /> : null}
                                             {type === "number" ? <NumberTypeFields disabled={isSubmitting} /> : null}
                                             {type === "boolean" ? <BooleanTypeFields disabled={isSubmitting} /> : null}
 
