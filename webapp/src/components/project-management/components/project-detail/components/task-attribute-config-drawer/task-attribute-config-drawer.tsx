@@ -402,7 +402,7 @@ export const TaskAttributeConfigDrawer: React.FC<TaskAttributeConfigDrawerProps>
                                     message: "只能包含字母/数字/下划线，并且不能以数字开头"
                                 }
                             ]}
-                            extra="用于存储的 key（建议使用英文 + 下划线）。创建后不建议修改。"
+                            extra="用于存储的 key（建议使用英文 + 下划线）。创建后不能修改。"
                         >
                             <Input placeholder="例如：risk_level" disabled={Boolean(editing)}/>
                         </Form.Item>
