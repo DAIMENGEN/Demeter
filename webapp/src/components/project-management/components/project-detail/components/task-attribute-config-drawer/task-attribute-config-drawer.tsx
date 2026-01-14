@@ -29,6 +29,7 @@ import {userApi, useUserSelectOptionsInfinite} from "@Webapp/api/modules/user";
 import {SelectTypeFields} from "./select-type-fields";
 import {UserTypeFields} from "./user-type-fields";
 import {ValueColorMapFields} from "./value-color-map-fields";
+import {DateTypeFields} from "./date-type-fields";
 import {
     normalizeColorMapToRows,
     normalizeOptionsToRows,
@@ -284,8 +285,8 @@ export const TaskAttributeConfigDrawer: React.FC<TaskAttributeConfigDrawerProps>
             const valueColorMap =
                 type === "select" || type === "user" ? rowsToColorMapJson(values.valueColorMapRows) : null;
 
-            const defaultValue =
-                type === "user" ? (values.defaultUser?.value ?? null) : (values.defaultValue ?? null);
+            // defaultValue: persist as string | null
+            const defaultValue = type === "user" ? (values.defaultUser?.value ?? null) : (values.defaultValue ?? null);
 
             if (editing) {
                 await update(projectId, editing.id, {
@@ -432,7 +433,9 @@ export const TaskAttributeConfigDrawer: React.FC<TaskAttributeConfigDrawerProps>
 
                         <Form.Item
                             noStyle
-                            shouldUpdate={(prev, cur) => prev.attributeType !== cur.attributeType || prev.optionsRows !== cur.optionsRows}>
+                            shouldUpdate={(prev, cur) =>
+                                prev.attributeType !== cur.attributeType || prev.optionsRows !== cur.optionsRows
+                            }>
                             {({getFieldValue}) => {
                                 const type = getFieldValue("attributeType") as AttributeType | undefined;
                                 const optionsRows = (getFieldValue("optionsRows") as FormValues["optionsRows"]) ?? [];
@@ -468,6 +471,24 @@ export const TaskAttributeConfigDrawer: React.FC<TaskAttributeConfigDrawerProps>
                                 }
                                 return (
                                     <>
+                                        {/* 通用默认值（除 select/user/date/datetime 外） */}
+                                        {type &&
+                                        type !== "select" &&
+                                        type !== "user" &&
+                                        type !== "date" &&
+                                        type !== "datetime" ? (
+                                            <Form.Item
+                                                name="defaultValue"
+                                                label="默认值"
+                                                extra="可选。新建任务时，如果该字段未填写，将自动使用默认值。"
+                                            >
+                                                <Input placeholder="请输入默认值（将以字符串存储）" allowClear />
+                                            </Form.Item>
+                                        ) : null}
+
+                                        {type === "date" ? <DateTypeFields mode="date" form={form} /> : null}
+                                        {type === "datetime" ? <DateTypeFields mode="datetime" form={form} /> : null}
+
                                         {type === "user" ? (
                                             <UserTypeFields
                                                 form={form}
