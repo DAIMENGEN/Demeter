@@ -1,5 +1,5 @@
 import React from "react";
-import {Button, Form, type FormInstance, Input, Select, type SelectProps, Space} from "antd";
+import {Button, Form, type FormInstance, Select, type SelectProps, Space} from "antd";
 
 import type {SelectOptionRow} from "./types";
 
@@ -20,7 +20,7 @@ export const UserTypeFields: React.FC<{
     userPicker: UserPicker;
     onUserSearch: (kw: string) => void;
     resetUserSearch: () => void;
-}> = ({form, userPicker, onUserSearch, resetUserSearch}) => {
+}> = ({userPicker, onUserSearch, resetUserSearch}) => {
     return (
         <>
             <Form.Item
@@ -40,11 +40,7 @@ export const UserTypeFields: React.FC<{
                                                     {...fieldProps}
                                                     name={[field.name, "value"]}
                                                     rules={[{required: true, message: "请选择人员"}]}
-                                                    style={{marginBottom: 0, minWidth: 320}}
-                                                    getValueFromEvent={(v: LabelValue | null) => {
-                                                        form.setFieldValue(["optionsRows", field.name, "label"], v?.label ?? "");
-                                                        return v;
-                                                    }}>
+                                                    style={{marginBottom: 0, minWidth: 320}}>
                                                     <Select
                                                         labelInValue
                                                         showSearch={{
@@ -77,15 +73,15 @@ export const UserTypeFields: React.FC<{
                                                     />
                                                 </Form.Item>
 
-                                                {/* 存储 label 用于显示（与 value 同步写入） */}
-                                                <Form.Item
-                                                    {...fieldProps}
-                                                    name={[field.name, "label"]}
-                                                    rules={[{required: true, message: "缺少 label"}]}
-                                                    style={{marginBottom: 0}}
-                                                    hidden>
-                                                    <Input/>
-                                                </Form.Item>
+                                                {/*/!* 存储 label 用于显示（与 value 同步写入） *!/*/}
+                                                {/*<Form.Item*/}
+                                                {/*    {...fieldProps}*/}
+                                                {/*    name={[field.name, "label"]}*/}
+                                                {/*    rules={[{required: true, message: "缺少 label"}]}*/}
+                                                {/*    style={{marginBottom: 0}}*/}
+                                                {/*    hidden>*/}
+                                                {/*    <Input/>*/}
+                                                {/*</Form.Item>*/}
                                             </Space.Compact>
                                         </Form.Item>
 
@@ -98,8 +94,7 @@ export const UserTypeFields: React.FC<{
 
                             <Button
                                 type="dashed"
-                                onClick={() => add({label: "", value: null as unknown as LabelValue})}
-                            >
+                                onClick={() => add({value: null as unknown as LabelValue})}>
                                 添加人员
                             </Button>
                         </Space>
@@ -113,10 +108,8 @@ export const UserTypeFields: React.FC<{
                     const validOptions = optionsRows
                         .map((r) => {
                             const raw = r?.value;
-                            const id = typeof raw === "string" ? raw : raw?.value;
-                            const label = r?.label;
-                            if (!id || !label) return null;
-                            return {value: id, label};
+                            if (!raw || typeof raw === "string") return null;
+                            return {value: raw.value, label: raw.label};
                         })
                         .filter((x): x is { value: string; label: string } => Boolean(x));
 
