@@ -21,9 +21,7 @@ export const LoginPage = () => {
       try {
         const response = await login(values);
 
-        // 保存 token 到 sessionStorage
-        sessionStorage.setItem("token", response.data.accessToken);
-        sessionStorage.setItem("refreshToken", response.data.refreshToken);
+        // cookie 鉴权模式：access_token / refresh_token 由 HttpOnly Cookie 承载，不再写入 storage
 
         // Update Redux store
         dispatch(

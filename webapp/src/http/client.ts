@@ -13,6 +13,7 @@ import {log} from "@Webapp/logging.ts";
 const httpClient: AxiosInstance = axios.create({
   baseURL: "http://127.0.0.1:9000/api",
   timeout: 30000,
+  withCredentials: true,
   headers: {
     "Content-Type": "application/json",
   },
@@ -20,55 +21,71 @@ const httpClient: AxiosInstance = axios.create({
 
 // Token 刷新状态管理
 let isRefreshing = false;
-let failedRequestsQueue: Array<(token: string) => void> = [];
+
+type FailedQueueItem = {
+  resolve: (token: string) => void;
+  reject: (error: unknown) => void;
+};
+
+let failedRequestsQueue: FailedQueueItem[] = [];
+
+function processQueue(error: unknown, token: string | null) {
+  failedRequestsQueue.forEach(({ resolve, reject }) => {
+    if (token) {
+      resolve(token);
+    } else {
+      reject(error);
+    }
+  });
+  failedRequestsQueue = [];
+}
 
 /**
  * 刷新 token
  */
 const refreshToken = async (): Promise<string> => {
-  const refreshToken = sessionStorage.getItem("refreshToken");
-  if (!refreshToken) {
-    throw new Error("No refresh token available");
-  }
-
   try {
-    // 使用 axios 直接调用，避免使用 httpClient（防止循环拦截）
-    const response = await axios.post<ApiResponse<{ token: string; refreshToken: string }>>(
+    // access_token/refresh_token 由 HttpOnly Cookie 承载，浏览器会在 withCredentials=true 时自动携带
+    // 刷新成功后，后端会通过 Set-Cookie 更新 access_token
+    await axios.post<ApiResponse<unknown>>(
       "http://127.0.0.1:9000/api/auth/refresh",
-      { refreshToken },
+      null,
       {
+        withCredentials: true,
         headers: {
           "Content-Type": "application/json",
         },
       }
     );
 
-    const { token, refreshToken: newRefreshToken } = response.data.data;
-    sessionStorage.setItem("token", token);
-    sessionStorage.setItem("refreshToken", newRefreshToken);
-
-    return token;
+    // 我们不再从响应体取 token，也不写入 storage；
+    // 只返回占位值给队列继续重试（实际鉴权由 cookie 完成）
+    return "cookie";
   } catch (error) {
-    // 刷新失败，清除 token 并跳转到登录页
-    sessionStorage.removeItem("token");
-    sessionStorage.removeItem("refreshToken");
-    window.location.href = "/login";
+    // 刷新失败：不在 HTTP 层强制跳转，由调用方（路由/页面）决定如何处理
     throw error;
   }
 };
+
+// 显式登出状态（避免登出过程中 401 触发刷新/重试）
+let isLoggingOut = false;
+
+export function markLoggingOut() {
+  isLoggingOut = true;
+  // 登出视为终止当前会话：清空等待队列，避免悬挂
+  processQueue(new Error("Logging out"), null);
+}
+
+export function clearLoggingOut() {
+  isLoggingOut = false;
+}
 
 /**
  * 请求拦截器
  */
 httpClient.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
-    // 从 sessionStorage 或其他地方获取 token
-    const token = sessionStorage.getItem("token");
-    if (token && config.headers) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-
-    // 可以在这里添加其他通用的请求头
+    // access_token 由 HttpOnly Cookie 承载，无需在前端手动设置 Authorization
     return config;
   },
   (error: AxiosError) => {
@@ -86,18 +103,35 @@ httpClient.interceptors.response.use(
     return response;
   },
   async (error: AxiosError<ApiResponse>) => {
-    const originalRequest = error.config;
+    const originalRequest = error.config as (typeof error.config & { _retry?: boolean }) | undefined;
+
+    // 登出过程中：不做刷新、不做重试，直接拒绝（避免二次跳转/提示）
+    if (isLoggingOut) {
+      return Promise.reject(error);
+    }
 
     // 处理 401 错误，进行 token 刷新
     if (error.response?.status === 401 && originalRequest) {
+      // 如果当前正在登出，则不刷新
+      if (isLoggingOut) {
+        return Promise.reject(error);
+      }
+
+      // 避免同一个请求无限重试（例如 refreshToken 已失效时）
+      if (originalRequest._retry) {
+        return Promise.reject(error);
+      }
+      originalRequest._retry = true;
+
       // 如果正在刷新 token，将请求加入队列
       if (isRefreshing) {
-        return new Promise((resolve) => {
-          failedRequestsQueue.push((token: string) => {
-            if (originalRequest.headers) {
-              originalRequest.headers.Authorization = `Bearer ${token}`;
-            }
-            resolve(httpClient(originalRequest));
+        return new Promise((resolve, reject) => {
+          failedRequestsQueue.push({
+            resolve: (_token: string) => {
+              // access_token 由 cookie 承载，不需要更新 Authorization
+              resolve(httpClient(originalRequest));
+            },
+            reject,
           });
         });
       }
@@ -105,23 +139,22 @@ httpClient.interceptors.response.use(
       isRefreshing = true;
 
       try {
-        // 刷新 token
-        const newToken = await refreshToken();
+        // 刷新 token（cookie 鉴权模式下不需要使用返回值）
+        await refreshToken();
 
         // 更新原始请求的 token
         if (originalRequest.headers) {
-          originalRequest.headers.Authorization = `Bearer ${newToken}`;
+          delete (originalRequest.headers as any).Authorization;
         }
 
         // 处理队列中的请求
-        failedRequestsQueue.forEach((callback) => callback(newToken));
-        failedRequestsQueue = [];
+        processQueue(null, "cookie");
 
         // 重试原始请求
         return httpClient(originalRequest);
       } catch (refreshError) {
-        // 刷新失败，清空队列
-        failedRequestsQueue = [];
+        // 刷新失败：统一 reject 队列中的请求，避免 Promise 悬挂
+        processQueue(refreshError, null);
         return Promise.reject(refreshError);
       } finally {
         isRefreshing = false;

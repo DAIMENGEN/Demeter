@@ -14,8 +14,6 @@ export interface LoginParams {
  * 登录响应数据
  */
 export interface LoginResponse {
-    accessToken: string;
-    refreshToken: string;
     user: {
         id: string;
         username: string;

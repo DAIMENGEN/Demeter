@@ -19,19 +19,10 @@ pub struct LoginRequest {
     pub password: String,
 }
 
-/// 刷新令牌请求参数
-#[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct RefreshTokenRequest {
-    pub refresh_token: String,
-}
-
 /// 认证响应
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct AuthResponse {
-    pub access_token: String,
-    pub refresh_token: String,
     pub user: UserInfo,
 }
 

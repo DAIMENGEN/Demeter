@@ -7,6 +7,8 @@ import {HomeOutlined, LogoutOutlined, UserOutlined, SettingOutlined} from "@ant-
 import {useAppDispatch, useAppSelector} from "@Webapp/store/hooks";
 import {logout as logoutAction, selectCurrentUser, selectIsAuthenticated} from "@Webapp/store/slices/user-slice";
 import {ProfileDrawer} from "@Webapp/pages/home-page/components/profile-drawer/profile-drawer.tsx";
+import { authApi } from "@Webapp/api";
+import { markLoggingOut, clearLoggingOut } from "@Webapp/http/client";
 
 const {Header, Content} = Layout;
 const {Text} = Typography;
@@ -36,18 +38,18 @@ export const HomePage: React.FC = () => {
         navigate(key);
     }, [navigate]);
 
-    const handleLogout = useCallback(() => {
-        // Clear tokens
-        sessionStorage.removeItem("token");
-        sessionStorage.removeItem("refreshToken");
-        localStorage.removeItem("token");
-        localStorage.removeItem("refreshToken");
+    const handleLogout = useCallback(async () => {
+        markLoggingOut();
+        try {
+            await authApi.logout();
+        } finally {
+            // Clear Redux state
+            dispatch(logoutAction());
 
-        // Clear Redux state
-        dispatch(logoutAction());
-
-        // Navigate to login
-        navigate("/login");
+            // Navigate to login
+            navigate("/login");
+            clearLoggingOut();
+        }
     }, [navigate, dispatch]);
 
     const handleSignUp = useCallback(() => {
@@ -153,4 +155,3 @@ export const HomePage: React.FC = () => {
         </Layout>
     );
 };
-
