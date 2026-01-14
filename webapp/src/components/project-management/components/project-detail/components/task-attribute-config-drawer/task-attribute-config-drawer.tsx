@@ -13,8 +13,10 @@ import {
     Switch,
     Table,
     type TableColumnsType,
+    Tooltip,
     Typography
 } from "antd";
+import {DeleteOutlined, EditOutlined, LoadingOutlined} from "@ant-design/icons";
 import {
     type AttributeType,
     AttributeTypeLabels,
@@ -128,99 +130,108 @@ export const TaskAttributeConfigDrawer: React.FC<TaskAttributeConfigDrawerProps>
         {
             title: "操作",
             key: "actions",
-            width: 200,
+            width: 120,
             render: (_, record) => {
                 const isEditingRow = Boolean(editing && record.id === editing.id);
                 const isEditingOtherRow = Boolean(editing && record.id !== editing.id);
                 const isEditingAny = Boolean(editing);
 
+                const editDisabled = isSubmitting || deleteLoading || isEditingRow || isEditingOtherRow;
+                const deleteDisabled = isSubmitting || isEditingAny;
+
                 return (
                     <Space>
-                        <Button
-                            size="small"
-                            disabled={isSubmitting || deleteLoading || isEditingRow || isEditingOtherRow}
-                            onClick={async () => {
-                                setEditing(record);
+                        <Tooltip title={isEditingRow ? "正在编辑" : "编辑"}>
+                            <Button
+                                size="small"
+                                type="default"
+                                aria-label={isEditingRow ? "正在编辑" : "编辑"}
+                                icon={isEditingRow ? <LoadingOutlined /> : <EditOutlined />}
+                                disabled={editDisabled}
+                                onClick={async () => {
+                                    setEditing(record);
 
-                                const type = (record.attributeType as AttributeType) ?? "text";
+                                    const type = (record.attributeType as AttributeType) ?? "text";
 
-                                const defaultUserId = type === "user" ? (record.defaultValue ?? undefined) : undefined;
+                                    const defaultUserId =
+                                        type === "user" ? (record.defaultValue ?? undefined) : undefined;
 
-                                // user options：从后端 options 里反序列化成 {label,value}[]（labelInValue 格式）
-                                const userOptionsRows = type === "user" ? normalizeUserOptionsToRows(record.options) : [];
+                                    // user options：从后端 options 里反序列化成 {label,value}[]（labelInValue 格式）
+                                    const userOptionsRows =
+                                        type === "user" ? normalizeUserOptionsToRows(record.options) : [];
 
-                                // 先基于 options 找 label 回显，找不到再兜底用 id
-                                const optFromOptions = defaultUserId
-                                    ? userOptionsRows.find((x) => {
-                                        const raw = x.value;
-                                        const id = typeof raw === "string" ? raw : raw?.value;
-                                        return id === defaultUserId;
-                                    })
-                                    : undefined;
-
-                                const optFromOptionsLabel = optFromOptions?.label;
-                                const fallbackOpt = defaultUserId
-                                    ? {label: optFromOptionsLabel ?? defaultUserId, value: defaultUserId}
-                                    : undefined;
-
-                                form.setFieldsValue({
-                                    attributeName: record.attributeName,
-                                    attributeLabel: record.attributeLabel,
-                                    attributeType: type,
-                                    isRequired: record.isRequired,
-                                    defaultValue: type === "user" ? undefined : (record.defaultValue ?? undefined),
-                                    defaultUser: type === "user" ? (optFromOptions ? fallbackOpt : undefined) : undefined,
-                                    order: record.order ?? undefined,
-                                    optionsRows: type === "user" ? userOptionsRows : normalizeOptionsToRows(record.options),
-                                    valueColorMapRows: normalizeColorMapToRows(record.valueColorMap)
-                                });
-
-                                // 确保默认 user 在下拉 options 中（antd Select labelInValue 需要）
-                                if (type === "user" && userOptionsRows.length) {
-                                    userPicker.setOptions((prev) => {
-                                        const map = new Map(prev.map((x) => [x.value, x] as const));
-                                        for (const r of userOptionsRows) {
-                                            const raw = r.value;
+                                    // 先基于 options 找 label 回显，找不到再兜底用 id
+                                    const optFromOptions = defaultUserId
+                                        ? userOptionsRows.find((x) => {
+                                            const raw = x.value;
                                             const id = typeof raw === "string" ? raw : raw?.value;
-                                            if (!id) continue;
-                                            map.set(id, {value: id, label: r.label});
-                                        }
-                                        return Array.from(map.values());
+                                            return id === defaultUserId;
+                                        })
+                                        : undefined;
+
+                                    const optFromOptionsLabel = optFromOptions?.label;
+                                    const fallbackOpt = defaultUserId
+                                        ? {label: optFromOptionsLabel ?? defaultUserId, value: defaultUserId}
+                                        : undefined;
+
+                                    form.setFieldsValue({
+                                        attributeName: record.attributeName,
+                                        attributeLabel: record.attributeLabel,
+                                        attributeType: type,
+                                        isRequired: record.isRequired,
+                                        defaultValue: type === "user" ? undefined : (record.defaultValue ?? undefined),
+                                        defaultUser: type === "user" ? (optFromOptions ? fallbackOpt : undefined) : undefined,
+                                        order: record.order ?? undefined,
+                                        optionsRows:
+                                            type === "user" ? userOptionsRows : normalizeOptionsToRows(record.options),
+                                        valueColorMapRows: normalizeColorMapToRows(record.valueColorMap)
                                     });
-                                }
 
-                                if (type === "user" && defaultUserId && optFromOptions && !optFromOptionsLabel) {
-                                    try {
-                                        const resp = await userApi.getUserById(defaultUserId);
-                                        if (resp.code === 200) {
-                                            const u = resp.data;
-                                            const opt = {value: u.id, label: `${u.fullName} (${u.username})`};
-
-                                            userPicker.setOptions((prev) => {
-                                                const map = new Map(prev.map((x) => [x.value, x] as const));
-                                                map.set(opt.value, opt);
-                                                return Array.from(map.values());
-                                            });
-
-                                            form.setFieldsValue({defaultUser: opt});
-                                        }
-                                    } catch {
-                                        // ignore: 保留 fallbackOpt
+                                    // 确保默认 user 在下拉 options 中（antd Select labelInValue 需要）
+                                    if (type === "user" && userOptionsRows.length) {
+                                        userPicker.setOptions((prev) => {
+                                            const map = new Map(prev.map((x) => [x.value, x] as const));
+                                            for (const r of userOptionsRows) {
+                                                const raw = r.value;
+                                                const id = typeof raw === "string" ? raw : raw?.value;
+                                                if (!id) continue;
+                                                map.set(id, {value: id, label: r.label});
+                                            }
+                                            return Array.from(map.values());
+                                        });
                                     }
-                                }
-                            }}
-                        >
-                            {isEditingRow ? "正在编辑" : "编辑"}
-                        </Button>
+
+                                    if (type === "user" && defaultUserId && optFromOptions && !optFromOptionsLabel) {
+                                        try {
+                                            const resp = await userApi.getUserById(defaultUserId);
+                                            if (resp.code === 200) {
+                                                const u = resp.data;
+                                                const opt = {value: u.id, label: `${u.fullName} (${u.username})`};
+
+                                                userPicker.setOptions((prev) => {
+                                                    const map = new Map(prev.map((x) => [x.value, x] as const));
+                                                    map.set(opt.value, opt);
+                                                    return Array.from(map.values());
+                                                });
+
+                                                form.setFieldsValue({defaultUser: opt});
+                                            }
+                                        } catch {
+                                            // ignore: 保留 fallbackOpt
+                                        }
+                                    }
+                                }}
+                            />
+                        </Tooltip>
+
                         <Popconfirm
                             title="确认删除这个自定义字段？"
                             okText="删除"
                             okType="danger"
                             cancelText="取消"
-                            disabled={isSubmitting || isEditingAny}
+                            disabled={deleteDisabled}
                             onConfirm={async () => {
-                                if (isSubmitting || isEditingAny) return;
-
+                                if (deleteDisabled) return;
                                 try {
                                     await remove(projectId, record.id);
                                     message.success("删除成功");
@@ -231,9 +242,17 @@ export const TaskAttributeConfigDrawer: React.FC<TaskAttributeConfigDrawerProps>
                                 }
                             }}
                         >
-                            <Button size="small" danger loading={deleteLoading} disabled={isSubmitting || isEditingAny}>
-                                删除
-                            </Button>
+                            <Tooltip title="删除">
+                                <Button
+                                    size="small"
+                                    type="dashed"
+                                    danger
+                                    aria-label="删除"
+                                    icon={<DeleteOutlined />}
+                                    loading={deleteLoading}
+                                    disabled={deleteDisabled}
+                                />
+                            </Tooltip>
                         </Popconfirm>
                     </Space>
                 );
@@ -562,5 +581,4 @@ export const TaskAttributeConfigDrawer: React.FC<TaskAttributeConfigDrawerProps>
         </Drawer>
     );
 };
-
 
