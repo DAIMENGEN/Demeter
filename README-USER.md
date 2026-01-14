@@ -8,84 +8,101 @@
 
 数据库表名: `users`
 
-字段说明:
-- `id` (BIGSERIAL): 主键，自增ID
-- `username` (VARCHAR(255)): 用户名，不可为空，唯一
-- `email` (VARCHAR(255)): 邮箱，不可为空，唯一
-- `password_hash` (VARCHAR(255)): 密码哈希，不可为空
-- `display_name` (VARCHAR(255)): 显示名称
-- `role` (INTEGER): 用户角色，不可为空，默认值为 0
-- `status` (INTEGER): 用户状态，不可为空，默认值为 1
-- `create_date_time` (TIMESTAMP): 创建时间，默认值为 '2022-10-08 00:00:00'
-- `update_date_time` (TIMESTAMP): 更新时间
+字段说明（以 `migrations/20260110000000_create_users_table.sql` 为准）:
+- `id` (BIGINT): 主键（Snowflake ID）
+- `username` (VARCHAR(50)): 用户名，不可为空，唯一
+- `password` (VARCHAR(255)): 密码（服务端存储），不可为空
+- `full_name` (VARCHAR(100)): 姓名，不可为空
+- `email` (VARCHAR(100)): 邮箱，不可为空，唯一
+- `phone` (VARCHAR(20)): 手机号，可为空
+- `is_active` (BOOLEAN): 是否启用，默认 `true`
+- `creator_id` (BIGINT): 创建者ID，不可为空
+- `updater_id` (BIGINT): 更新者ID，可为空
+- `create_date_time` (TIMESTAMP): 创建时间，默认 `NOW()`
+- `update_date_time` (TIMESTAMP): 更新时间，可为空
 
 索引:
-- `idx_users_username`: 用户名唯一索引
-- `idx_users_email`: 邮箱唯一索引
-- `idx_users_role`: 用户角色索引
-- `idx_users_status`: 用户状态索引
-- `idx_users_create_date_time`: 创建时间倒序索引
+- `idx_users_username`
+- `idx_users_email`
+- `idx_users_is_active`
+- `idx_users_create_date_time`
 
 ## API 端点
 
-所有端点都在 `/api/users` 路径下:
+说明：后端在 `main.rs` 中将所有路由统一挂载在 `/api` 下，因此本文档中的路径均以 `/api` 开头。
+
+> 用户模块的所有接口均受 JWT 中间件保护，需要在请求头中携带：`Authorization: Bearer <accessToken>`。
 
 ### 1. 获取用户列表（分页）
 - **方法**: GET
 - **路径**: `/api/users`
-- **查询参数**:
-  - `page` (可选): 页码，默认为 1
-  - `page_size` (可选): 每页大小，默认为 10
-  - `username` (可选): 用户名模糊搜索
-  - `email` (可选): 邮箱模糊搜索
-  - `role` (可选): 用户角色
-  - `status` (可选): 用户状态
-  - `start_date` (可选): 开始日期
-  - `end_date` (可选): 结束日期
+- **查询参数**（与 `UserQueryParams` 一致，camelCase）:
+  - `page` (可选): 页码
+  - `pageSize` (可选): 每页大小
+  - `username` (可选)
+  - `fullName` (可选)
+  - `email` (可选)
+  - `phone` (可选)
+  - `isActive` (可选)
 
 ### 2. 获取所有用户（不分页）
 - **方法**: GET
 - **路径**: `/api/users/all`
-- **查询参数**: 同上（除了 page 和 page_size）
+- **查询参数**: 同上（不包含分页参数也可）
 
 ### 3. 根据ID获取用户
 - **方法**: GET
 - **路径**: `/api/users/{id}`
 
-### 4. 创建用户
+### 4. 根据用户名获取用户
+- **方法**: GET
+- **路径**: `/api/users/username/{username}`
+
+### 5. 创建用户
 - **方法**: POST
 - **路径**: `/api/users`
-- **请求体**:
+- **请求体**（`CreateUserParams`）:
 ```json
 {
   "username": "johndoe",
-  "email": "john@example.com",
   "password": "your_password",
-  "display_name": "John Doe",
-  "role": 1
+  "fullName": "John Doe",
+  "email": "john@example.com",
+  "phone": "1234567890",
+  "isActive": true
 }
 ```
 
-### 5. 更新用户
+### 6. 更新用户
 - **方法**: PUT
 - **路径**: `/api/users/{id}`
-- **请求体**: 所有字段都是可选的
+- **请求体**（`UpdateUserParams`，所有字段可选）:
 ```json
 {
   "username": "johndoe",
-  "email": "john@example.com",
   "password": "new_password",
-  "display_name": "John D.",
-  "role": 2,
-  "status": 1
+  "fullName": "John D.",
+  "email": "john@example.com",
+  "phone": "1234567890",
+  "isActive": true
 }
 ```
 
-### 6. 删除用户
+### 7. 切换用户状态
+- **方法**: PUT
+- **路径**: `/api/users/{id}/status`
+- **请求体**（`ToggleUserStatusParams`）:
+```json
+{
+  "isActive": false
+}
+```
+
+### 8. 删除用户
 - **方法**: DELETE
 - **路径**: `/api/users/{id}`
 
-### 7. 批量删除用户
+### 9. 批量删除用户
 - **方法**: POST
 - **路径**: `/api/users/batch-delete`
 - **请求体**:
@@ -125,5 +142,3 @@ cargo run
 ```
 
 应用程序启动时会自动运行所有待执行的迁移。
-
-

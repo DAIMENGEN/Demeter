@@ -58,14 +58,13 @@ impl AuthRepository {
     /// 创建用户（注册）
     pub async fn create_user(
         pool: &PgPool,
+        user_id: i64,
         username: &str,
         password_hash: &str,
         full_name: &str,
         email: &str,
         phone: Option<&str>,
     ) -> AppResult<User> {
-        let id = uuid::Uuid::new_v4().to_string();
-
         let user = sqlx::query_as::<_, User>(
             r#"
             INSERT INTO users (id, username, password, full_name, email, phone, is_active, creator_id, create_date_time)
@@ -73,7 +72,7 @@ impl AuthRepository {
             RETURNING id, username, password, full_name, email, phone, is_active, creator_id, updater_id, create_date_time, update_date_time
             "#
         )
-        .bind(&id)
+        .bind(user_id)
         .bind(username)
         .bind(password_hash)
         .bind(full_name)
@@ -88,19 +87,18 @@ impl AuthRepository {
     /// 保存刷新令牌
     pub async fn save_refresh_token(
         pool: &PgPool,
-        user_id: &str,
+        id: i64,
+        user_id: i64,
         token: &str,
         expires_at: chrono::NaiveDateTime,
     ) -> AppResult<()> {
-        let id = uuid::Uuid::new_v4().to_string();
-
         sqlx::query(
             r#"
             INSERT INTO refresh_tokens (id, user_id, token, expires_at, created_at)
             VALUES ($1, $2, $3, $4, NOW())
             "#,
         )
-        .bind(&id)
+        .bind(id)
         .bind(user_id)
         .bind(token)
         .bind(expires_at)
@@ -174,7 +172,7 @@ impl AuthRepository {
     }
 
     /// 根据用户ID获取用户信息
-    pub async fn get_user_info_by_id(pool: &PgPool, user_id: &str) -> AppResult<Option<UserInfo>> {
+    pub async fn get_user_info_by_id(pool: &PgPool, user_id: i64) -> AppResult<Option<UserInfo>> {
         let user = sqlx::query_as::<_, User>(
             r#"
             SELECT id, username, password, full_name, email, phone, is_active,
@@ -188,7 +186,7 @@ impl AuthRepository {
         .await?;
 
         Ok(user.map(|u| UserInfo {
-            id: u.id,
+            id: u.id.into(),
             username: u.username,
             full_name: u.full_name,
             email: u.email,

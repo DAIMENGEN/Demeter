@@ -1,12 +1,14 @@
 use crate::modules::user::handlers;
+use crate::common::app_state::AppState;
+use crate::common::middleware::jwt_auth_middleware;
 use axum::{
+    middleware,
     routing::{delete, get, post, put},
     Router,
 };
-use sqlx::PgPool;
 
 /// 用户路由配置
-pub fn user_routes() -> Router<PgPool> {
+pub fn user_routes(state: AppState) -> Router {
     Router::new()
         .route("/users", get(handlers::get_user_list))
         .route("/users/all", get(handlers::get_all_users))
@@ -23,4 +25,9 @@ pub fn user_routes() -> Router<PgPool> {
             post(handlers::batch_delete_users),
         )
         .route("/users/{id}/status", put(handlers::toggle_user_status))
+        .layer(middleware::from_fn_with_state(
+            state.jwt_config.clone(),
+            jwt_auth_middleware,
+        ))
+        .with_state(state)
 }

@@ -1,10 +1,10 @@
 -- 创建部门表
 CREATE TABLE IF NOT EXISTS departments (
-    id VARCHAR(36) PRIMARY KEY,
+    id BIGINT PRIMARY KEY,
     department_name VARCHAR(255) NOT NULL,
     description TEXT,
-    creator_id VARCHAR(36) NOT NULL,
-    updater_id VARCHAR(36),
+    creator_id BIGINT NOT NULL,
+    updater_id BIGINT,
     create_date_time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     update_date_time TIMESTAMP
 );

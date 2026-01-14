@@ -1,6 +1,6 @@
 -- 创建项目表
 CREATE TABLE IF NOT EXISTS projects (
-    id BIGSERIAL PRIMARY KEY,
+    id BIGINT PRIMARY KEY,
     project_name VARCHAR(255) NOT NULL,
     description TEXT,
     start_date_time TIMESTAMP NOT NULL,
@@ -8,8 +8,8 @@ CREATE TABLE IF NOT EXISTS projects (
     project_status INTEGER NOT NULL,
     version INTEGER,
     "order" DOUBLE PRECISION,
-    creator_id VARCHAR(36) NOT NULL,
-    updater_id VARCHAR(36),
+    creator_id BIGINT NOT NULL,
+    updater_id BIGINT,
     create_date_time TIMESTAMP NOT NULL DEFAULT '2022-10-08 00:00:00',
     update_date_time TIMESTAMP
 );

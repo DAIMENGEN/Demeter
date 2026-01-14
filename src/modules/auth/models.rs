@@ -39,7 +39,7 @@ pub struct AuthResponse {
 #[derive(Debug, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct UserInfo {
-    pub id: String,
+    pub id: i64,
     pub username: String,
     pub full_name: String,
     pub email: String,
@@ -50,8 +50,8 @@ pub struct UserInfo {
 /// 刷新令牌数据库模型
 #[derive(Debug, FromRow)]
 pub struct RefreshToken {
-    pub id: String,
-    pub user_id: String,
+    pub id: i64,
+    pub user_id: i64,
     pub token: String,
     pub expires_at: chrono::NaiveDateTime,
     pub created_at: chrono::NaiveDateTime,

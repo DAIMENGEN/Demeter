@@ -1,3 +1,4 @@
+use crate::common::id::Id;
 use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
 
@@ -5,15 +6,15 @@ use sqlx::FromRow;
 #[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
 #[serde(rename_all = "camelCase")]
 pub struct Holiday {
-    pub id: i64,
+    pub id: Id,
     pub holiday_name: String,
     pub description: Option<String>,
     pub holiday_date: chrono::NaiveDate,
     pub holiday_type: i32,
     pub is_recurring: bool,
     pub country_code: i32,
-    pub creator_id: String,
-    pub updater_id: Option<String>,
+    pub creator_id: Id,
+    pub updater_id: Option<Id>,
     pub create_date_time: chrono::NaiveDateTime,
     pub update_date_time: Option<chrono::NaiveDateTime>,
 }
@@ -60,6 +61,5 @@ pub struct HolidayQueryParams {
 /// 批量删除假期请求参数
 #[derive(Debug, Deserialize)]
 pub struct BatchDeleteHolidaysParams {
-    pub ids: Vec<i64>,
+    pub ids: Vec<Id>,
 }
-

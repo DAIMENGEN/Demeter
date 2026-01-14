@@ -1,3 +1,4 @@
+use crate::common::id::Id;
 use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
 
@@ -5,11 +6,11 @@ use sqlx::FromRow;
 #[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
 #[serde(rename_all = "camelCase")]
 pub struct Department {
-    pub id: String,
+    pub id: Id,
     pub department_name: String,
     pub description: Option<String>,
-    pub creator_id: String,
-    pub updater_id: Option<String>,
+    pub creator_id: Id,
+    pub updater_id: Option<Id>,
     pub create_date_time: chrono::NaiveDateTime,
     pub update_date_time: Option<chrono::NaiveDateTime>,
 }
@@ -42,6 +43,5 @@ pub struct DepartmentQueryParams {
 /// 批量删除部门请求参数
 #[derive(Debug, Deserialize)]
 pub struct BatchDeleteDepartmentsParams {
-    pub ids: Vec<String>,
+    pub ids: Vec<Id>,
 }
-

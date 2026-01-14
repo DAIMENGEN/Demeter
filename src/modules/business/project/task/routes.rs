@@ -1,15 +1,14 @@
+use crate::common::app_state::AppState;
 use crate::common::middleware::jwt_auth_middleware;
-use crate::config::JwtConfig;
 use crate::modules::business::project::task::handlers;
 use axum::{
     middleware,
     routing::{delete, get, post, put},
     Router,
 };
-use sqlx::PgPool;
 
 /// 任务路由配置
-pub fn task_routes(jwt_config: JwtConfig) -> Router<PgPool> {
+pub fn task_routes(state: AppState) -> Router {
     Router::new()
         // 任务属性配置路由
         .route(
@@ -66,8 +65,8 @@ pub fn task_routes(jwt_config: JwtConfig) -> Router<PgPool> {
             post(handlers::batch_delete_tasks),
         )
         .layer(middleware::from_fn_with_state(
-            jwt_config,
+            state.jwt_config.clone(),
             jwt_auth_middleware,
         ))
+        .with_state(state)
 }
-

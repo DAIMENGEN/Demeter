@@ -8,72 +8,73 @@
 
 数据库表名: `departments`
 
-字段说明:
-- `id` (BIGSERIAL): 主键，自增ID
-- `name` (VARCHAR(255)): 部门名称，不可为空，唯一
-- `description` (TEXT): 部门描述
-- `status` (INTEGER): 部门状态，不可为空，默认值为 1
-- `create_date_time` (TIMESTAMP): 创建时间，默认值为 '2022-10-08 00:00:00'
-- `update_date_time` (TIMESTAMP): 更新时间
+字段说明（以 `migrations/20260110000003_create_departments_table.sql` 为准）:
+- `id` (BIGINT): 主键（Snowflake ID）
+- `department_name` (VARCHAR(255)): 部门名称，不可为空
+- `description` (TEXT): 部门描述，可为空
+- `creator_id` (BIGINT): 创建者ID，不可为空
+- `updater_id` (BIGINT): 更新者ID，可为空
+- `create_date_time` (TIMESTAMP): 创建时间，默认 `CURRENT_TIMESTAMP`
+- `update_date_time` (TIMESTAMP): 更新时间，可为空
 
 索引:
-- `idx_departments_name`: 部门名称唯一索引
-- `idx_departments_status`: 部门状态索引
-- `idx_departments_create_date_time`: 创建时间倒序索引
+- `idx_departments_department_name`
+- `idx_departments_creator_id`
+- `idx_departments_create_date_time`
 
 ## API 端点
 
-所有端点都在 `/api/departments` 路径下:
+说明：后端在 `main.rs` 中将所有路由统一挂载在 `/api` 下，因此本文档中的路径均以 `/api` 开头。
+
+> 部门模块的所有接口均受 JWT 中间件保护，需要在请求头中携带：`Authorization: Bearer <accessToken>`。
 
 ### 1. 获取部门列表（分页）
 - **方法**: GET
 - **路径**: `/api/departments`
-- **查询参数**:
-  - `page` (可选): 页码，默认为 1
-  - `page_size` (可选): 每页大小，默认为 10
-  - `name` (可选): 部门名称模糊搜索
-  - `status` (可选): 部门状态
-  - `start_date` (可选): 开始日期
-  - `end_date` (可选): 结束日期
+- **查询参数**（`DepartmentQueryParams`，camelCase）:
+  - `page` (可选)
+  - `pageSize` (可选)
+  - `departmentName` (可选): 部门名称（模糊匹配）
 
 ### 2. 获取所有部门（不分页）
 - **方法**: GET
 - **路径**: `/api/departments/all`
-- **查询参数**: 同上（除了 page 和 page_size）
 
 ### 3. 根据ID获取部门
 - **方法**: GET
 - **路径**: `/api/departments/{id}`
 
-### 4. 创建部门
+### 4. 根据名称获取部门
+- **方法**: GET
+- **路径**: `/api/departments/name/{department_name}`
+
+### 5. 创建部门
 - **方法**: POST
 - **路径**: `/api/departments`
-- **请求体**:
+- **请求体**（`CreateDepartmentParams`）:
 ```json
 {
-  "name": "研发部",
-  "description": "负责产品研发",
-  "status": 1
+  "departmentName": "研发部",
+  "description": "负责产品研发"
 }
 ```
 
-### 5. 更新部门
+### 6. 更新部门
 - **方法**: PUT
 - **路径**: `/api/departments/{id}`
-- **请求体**: 所有字段都是可选的
+- **请求体**（`UpdateDepartmentParams`，所有字段可选）:
 ```json
 {
-  "name": "研发中心",
-  "description": "负责产品研发和技术支持",
-  "status": 1
+  "departmentName": "研发中心",
+  "description": "负责产品研发和技术支持"
 }
 ```
 
-### 6. 删除部门
+### 7. 删除部门
 - **方法**: DELETE
 - **路径**: `/api/departments/{id}`
 
-### 7. 批量删除部门
+### 8. 批量删除部门
 - **方法**: POST
 - **路径**: `/api/departments/batch-delete`
 - **请求体**:
@@ -86,7 +87,7 @@
 ## 模块结构
 
 ```
-src/modules/department/
+src/modules/organization/department/
 ├── mod.rs          # 模块导出
 ├── models.rs       # 数据模型定义
 ├── repository.rs   # 数据库访问层

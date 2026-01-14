@@ -1,3 +1,4 @@
+use crate::common::id::Id;
 use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
 
@@ -42,8 +43,8 @@ impl AttributeType {
 #[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
 #[serde(rename_all = "camelCase")]
 pub struct TaskAttributeConfig {
-    pub id: i64,
-    pub project_id: i64,
+    pub id: Id,
+    pub project_id: Id,
     pub attribute_name: String,
     pub attribute_label: String,
     #[sqlx(rename = "attribute_type")]
@@ -52,9 +53,11 @@ pub struct TaskAttributeConfig {
     pub default_value: Option<String>,
     #[sqlx(json)]
     pub options: Option<serde_json::Value>,
+    #[sqlx(json)]
+    pub value_color_map: Option<serde_json::Value>,
     pub order: Option<f64>,
-    pub creator_id: String,
-    pub updater_id: Option<String>,
+    pub creator_id: Id,
+    pub updater_id: Option<Id>,
     pub create_date_time: chrono::NaiveDateTime,
     pub update_date_time: Option<chrono::NaiveDateTime>,
 }
@@ -63,15 +66,15 @@ pub struct TaskAttributeConfig {
 #[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
 #[serde(rename_all = "camelCase")]
 pub struct Task {
-    pub id: i64,
+    pub id: Id,
     pub task_name: String,
-    pub parent_id: Option<i64>,
-    pub project_id: i64,
+    pub parent_id: Option<Id>,
+    pub project_id: Id,
     pub order: Option<f64>,
     #[sqlx(json)]
     pub custom_attributes: serde_json::Value,
-    pub creator_id: String,
-    pub updater_id: Option<String>,
+    pub creator_id: Id,
+    pub updater_id: Option<Id>,
     pub create_date_time: chrono::NaiveDateTime,
     pub update_date_time: Option<chrono::NaiveDateTime>,
 }
@@ -107,7 +110,7 @@ pub struct UpdateTaskAttributeConfigParams {
 #[serde(rename_all = "camelCase")]
 pub struct CreateTaskParams {
     pub task_name: String,
-    pub parent_id: Option<i64>,
+    pub parent_id: Option<Id>,
     pub order: Option<f64>,
     pub custom_attributes: Option<serde_json::Value>,
 }
@@ -117,7 +120,7 @@ pub struct CreateTaskParams {
 #[serde(rename_all = "camelCase")]
 pub struct UpdateTaskParams {
     pub task_name: Option<String>,
-    pub parent_id: Option<i64>,
+    pub parent_id: Option<Id>,
     pub order: Option<f64>,
     pub custom_attributes: Option<serde_json::Value>,
 }
@@ -129,18 +132,17 @@ pub struct TaskQueryParams {
     pub page: Option<i64>,
     pub page_size: Option<i64>,
     pub task_name: Option<String>,
-    pub parent_id: Option<i64>,
+    pub parent_id: Option<Id>,
 }
 
 /// 批量删除任务请求参数
 #[derive(Debug, Deserialize)]
 pub struct BatchDeleteTasksParams {
-    pub ids: Vec<i64>,
+    pub ids: Vec<Id>,
 }
 
 /// 批量删除任务属性配置请求参数
 #[derive(Debug, Deserialize)]
 pub struct BatchDeleteTaskAttributeConfigsParams {
-    pub ids: Vec<i64>,
+    pub ids: Vec<Id>,
 }
-

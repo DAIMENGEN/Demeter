@@ -1,9 +1,10 @@
-﻿use crate::common::error::{AppError, AppResult};
+﻿use crate::common::app_state::AppState;
+use crate::common::error::{AppError, AppResult};
+use crate::common::id::Id;
 use crate::common::jwt::Claims;
 use crate::common::response::{ApiResponse, PageResponse};
 use crate::modules::organization::team::models::{
-    BatchDeleteTeamsParams, CreateTeamParams, Team, TeamQueryParams,
-    UpdateTeamParams,
+    BatchDeleteTeamsParams, CreateTeamParams, Team, TeamQueryParams, UpdateTeamParams,
 };
 use crate::modules::organization::team::repository::TeamRepository;
 use axum::{
@@ -11,42 +12,45 @@ use axum::{
     http::StatusCode,
     Extension, Json,
 };
-use sqlx::PgPool;
+
 /// 获取团队列表（分页）
 pub async fn get_team_list(
-    State(pool): State<PgPool>,
+    State(state): State<AppState>,
     Query(params): Query<TeamQueryParams>,
 ) -> AppResult<Json<ApiResponse<PageResponse<Team>>>> {
-    let (teams, total) = TeamRepository::get_team_list(&pool, params).await?;
+    let (teams, total) = TeamRepository::get_team_list(&state.pool, params).await?;
     Ok(Json(ApiResponse::success(PageResponse {
         list: teams,
         total,
     })))
 }
+
 /// 获取所有团队（不分页）
 pub async fn get_all_teams(
-    State(pool): State<PgPool>,
+    State(state): State<AppState>,
     Query(params): Query<TeamQueryParams>,
 ) -> AppResult<Json<ApiResponse<Vec<Team>>>> {
-    let teams = TeamRepository::get_all_teams(&pool, params).await?;
+    let teams = TeamRepository::get_all_teams(&state.pool, params).await?;
     Ok(Json(ApiResponse::success(teams)))
 }
+
 /// 根据 ID 获取团队
 pub async fn get_team_by_id(
-    State(pool): State<PgPool>,
-    Path(id): Path<i64>,
+    State(state): State<AppState>,
+    Path(team_id): Path<Id>,
 ) -> AppResult<Json<ApiResponse<Team>>> {
-    let team = TeamRepository::get_team_by_id(&pool, id)
+    let team = TeamRepository::get_team_by_id(&state.pool, team_id.0)
         .await?
-        .ok_or(AppError::NotFound(format!("团队不存在: {}", id)))?;
+        .ok_or(AppError::NotFound(format!("团队不存在: {}", team_id)))?;
     Ok(Json(ApiResponse::success(team)))
 }
+
 /// 根据团队名称获取团队
 pub async fn get_team_by_name(
-    State(pool): State<PgPool>,
+    State(state): State<AppState>,
     Path(team_name): Path<String>,
 ) -> AppResult<Json<ApiResponse<Team>>> {
-    let team = TeamRepository::get_team_by_name(&pool, &team_name)
+    let team = TeamRepository::get_team_by_name(&state.pool, &team_name)
         .await?
         .ok_or(AppError::NotFound(format!(
             "团队不存在: {}",
@@ -54,47 +58,55 @@ pub async fn get_team_by_name(
         )))?;
     Ok(Json(ApiResponse::success(team)))
 }
+
 /// 创建团队
 pub async fn create_team(
-    State(pool): State<PgPool>,
+    State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
     Json(params): Json<CreateTeamParams>,
 ) -> AppResult<(StatusCode, Json<ApiResponse<Team>>)> {
-    // TODO: 从认证中间件获取当前用户ID
-    let creator_id = 1; // 临时使用默认值
-    let team = TeamRepository::create_team(&pool, params, creator_id).await?;
+    let creator_id = claims.sub;
+    let team_id = state
+        .generate_id()
+        .map_err(|e| AppError::InternalError(format!("生成团队ID失败: {}", e)))?;
+
+    let team = TeamRepository::create_team(&state.pool, team_id, params, creator_id).await?;
     Ok((StatusCode::CREATED, Json(ApiResponse::success(team))))
 }
+
 /// 更新团队
 pub async fn update_team(
-    State(pool): State<PgPool>,
+    State(state): State<AppState>,
     Extension(claims): Extension<Claims>,
-    Path(id): Path<i64>,
+    Path(team_id): Path<Id>,
     Json(params): Json<UpdateTeamParams>,
 ) -> AppResult<Json<ApiResponse<Team>>> {
-    // 从JWT令牌中获取当前用户ID（UUID格式）
-    let updater_id = &claims.sub;
-    
-    let team = TeamRepository::update_team(&pool, id, params, updater_id)
+    let updater_id = claims.sub;
+
+    let team = TeamRepository::update_team(&state.pool, team_id.0, params, updater_id)
         .await?
-        .ok_or(AppError::NotFound(format!("团队不存在: {}", id)))?;
+        .ok_or(AppError::NotFound(format!("团队不存在: {}", team_id)))?;
     Ok(Json(ApiResponse::success(team)))
 }
+
 /// 删除团队
 pub async fn delete_team(
-    State(pool): State<PgPool>,
-    Path(id): Path<i64>,
+    State(state): State<AppState>,
+    Path(team_id): Path<Id>,
 ) -> AppResult<Json<ApiResponse<()>>> {
-    let deleted = TeamRepository::delete_team(&pool, id).await?;
+    let deleted = TeamRepository::delete_team(&state.pool, team_id.0).await?;
     if !deleted {
-        return Err(AppError::NotFound(format!("团队不存在: {}", id)));
+        return Err(AppError::NotFound(format!("团队不存在: {}", team_id)));
     }
     Ok(Json(ApiResponse::success(())))
 }
+
 /// 批量删除团队
 pub async fn batch_delete_teams(
-    State(pool): State<PgPool>,
+    State(state): State<AppState>,
     Json(params): Json<BatchDeleteTeamsParams>,
 ) -> AppResult<Json<ApiResponse<()>>> {
-    TeamRepository::batch_delete_teams(&pool, params.ids).await?;
+    let team_ids: Vec<i64> = params.ids.into_iter().map(|id| id.0).collect();
+    TeamRepository::batch_delete_teams(&state.pool, team_ids).await?;
     Ok(Json(ApiResponse::success(())))
 }

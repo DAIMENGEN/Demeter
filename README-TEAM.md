@@ -2,81 +2,79 @@
 
 ## 概述
 
-团队模块已实现，遵循现有的用户和假期模块架构模式。
+团队模块已实现，遵循现有的模块架构模式。
 
 ## 数据库表结构
 
 数据库表名: `teams`
 
-字段说明:
-- `id` (BIGSERIAL): 主键，自增ID
+字段说明（以 `migrations/20260110000004_create_teams_table.sql` 为准）:
+- `id` (BIGINT): 主键（Snowflake ID）
 - `team_name` (VARCHAR(255)): 团队名称，不可为空
-- `description` (TEXT): 团队描述
-- `department_id` (BIGINT): 所属部门ID，不可为空
-- `leader_id` (BIGINT): 团队负责人ID，不可为空
-- `create_date_time` (TIMESTAMP): 创建时间，默认值为当前时间
-- `update_date_time` (TIMESTAMP): 更新时间
+- `description` (TEXT): 团队描述，可为空
+- `creator_id` (BIGINT): 创建者ID，不可为空
+- `updater_id` (BIGINT): 更新者ID，可为空
+- `create_date_time` (TIMESTAMP): 创建时间
+- `update_date_time` (TIMESTAMP): 更新时间，可为空
 
 索引:
-- `idx_teams_team_name`: 团队名称索引
-- `idx_teams_department_id`: 部门ID索引
-- `idx_teams_leader_id`: 负责人ID索引
-- `idx_teams_create_date_time`: 创建时间倒序索引
+- `idx_teams_team_name`
+- `idx_teams_creator_id`
+- `idx_teams_create_date_time`
 
 ## API 端点
 
-所有端点都在 `/api/teams` 路径下:
+说明：后端在 `main.rs` 中将所有路由统一挂载在 `/api` 下，因此本文档中的路径均以 `/api` 开头。
+
+> 团队模块的所有接口均受 JWT 中间件保护，需要在请求头中携带：`Authorization: Bearer <accessToken>`。
 
 ### 1. 获取团队列表（分页）
 - **方法**: GET
 - **路径**: `/api/teams`
-- **查询参数**:
-  - `page` (可选): 页码，默认为 1
-  - `page_size` (可选): 每页大小，默认为 10
-  - `team_name` (可选): 团队名称模糊搜索
-  - `department_id` (可选): 部门ID
-  - `leader_id` (可选): 负责人ID
+- **查询参数**（`TeamQueryParams`，camelCase）:
+  - `page` (可选)
+  - `pageSize` (可选)
+  - `teamName` (可选): 团队名称（模糊匹配）
 
 ### 2. 获取所有团队（不分页）
 - **方法**: GET
 - **路径**: `/api/teams/all`
-- **查询参数**: 同上（除了 page 和 page_size）
 
 ### 3. 根据ID获取团队
 - **方法**: GET
 - **路径**: `/api/teams/{id}`
 
-### 4. 创建团队
+### 4. 根据名称获取团队
+- **方法**: GET
+- **路径**: `/api/teams/name/{team_name}`
+
+### 5. 创建团队
 - **方法**: POST
 - **路径**: `/api/teams`
-- **请求体**:
+- **请求体**（`CreateTeamParams`）:
 ```json
 {
-  "team_name": "研发一组",
-  "description": "负责核心产品开发",
-  "department_id": 1,
-  "leader_id": 2
+  "teamName": "研发一组",
+  "description": "负责核心产品开发"
 }
 ```
 
-### 5. 更新团队
+### 6. 更新团队
 - **方法**: PUT
 - **路径**: `/api/teams/{id}`
-- **请求体**: 所有字段都是可选的
+- **请求体**（`UpdateTeamParams`，所有字段可选）:
 ```json
 {
-  "team_name": "研发一组",
-  "description": "更新后的描述",
-  "department_id": 1,
-  "leader_id": 2
+  "teamName": "研发一组",
+  "description": "更新后的描述"
 }
 ```
 
-### 6. 删除团队
+### 7. 删除团队
 - **方法**: DELETE
 - **路径**: `/api/teams/{id}`
 
-### 7. 批量删除团队
+### 8. 批量删除团队
 - **方法**: POST
 - **路径**: `/api/teams/batch-delete`
 - **请求体**:
@@ -89,7 +87,7 @@
 ## 模块结构
 
 ```
-src/modules/team/
+src/modules/organization/team/
 ├── mod.rs          # 模块导出
 ├── models.rs       # 数据模型定义
 ├── repository.rs   # 数据库访问层
@@ -116,5 +114,4 @@ cargo run
 ```
 
 应用程序启动时会自动运行所有待执行的迁移。
-
 

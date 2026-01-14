@@ -64,7 +64,7 @@ impl TeamRepository {
     /// 根据 ID 获取团队
     pub async fn get_team_by_id(
         pool: &PgPool,
-        id: i64,
+        team_id: i64,
     ) -> AppResult<Option<Team>> {
         let team = sqlx::query_as::<_, Team>(
             r#"
@@ -73,7 +73,7 @@ impl TeamRepository {
             WHERE id = $1
             "#,
         )
-        .bind(id)
+        .bind(team_id)
         .fetch_optional(pool)
         .await?;
         Ok(team)
@@ -98,16 +98,18 @@ impl TeamRepository {
     /// 创建团队
     pub async fn create_team(
         pool: &PgPool,
+        team_id: i64,
         params: CreateTeamParams,
         creator_id: i64,
     ) -> AppResult<Team> {
         let team = sqlx::query_as::<_, Team>(
             r#"
-            INSERT INTO teams (team_name, description, creator_id, create_date_time)
-            VALUES ($1, $2, $3, NOW())
+            INSERT INTO teams (id, team_name, description, creator_id, create_date_time)
+            VALUES ($1, $2, $3, $4, NOW())
             RETURNING id, team_name, description, creator_id, updater_id, create_date_time, update_date_time
             "#
         )
+        .bind(team_id)
         .bind(&params.team_name)
         .bind(&params.description)
         .bind(creator_id)
@@ -118,12 +120,12 @@ impl TeamRepository {
     /// 更新团队
     pub async fn update_team(
         pool: &PgPool,
-        id: i64,
+        team_id: i64,
         params: UpdateTeamParams,
-        updater_id: &str,
+        updater_id: i64,
     ) -> AppResult<Option<Team>> {
         // 首先检查团队是否存在
-        let existing = Self::get_team_by_id(pool, id).await?;
+        let existing = Self::get_team_by_id(pool, team_id).await?;
         if existing.is_none() {
             return Ok(None);
         }
@@ -138,7 +140,7 @@ impl TeamRepository {
             RETURNING id, team_name, description, creator_id, updater_id, create_date_time, update_date_time
             "#
         )
-        .bind(id)
+        .bind(team_id)
         .bind(&params.team_name)
         .bind(&params.description)
         .bind(updater_id)
@@ -147,27 +149,27 @@ impl TeamRepository {
         Ok(Some(team))
     }
     /// 删除团队
-    pub async fn delete_team(pool: &PgPool, id: i64) -> AppResult<bool> {
+    pub async fn delete_team(pool: &PgPool, team_id: i64) -> AppResult<bool> {
         let result = sqlx::query(
             r#"
             DELETE FROM teams
             WHERE id = $1
             "#,
         )
-        .bind(id)
+        .bind(team_id)
         .execute(pool)
         .await?;
         Ok(result.rows_affected() > 0)
     }
     /// 批量删除团队
-    pub async fn batch_delete_teams(pool: &PgPool, ids: Vec<i64>) -> AppResult<u64> {
+    pub async fn batch_delete_teams(pool: &PgPool, team_ids: Vec<i64>) -> AppResult<u64> {
         let result = sqlx::query(
             r#"
             DELETE FROM teams
             WHERE id = ANY($1)
             "#,
         )
-        .bind(&ids)
+        .bind(&team_ids)
         .execute(pool)
         .await?;
         Ok(result.rows_affected())

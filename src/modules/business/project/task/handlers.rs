@@ -1,10 +1,12 @@
+use crate::common::app_state::AppState;
 use crate::common::error::{AppError, AppResult};
 use crate::common::jwt::Claims;
 use crate::common::response::{ApiResponse, PageResponse};
+use crate::common::id::Id;
 use crate::modules::business::project::task::models::{
-    BatchDeleteTaskAttributeConfigsParams, BatchDeleteTasksParams,
-    CreateTaskAttributeConfigParams, CreateTaskParams, Task, TaskAttributeConfig,
-    TaskQueryParams, UpdateTaskAttributeConfigParams, UpdateTaskParams,
+    BatchDeleteTaskAttributeConfigsParams, BatchDeleteTasksParams, CreateTaskAttributeConfigParams,
+    CreateTaskParams, Task, TaskAttributeConfig, TaskQueryParams, UpdateTaskAttributeConfigParams,
+    UpdateTaskParams,
 };
 use crate::modules::business::project::task::repository::TaskRepository;
 use axum::{
@@ -12,25 +14,25 @@ use axum::{
     http::StatusCode,
     Extension, Json,
 };
-use sqlx::PgPool;
 
 // ==================== 任务属性配置相关 ====================
 
 /// 获取项目的所有任务属性配置
 pub async fn get_attribute_configs(
-    State(pool): State<PgPool>,
-    Path(project_id): Path<i64>,
+    State(state): State<AppState>,
+    Path(project_id): Path<Id>,
 ) -> AppResult<Json<ApiResponse<Vec<TaskAttributeConfig>>>> {
-    let configs = TaskRepository::get_attribute_configs_by_project(&pool, project_id).await?;
+    let configs =
+        TaskRepository::get_attribute_configs_by_project(&state.pool, project_id.0).await?;
     Ok(Json(ApiResponse::success(configs)))
 }
 
 /// 根据ID获取任务属性配置
 pub async fn get_attribute_config_by_id(
-    State(pool): State<PgPool>,
-    Path((_project_id, config_id)): Path<(i64, i64)>,
+    State(state): State<AppState>,
+    Path((_project_id, config_id)): Path<(Id, Id)>,
 ) -> AppResult<Json<ApiResponse<TaskAttributeConfig>>> {
-    let config = TaskRepository::get_attribute_config_by_id(&pool, config_id)
+    let config = TaskRepository::get_attribute_config_by_id(&state.pool, config_id.0)
         .await?
         .ok_or(AppError::NotFound(format!(
             "任务属性配置不存在: {}",
@@ -42,50 +44,60 @@ pub async fn get_attribute_config_by_id(
 
 /// 创建任务属性配置
 pub async fn create_attribute_config(
-    State(pool): State<PgPool>,
+    State(state): State<AppState>,
     Extension(claims): Extension<Claims>,
-    Path(project_id): Path<i64>,
+    Path(project_id): Path<Id>,
     Json(params): Json<CreateTaskAttributeConfigParams>,
 ) -> AppResult<(StatusCode, Json<ApiResponse<TaskAttributeConfig>>)> {
-    let creator_id = &claims.sub;
+    let creator_id = claims.sub;
+    let config_id = state
+        .generate_id()
+        .map_err(|e| AppError::InternalError(format!("生成任务属性配置ID失败: {}", e)))?;
 
-    let config =
-        TaskRepository::create_attribute_config(&pool, project_id, params, creator_id).await?;
+    let config = TaskRepository::create_attribute_config(
+        &state.pool,
+        config_id,
+        project_id.0,
+        params,
+        creator_id,
+    )
+    .await?;
 
     Ok((StatusCode::CREATED, Json(ApiResponse::success(config))))
 }
 
 /// 更新任务属性配置
 pub async fn update_attribute_config(
-    State(pool): State<PgPool>,
+    State(state): State<AppState>,
     Extension(claims): Extension<Claims>,
-    Path((_project_id, config_id)): Path<(i64, i64)>,
+    Path((_project_id, config_id)): Path<(Id, Id)>,
     Json(params): Json<UpdateTaskAttributeConfigParams>,
 ) -> AppResult<Json<ApiResponse<TaskAttributeConfig>>> {
-    let updater_id = &claims.sub;
+    let updater_id = claims.sub;
 
     let config =
-        TaskRepository::update_attribute_config(&pool, config_id, params, updater_id).await?;
+        TaskRepository::update_attribute_config(&state.pool, config_id.0, params, updater_id).await?;
 
     Ok(Json(ApiResponse::success(config)))
 }
 
 /// 删除任务属性配置
 pub async fn delete_attribute_config(
-    State(pool): State<PgPool>,
-    Path((_project_id, config_id)): Path<(i64, i64)>,
+    State(state): State<AppState>,
+    Path((_project_id, config_id)): Path<(Id, Id)>,
 ) -> AppResult<StatusCode> {
-    TaskRepository::delete_attribute_config(&pool, config_id).await?;
+    TaskRepository::delete_attribute_config(&state.pool, config_id.0).await?;
     Ok(StatusCode::NO_CONTENT)
 }
 
 /// 批量删除任务属性配置
 pub async fn batch_delete_attribute_configs(
-    State(pool): State<PgPool>,
-    Path(_project_id): Path<i64>,
+    State(state): State<AppState>,
+    Path(_project_id): Path<Id>,
     Json(params): Json<BatchDeleteTaskAttributeConfigsParams>,
 ) -> AppResult<StatusCode> {
-    TaskRepository::batch_delete_attribute_configs(&pool, params.ids).await?;
+    let ids: Vec<i64> = params.ids.into_iter().map(|id| id.0).collect();
+    TaskRepository::batch_delete_attribute_configs(&state.pool, ids).await?;
     Ok(StatusCode::NO_CONTENT)
 }
 
@@ -93,11 +105,11 @@ pub async fn batch_delete_attribute_configs(
 
 /// 获取任务列表（分页）
 pub async fn get_task_list(
-    State(pool): State<PgPool>,
-    Path(project_id): Path<i64>,
+    State(state): State<AppState>,
+    Path(project_id): Path<Id>,
     Query(params): Query<TaskQueryParams>,
 ) -> AppResult<Json<ApiResponse<PageResponse<Task>>>> {
-    let (tasks, total) = TaskRepository::get_task_list(&pool, project_id, params).await?;
+    let (tasks, total) = TaskRepository::get_task_list(&state.pool, project_id.0, params).await?;
 
     Ok(Json(ApiResponse::success(PageResponse {
         list: tasks,
@@ -107,70 +119,74 @@ pub async fn get_task_list(
 
 /// 获取所有任务（不分页）
 pub async fn get_all_tasks(
-    State(pool): State<PgPool>,
-    Path(project_id): Path<i64>,
+    State(state): State<AppState>,
+    Path(project_id): Path<Id>,
     Query(params): Query<TaskQueryParams>,
 ) -> AppResult<Json<ApiResponse<Vec<Task>>>> {
-    let tasks = TaskRepository::get_all_tasks(&pool, project_id, params).await?;
+    let tasks = TaskRepository::get_all_tasks(&state.pool, project_id.0, params).await?;
     Ok(Json(ApiResponse::success(tasks)))
 }
 
 /// 根据ID获取任务
 pub async fn get_task_by_id(
-    State(pool): State<PgPool>,
-    Path((_project_id, task_id)): Path<(i64, i64)>,
+    State(state): State<AppState>,
+    Path((_project_id, task_id)): Path<(Id, Id)>,
 ) -> AppResult<Json<ApiResponse<Task>>> {
-    let task = TaskRepository::get_task_by_id(&pool, task_id)
+    let task = TaskRepository::get_task_by_id(&state.pool, task_id.0)
         .await?
-        .ok_or(AppError::NotFound(format!("任务不存在: {}", task_id)))?;
+        .ok_or_else(|| crate::common::error::AppError::NotFound("Task not found".to_string()))?;
 
     Ok(Json(ApiResponse::success(task)))
 }
 
 /// 创建任务
 pub async fn create_task(
-    State(pool): State<PgPool>,
+    State(state): State<AppState>,
     Extension(claims): Extension<Claims>,
-    Path(project_id): Path<i64>,
+    Path(project_id): Path<Id>,
     Json(params): Json<CreateTaskParams>,
 ) -> AppResult<(StatusCode, Json<ApiResponse<Task>>)> {
-    let creator_id = &claims.sub;
+    let creator_id = claims.sub;
+    let task_id = state
+        .generate_id()
+        .map_err(|e| AppError::InternalError(format!("生成任务ID失败: {}", e)))?;
 
-    let task = TaskRepository::create_task(&pool, project_id, params, creator_id).await?;
+    let task =
+        TaskRepository::create_task(&state.pool, task_id, project_id.0, params, creator_id).await?;
 
     Ok((StatusCode::CREATED, Json(ApiResponse::success(task))))
 }
 
 /// 更新任务
 pub async fn update_task(
-    State(pool): State<PgPool>,
+    State(state): State<AppState>,
     Extension(claims): Extension<Claims>,
-    Path((_project_id, task_id)): Path<(i64, i64)>,
+    Path((_project_id, task_id)): Path<(Id, Id)>,
     Json(params): Json<UpdateTaskParams>,
 ) -> AppResult<Json<ApiResponse<Task>>> {
-    let updater_id = &claims.sub;
+    let updater_id = claims.sub;
 
-    let task = TaskRepository::update_task(&pool, task_id, params, updater_id).await?;
+    let task = TaskRepository::update_task(&state.pool, task_id.0, params, updater_id).await?;
 
     Ok(Json(ApiResponse::success(task)))
 }
 
 /// 删除任务
 pub async fn delete_task(
-    State(pool): State<PgPool>,
-    Path((_project_id, task_id)): Path<(i64, i64)>,
+    State(state): State<AppState>,
+    Path((_project_id, task_id)): Path<(Id, Id)>,
 ) -> AppResult<StatusCode> {
-    TaskRepository::delete_task(&pool, task_id).await?;
+    TaskRepository::delete_task(&state.pool, task_id.0).await?;
     Ok(StatusCode::NO_CONTENT)
 }
 
 /// 批量删除任务
 pub async fn batch_delete_tasks(
-    State(pool): State<PgPool>,
-    Path(_project_id): Path<i64>,
+    State(state): State<AppState>,
+    Path(_project_id): Path<Id>,
     Json(params): Json<BatchDeleteTasksParams>,
 ) -> AppResult<StatusCode> {
-    TaskRepository::batch_delete_tasks(&pool, params.ids).await?;
+    let ids: Vec<i64> = params.ids.into_iter().map(|id| id.0).collect();
+    TaskRepository::batch_delete_tasks(&state.pool, ids).await?;
     Ok(StatusCode::NO_CONTENT)
 }
-

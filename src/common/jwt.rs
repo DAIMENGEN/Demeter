@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 /// JWT 令牌声明
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Claims {
-    pub sub: String,        // 用户ID
+    pub sub: i64,        // 用户ID
     pub username: String,   // 用户名
     pub exp: u64,           // 过期时间
     pub iat: u64,           // 签发时间
@@ -19,13 +19,13 @@ pub struct JwtUtil;
 impl JwtUtil {
     /// 生成访问令牌
     pub fn generate_access_token(
-        user_id: &str,
+        user_id: i64,
         username: &str,
         config: &JwtConfig,
     ) -> AppResult<String> {
         let now = chrono::Utc::now().timestamp() as u64;
         let claims = Claims {
-            sub: user_id.to_string(),
+            sub: user_id,
             username: username.to_string(),
             exp: now + config.access_token_expires_in as u64,
             iat: now,
@@ -42,13 +42,13 @@ impl JwtUtil {
 
     /// 生成刷新令牌
     pub fn generate_refresh_token(
-        user_id: &str,
+        user_id: i64,
         username: &str,
         config: &JwtConfig,
     ) -> AppResult<String> {
         let now = chrono::Utc::now().timestamp() as u64;
         let claims = Claims {
-            sub: user_id.to_string(),
+            sub: user_id,
             username: username.to_string(),
             exp: now + config.refresh_token_expires_in as u64,
             iat: now,

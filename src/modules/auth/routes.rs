@@ -1,4 +1,5 @@
-use crate::modules::auth::handlers::{login, logout, refresh_token, register, AppState};
+use crate::common::app_state::AppState;
+use crate::modules::auth::handlers::{login, logout, refresh_token, register};
 use axum::{routing::post, Router};
 
 /// 创建认证路由

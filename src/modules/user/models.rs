@@ -1,3 +1,4 @@
+use crate::common::id::Id;
 use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
 
@@ -5,7 +6,7 @@ use sqlx::FromRow;
 #[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
 #[serde(rename_all = "camelCase")]
 pub struct User {
-    pub id: String,
+    pub id: Id,
     pub username: String,
     #[serde(skip_serializing)]
     pub password: Option<String>,
@@ -13,8 +14,8 @@ pub struct User {
     pub email: String,
     pub phone: Option<String>,
     pub is_active: bool,
-    pub creator_id: String,
-    pub updater_id: Option<String>,
+    pub creator_id: Id,
+    pub updater_id: Option<Id>,
     pub create_date_time: chrono::NaiveDateTime,
     pub update_date_time: Option<chrono::NaiveDateTime>,
 }
@@ -60,7 +61,7 @@ pub struct UserQueryParams {
 /// 批量删除用户请求参数
 #[derive(Debug, Deserialize)]
 pub struct BatchDeleteUsersParams {
-    pub ids: Vec<String>,
+    pub ids: Vec<Id>,
 }
 
 /// 切换用户状态请求参数

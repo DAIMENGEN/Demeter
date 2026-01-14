@@ -34,7 +34,7 @@ impl TaskRepository {
     /// 根据ID获取任务属性配置
     pub async fn get_attribute_config_by_id(
         pool: &PgPool,
-        id: i64,
+        config_id: i64,
     ) -> AppResult<Option<TaskAttributeConfig>> {
         let config = sqlx::query_as::<_, TaskAttributeConfig>(
             r#"SELECT id, project_id, attribute_name, attribute_label, attribute_type,
@@ -43,7 +43,7 @@ impl TaskRepository {
                FROM project_task_attribute_configs
                WHERE id = $1"#
         )
-        .bind(id)
+        .bind(config_id)
         .fetch_optional(pool)
         .await?;
 
@@ -53,19 +53,21 @@ impl TaskRepository {
     /// 创建任务属性配置
     pub async fn create_attribute_config(
         pool: &PgPool,
+        id: i64,
         project_id: i64,
         params: CreateTaskAttributeConfigParams,
-        creator_id: &str,
+        creator_id: i64,
     ) -> AppResult<TaskAttributeConfig> {
         let config = sqlx::query_as::<_, TaskAttributeConfig>(
             r#"INSERT INTO project_task_attribute_configs
-               (project_id, attribute_name, attribute_label, attribute_type,
+               (id, project_id, attribute_name, attribute_label, attribute_type,
                 is_required, default_value, options, value_color_map, "order", creator_id, create_date_time)
-               VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, CURRENT_TIMESTAMP)
+               VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, CURRENT_TIMESTAMP)
                RETURNING id, project_id, attribute_name, attribute_label, attribute_type,
                          is_required, default_value, options, value_color_map,
                          "order", creator_id, updater_id, create_date_time, update_date_time"#
         )
+        .bind(id)
         .bind(project_id)
         .bind(&params.attribute_name)
         .bind(&params.attribute_label)
@@ -85,9 +87,9 @@ impl TaskRepository {
     /// 更新任务属性配置
     pub async fn update_attribute_config(
         pool: &PgPool,
-        id: i64,
+        config_id: i64,
         params: UpdateTaskAttributeConfigParams,
-        updater_id: &str,
+        updater_id: i64,
     ) -> AppResult<TaskAttributeConfig> {
         let config = sqlx::query_as::<_, TaskAttributeConfig>(
             r#"UPDATE project_task_attribute_configs
@@ -111,7 +113,7 @@ impl TaskRepository {
         .bind(&params.value_color_map)
         .bind(params.order)
         .bind(updater_id)
-        .bind(id)
+        .bind(config_id)
         .fetch_one(pool)
         .await?;
 
@@ -119,9 +121,9 @@ impl TaskRepository {
     }
 
     /// 删除任务属性配置
-    pub async fn delete_attribute_config(pool: &PgPool, id: i64) -> AppResult<()> {
+    pub async fn delete_attribute_config(pool: &PgPool, config_id: i64) -> AppResult<()> {
         sqlx::query("DELETE FROM project_task_attribute_configs WHERE id = $1")
-            .bind(id)
+            .bind(config_id)
             .execute(pool)
             .await?;
 
@@ -176,7 +178,7 @@ impl TaskRepository {
             r#"SELECT id, task_name, parent_id, project_id, "order",
                       custom_attributes, creator_id, updater_id,
                       create_date_time, update_date_time
-               FROM tasks
+               FROM project_tasks
                {}
                ORDER BY "order" ASC NULLS LAST, create_date_time DESC
                LIMIT {} OFFSET {}"#,
@@ -184,7 +186,7 @@ impl TaskRepository {
         );
 
         let count_query = format!(
-            "SELECT COUNT(*) as count FROM tasks {}",
+            "SELECT COUNT(*) as count FROM project_tasks {}",
             where_clause
         );
 
@@ -236,7 +238,7 @@ impl TaskRepository {
             r#"SELECT id, task_name, parent_id, project_id, "order",
                       custom_attributes, creator_id, updater_id,
                       create_date_time, update_date_time
-               FROM tasks
+               FROM project_tasks
                {}
                ORDER BY "order" ASC NULLS LAST, create_date_time DESC"#,
             where_clause
@@ -258,15 +260,15 @@ impl TaskRepository {
     }
 
     /// 根据ID获取任务
-    pub async fn get_task_by_id(pool: &PgPool, id: i64) -> AppResult<Option<Task>> {
+    pub async fn get_task_by_id(pool: &PgPool, task_id: i64) -> AppResult<Option<Task>> {
         let task = sqlx::query_as::<_, Task>(
             r#"SELECT id, task_name, parent_id, project_id, "order",
                       custom_attributes,
                       creator_id, updater_id, create_date_time, update_date_time
-               FROM tasks
-               WHERE id = $1"#
+               FROM project_tasks
+               WHERE id = $1"#,
         )
-        .bind(id)
+        .bind(task_id)
         .fetch_optional(pool)
         .await?;
 
@@ -276,20 +278,22 @@ impl TaskRepository {
     /// 创建任务
     pub async fn create_task(
         pool: &PgPool,
+        id: i64,
         project_id: i64,
         params: CreateTaskParams,
-        creator_id: &str,
+        creator_id: i64,
     ) -> AppResult<Task> {
         let custom_attrs = params.custom_attributes.unwrap_or(serde_json::json!({}));
 
         let task = sqlx::query_as::<_, Task>(
-            r#"INSERT INTO tasks
-               (task_name, parent_id, project_id, "order", custom_attributes, creator_id, create_date_time)
-               VALUES ($1, $2, $3, $4, $5, $6, CURRENT_TIMESTAMP)
+            r#"INSERT INTO project_tasks
+               (id, task_name, parent_id, project_id, "order", custom_attributes, creator_id, create_date_time)
+               VALUES ($1, $2, $3, $4, $5, $6, $7, CURRENT_TIMESTAMP)
                RETURNING id, task_name, parent_id, project_id, "order",
                          custom_attributes,
-                         creator_id, updater_id, create_date_time, update_date_time"#
+                         creator_id, updater_id, create_date_time, update_date_time"#,
         )
+        .bind(id)
         .bind(&params.task_name)
         .bind(params.parent_id)
         .bind(project_id)
@@ -305,12 +309,12 @@ impl TaskRepository {
     /// 更新任务
     pub async fn update_task(
         pool: &PgPool,
-        id: i64,
+        task_id: i64,
         params: UpdateTaskParams,
-        updater_id: &str,
+        updater_id: i64,
     ) -> AppResult<Task> {
         let task = sqlx::query_as::<_, Task>(
-            r#"UPDATE tasks
+            r#"UPDATE project_tasks
                SET task_name = COALESCE($1, task_name),
                    parent_id = COALESCE($2, parent_id),
                    "order" = COALESCE($3, "order"),
@@ -320,14 +324,14 @@ impl TaskRepository {
                WHERE id = $6
                RETURNING id, task_name, parent_id, project_id, "order",
                          custom_attributes,
-                         creator_id, updater_id, create_date_time, update_date_time"#
+                         creator_id, updater_id, create_date_time, update_date_time"#,
         )
         .bind(&params.task_name)
         .bind(params.parent_id)
         .bind(params.order)
         .bind(&params.custom_attributes)
         .bind(updater_id)
-        .bind(id)
+        .bind(task_id)
         .fetch_one(pool)
         .await?;
 
@@ -335,9 +339,9 @@ impl TaskRepository {
     }
 
     /// 删除任务
-    pub async fn delete_task(pool: &PgPool, id: i64) -> AppResult<()> {
+    pub async fn delete_task(pool: &PgPool, task_id: i64) -> AppResult<()> {
         sqlx::query("DELETE FROM project_tasks WHERE id = $1")
-            .bind(id)
+            .bind(task_id)
             .execute(pool)
             .await?;
 
@@ -345,9 +349,9 @@ impl TaskRepository {
     }
 
     /// 批量删除任务
-    pub async fn batch_delete_tasks(pool: &PgPool, ids: Vec<i64>) -> AppResult<()> {
+    pub async fn batch_delete_tasks(pool: &PgPool, task_ids: Vec<i64>) -> AppResult<()> {
         sqlx::query("DELETE FROM project_tasks WHERE id = ANY($1)")
-            .bind(&ids)
+            .bind(&task_ids)
             .execute(pool)
             .await?;
 

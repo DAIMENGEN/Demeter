@@ -1,14 +1,14 @@
 -- 创建用户表
 CREATE TABLE IF NOT EXISTS users (
-    id VARCHAR(36) PRIMARY KEY,
+    id BIGINT PRIMARY KEY,
     username VARCHAR(50) NOT NULL UNIQUE,
     password VARCHAR(255) NOT NULL,
     full_name VARCHAR(100) NOT NULL,
     email VARCHAR(100) NOT NULL UNIQUE,
     phone VARCHAR(20),
     is_active BOOLEAN NOT NULL DEFAULT TRUE,
-    creator_id VARCHAR(36) NOT NULL,
-    updater_id VARCHAR(36),
+    creator_id BIGINT NOT NULL,
+    updater_id BIGINT,
     create_date_time TIMESTAMP NOT NULL DEFAULT NOW(),
     update_date_time TIMESTAMP
 );

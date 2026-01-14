@@ -1,4 +1,6 @@
+use crate::common::app_state::AppState;
 use crate::common::error::{AppError, AppResult};
+use crate::common::id::Id;
 use crate::common::jwt::Claims;
 use crate::common::response::{ApiResponse, PageResponse};
 use crate::modules::organization::department::models::{
@@ -11,14 +13,13 @@ use axum::{
     http::StatusCode,
     Extension, Json,
 };
-use sqlx::PgPool;
 
 /// 获取部门列表（分页）
 pub async fn get_department_list(
-    State(pool): State<PgPool>,
+    State(state): State<AppState>,
     Query(params): Query<DepartmentQueryParams>,
 ) -> AppResult<Json<ApiResponse<PageResponse<Department>>>> {
-    let (departments, total) = DepartmentRepository::get_department_list(&pool, params).await?;
+    let (departments, total) = DepartmentRepository::get_department_list(&state.pool, params).await?;
 
     Ok(Json(ApiResponse::success(PageResponse {
         list: departments,
@@ -28,31 +29,31 @@ pub async fn get_department_list(
 
 /// 获取所有部门（不分页）
 pub async fn get_all_departments(
-    State(pool): State<PgPool>,
+    State(state): State<AppState>,
     Query(params): Query<DepartmentQueryParams>,
 ) -> AppResult<Json<ApiResponse<Vec<Department>>>> {
-    let departments = DepartmentRepository::get_all_departments(&pool, params).await?;
+    let departments = DepartmentRepository::get_all_departments(&state.pool, params).await?;
     Ok(Json(ApiResponse::success(departments)))
 }
 
 /// 根据 ID 获取部门
 pub async fn get_department_by_id(
-    State(pool): State<PgPool>,
-    Path(id): Path<String>,
+    State(state): State<AppState>,
+    Path(department_id): Path<Id>,
 ) -> AppResult<Json<ApiResponse<Department>>> {
-    let department = DepartmentRepository::get_department_by_id(&pool, &id)
+    let department = DepartmentRepository::get_department_by_id(&state.pool, department_id.0)
         .await?
-        .ok_or(AppError::NotFound(format!("部门不存在: {}", id)))?;
+        .ok_or(AppError::NotFound(format!("部门不存在: {}", department_id)))?;
 
     Ok(Json(ApiResponse::success(department)))
 }
 
 /// 根据部门名称获取部门
 pub async fn get_department_by_name(
-    State(pool): State<PgPool>,
+    State(state): State<AppState>,
     Path(department_name): Path<String>,
 ) -> AppResult<Json<ApiResponse<Department>>> {
-    let department = DepartmentRepository::get_department_by_name(&pool, &department_name)
+    let department = DepartmentRepository::get_department_by_name(&state.pool, &department_name)
         .await?
         .ok_or(AppError::NotFound(format!(
             "部门不存在: {}",
@@ -64,43 +65,46 @@ pub async fn get_department_by_name(
 
 /// 创建部门
 pub async fn create_department(
-    State(pool): State<PgPool>,
+    State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
     Json(params): Json<CreateDepartmentParams>,
 ) -> AppResult<(StatusCode, Json<ApiResponse<Department>>)> {
-    // TODO: 从认证中间件获取当前用户ID
-    let creator_id = "system";
+    let creator_id = claims.sub;
+    let department_id = state
+        .generate_id()
+        .map_err(|e| AppError::InternalError(format!("生成部门ID失败: {}", e)))?;
 
-    let department = DepartmentRepository::create_department(&pool, params, creator_id).await?;
+    let department =
+        DepartmentRepository::create_department(&state.pool, department_id, params, creator_id).await?;
 
     Ok((StatusCode::CREATED, Json(ApiResponse::success(department))))
 }
 
 /// 更新部门
 pub async fn update_department(
-    State(pool): State<PgPool>,
+    State(state): State<AppState>,
     Extension(claims): Extension<Claims>,
-    Path(id): Path<String>,
+    Path(department_id): Path<Id>,
     Json(params): Json<UpdateDepartmentParams>,
 ) -> AppResult<Json<ApiResponse<Department>>> {
-    // 从JWT令牌中获取当前用户ID（UUID格式）
-    let updater_id = &claims.sub;
+    let updater_id = claims.sub;
 
-    let department = DepartmentRepository::update_department(&pool, &id, params, updater_id)
+    let department = DepartmentRepository::update_department(&state.pool, department_id.0, params, updater_id)
         .await?
-        .ok_or(AppError::NotFound(format!("部门不存在: {}", id)))?;
+        .ok_or(AppError::NotFound(format!("部门不存在: {}", department_id)))?;
 
     Ok(Json(ApiResponse::success(department)))
 }
 
 /// 删除部门
 pub async fn delete_department(
-    State(pool): State<PgPool>,
-    Path(id): Path<String>,
+    State(state): State<AppState>,
+    Path(department_id): Path<Id>,
 ) -> AppResult<Json<ApiResponse<()>>> {
-    let deleted = DepartmentRepository::delete_department(&pool, &id).await?;
+    let deleted = DepartmentRepository::delete_department(&state.pool, department_id.0).await?;
 
     if !deleted {
-        return Err(AppError::NotFound(format!("部门不存在: {}", id)));
+        return Err(AppError::NotFound(format!("部门不存在: {}", department_id)));
     }
 
     Ok(Json(ApiResponse::success(())))
@@ -108,9 +112,10 @@ pub async fn delete_department(
 
 /// 批量删除部门
 pub async fn batch_delete_departments(
-    State(pool): State<PgPool>,
+    State(state): State<AppState>,
     Json(params): Json<BatchDeleteDepartmentsParams>,
 ) -> AppResult<Json<ApiResponse<()>>> {
-    DepartmentRepository::batch_delete_departments(&pool, params.ids).await?;
+    let department_ids: Vec<i64> = params.ids.into_iter().map(|id| id.0).collect();
+    DepartmentRepository::batch_delete_departments(&state.pool, department_ids).await?;
     Ok(Json(ApiResponse::success(())))
 }

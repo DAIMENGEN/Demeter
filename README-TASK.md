@@ -8,98 +8,114 @@ Task 模块是 Project 模块的子模块，为项目提供任务管理功能。
 
 ### 1. 任务属性配置化
 - 每个项目可以定义自己的任务属性配置
-- 支持多种属性类型：text（文本）、number（数字）、boolean（布尔值）、date（日期）、datetime（日期时间）、select（选择）
-- 可设置属性是否必填、默认值等
+- 支持多种属性类型：`text`、`number`、`boolean`、`date`、`datetime`、`select`
+- 可设置属性是否必填、默认值、选项等
 - 同一项目下的所有任务遵循统一的属性结构
 
 ### 2. 任务固有字段
-每个任务包含以下固定字段：
-- `id`: 任务ID（自增）
-- `task_name`: 任务名称
-- `parent_id`: 父任务ID（支持任务层级结构）
-- `project_id`: 所属项目ID
+每个任务包含以下固定字段（API 返回为 camelCase）：
+- `id`: 任务ID（Snowflake ID）
+- `taskName`: 任务名称
+- `parentId`: 父任务ID（支持任务层级结构）
+- `projectId`: 所属项目ID
 - `order`: 排序字段
-- `creator_id`: 创建者ID
-- `updater_id`: 更新者ID
-- `create_date_time`: 创建时间
-- `update_date_time`: 更新时间
-- `custom_attributes`: 自定义属性（JSONB格式）
+- `creatorId`: 创建者ID
+- `updaterId`: 更新者ID
+- `createDateTime`: 创建时间
+- `updateDateTime`: 更新时间
+- `customAttributes`: 自定义属性（JSON 对象）
 
 ### 3. 自定义属性存储
 - 使用 PostgreSQL 的 JSONB 类型存储自定义属性
-- 支持灵活的属性结构，同时保证数据类型安全
-- 可通过 GIN 索引优化 JSONB 查询性能
+- 支持灵活的属性结构
+- 通过 GIN 索引优化 JSONB 查询性能
 
 ## 数据库结构
 
 ### 任务属性配置表 (project_task_attribute_configs)
-```sql
-- id: BIGSERIAL PRIMARY KEY
-- project_id: BIGINT (外键关联 projects 表)
-- attribute_name: VARCHAR(255) (属性名称)
-- attribute_label: VARCHAR(255) (属性标签)
-- attribute_type: VARCHAR(50) (属性类型)
-- is_required: BOOLEAN (是否必填)
-- default_value: TEXT (默认值)
-- options: JSONB (选项配置，用于 select 类型)
-- order: DOUBLE PRECISION (排序)
-- creator_id, updater_id, create_date_time, update_date_time
-```
+以 `migrations/20260113000000_create_tasks_table.sql` 为准：
+
+- `id` (BIGINT): 主键（Snowflake ID）
+- `project_id` (BIGINT): 外键关联 `projects(id)`
+- `attribute_name` (VARCHAR): 属性名称（同一 project 下唯一）
+- `attribute_label` (VARCHAR): 属性显示名称
+- `attribute_type` (VARCHAR): 属性类型（text/number/boolean/date/datetime/select）
+- `is_required` (BOOLEAN): 是否必填
+- `default_value` (TEXT): 默认值
+- `options` (JSONB): select 类型的选项配置（可选）
+- `value_color_map` (JSONB): 属性值颜色映射（可选），格式示例：`{"高":"#FF0000","中":"#FFA500"}`
+- `order` (DOUBLE PRECISION): 排序
+- `creator_id`, `updater_id`, `create_date_time`, `update_date_time`
 
 ### 任务表 (project_tasks)
-```sql
-- id: BIGSERIAL PRIMARY KEY
-- task_name: VARCHAR(255)
-- parent_id: BIGINT (外键关联 project_tasks 表，自引用)
-- project_id: BIGINT (外键关联 projects 表)
-- order: DOUBLE PRECISION
-- custom_attributes: JSONB (自定义属性)
-- creator_id, updater_id, create_date_time, update_date_time
-```
+
+- `id` (BIGINT): 主键（Snowflake ID）
+- `task_name` (VARCHAR)
+- `parent_id` (BIGINT): 自引用外键，关联 `project_tasks(id)`
+- `project_id` (BIGINT): 外键关联 `projects(id)`
+- `order` (DOUBLE PRECISION)
+- `custom_attributes` (JSONB): 自定义属性（默认 `{}`）
+- `creator_id`, `updater_id`, `create_date_time`, `update_date_time`
 
 ## API 端点
+
+说明：后端在 `main.rs` 中将所有路由统一挂载在 `/api` 下，因此本文档中的路径均以 `/api` 开头。
+
+> Task 模块的所有接口均受 JWT 中间件保护，需要在请求头中携带：`Authorization: Bearer <accessToken>`。
 
 ### 任务属性配置管理
 
 | 方法 | 路径 | 说明 |
 |------|------|------|
-| GET | `/api/projects/{project_id}/task-attributes` | 获取项目的所有任务属性配置 |
-| POST | `/api/projects/{project_id}/task-attributes` | 创建任务属性配置 |
-| GET | `/api/projects/{project_id}/task-attributes/{config_id}` | 获取指定任务属性配置 |
-| PUT | `/api/projects/{project_id}/task-attributes/{config_id}` | 更新任务属性配置 |
-| DELETE | `/api/projects/{project_id}/task-attributes/{config_id}` | 删除任务属性配置 |
-| POST | `/api/projects/{project_id}/task-attributes/batch-delete` | 批量删除任务属性配置 |
+| GET | `/api/projects/{projectId}/task-attributes` | 获取项目的所有任务属性配置 |
+| POST | `/api/projects/{projectId}/task-attributes` | 创建任务属性配置 |
+| GET | `/api/projects/{projectId}/task-attributes/{configId}` | 获取指定任务属性配置 |
+| PUT | `/api/projects/{projectId}/task-attributes/{configId}` | 更新任务属性配置 |
+| DELETE | `/api/projects/{projectId}/task-attributes/{configId}` | 删除任务属性配置 |
+| POST | `/api/projects/{projectId}/task-attributes/batch-delete` | 批量删除任务属性配置 |
 
 ### 任务管理
 
 | 方法 | 路径 | 说明 |
 |------|------|------|
-| GET | `/api/projects/{project_id}/tasks` | 获取任务列表（分页） |
-| GET | `/api/projects/{project_id}/tasks/all` | 获取所有任务（不分页） |
-| POST | `/api/projects/{project_id}/tasks` | 创建任务 |
-| GET | `/api/projects/{project_id}/tasks/{task_id}` | 获取指定任务 |
-| PUT | `/api/projects/{project_id}/tasks/{task_id}` | 更新任务 |
-| DELETE | `/api/projects/{project_id}/tasks/{task_id}` | 删除任务 |
-| POST | `/api/projects/{project_id}/tasks/batch-delete` | 批量删除任务 |
+| GET | `/api/projects/{projectId}/tasks` | 获取任务列表（分页） |
+| GET | `/api/projects/{projectId}/tasks/all` | 获取所有任务（不分页） |
+| POST | `/api/projects/{projectId}/tasks` | 创建任务 |
+| GET | `/api/projects/{projectId}/tasks/{taskId}` | 获取指定任务 |
+| PUT | `/api/projects/{projectId}/tasks/{taskId}` | 更新任务 |
+| DELETE | `/api/projects/{projectId}/tasks/{taskId}` | 删除任务 |
+| POST | `/api/projects/{projectId}/tasks/batch-delete` | 批量删除任务 |
 
 ## 使用示例
 
-### 1. 创建任务属性配置
-```json
+### 1. 创建任务属性配置（select + 颜色映射）
+```http
 POST /api/projects/1/task-attributes
+Content-Type: application/json
+
 {
   "attributeName": "priority",
   "attributeLabel": "优先级",
   "attributeType": "select",
   "isRequired": true,
+  "defaultValue": "中",
   "options": ["高", "中", "低"],
+  "valueColorMap": {
+    "高": "#FF0000",
+    "中": "#FFA500",
+    "低": "#00FF00"
+  },
   "order": 1.0
 }
 ```
 
+> 说明：`options` / `valueColorMap` 在后端以 JSONB 存储；其具体结构由前端和业务约定，后端按 JSON 原样保存。
+
 ### 2. 创建任务
-```json
+```http
 POST /api/projects/1/tasks
+Content-Type: application/json
+
 {
   "taskName": "完成需求分析",
   "parentId": null,
@@ -121,21 +137,14 @@ GET /api/projects/1/tasks?page=1&pageSize=10&taskName=需求
 
 - **Web 框架**: Axum
 - **数据库**: PostgreSQL
-- **ORM**: SQLx (使用动态查询以支持运行时灵活性)
+- **ORM**: SQLx
 - **JSON 处理**: serde_json
-- **认证**: JWT (通过中间件保护所有路由)
+- **认证**: JWT（通过中间件保护所有路由）
 
 ## 注意事项
 
 1. 所有 API 端点都需要 JWT 认证
 2. 创建任务时，`customAttributes` 应符合项目定义的属性配置
-3. 删除任务属性配置时，不会影响已创建任务的自定义属性数据
-4. 删除任务时，会级联删除其所有子任务
-5. 删除项目时，会级联删除该项目的所有任务和属性配置
-6. **颜色配置说明**：
-   - `valueColorMap` 是可选字段，用于为属性值设置颜色
-   - 颜色值必须使用 16 进制格式（如 `#FF0000`）
-   - 建议为 select 类型的属性配置颜色映射
-   - 颜色映射的键应该与 `options` 中的选项值对应
-   - 前端可以使用这些颜色信息进行视觉渲染，提升用户体验
-
+3. 删除任务属性配置不会影响已创建任务的自定义属性数据
+4. 删除任务会级联删除其所有子任务
+5. 删除项目会级联删除该项目的所有任务和属性配置

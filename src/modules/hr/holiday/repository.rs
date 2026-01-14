@@ -1,5 +1,7 @@
 use crate::common::error::AppResult;
-use crate::modules::hr::holiday::models::{CreateHolidayParams, Holiday, HolidayQueryParams, UpdateHolidayParams};
+use crate::modules::hr::holiday::models::{
+    CreateHolidayParams, Holiday, HolidayQueryParams, UpdateHolidayParams,
+};
 use sqlx::PgPool;
 
 /// 假期数据访问层
@@ -112,7 +114,10 @@ impl HolidayRepository {
     }
 
     /// 根据 ID 获取假期
-    pub async fn get_holiday_by_id(pool: &PgPool, id: i64) -> AppResult<Option<Holiday>> {
+    pub async fn get_holiday_by_id(
+        pool: &PgPool,
+        holiday_id: i64,
+    ) -> AppResult<Option<Holiday>> {
         let holiday = sqlx::query_as::<_, Holiday>(
             r#"
             SELECT id, holiday_name, description, holiday_date, holiday_type, is_recurring,
@@ -121,7 +126,7 @@ impl HolidayRepository {
             WHERE id = $1
             "#,
         )
-        .bind(id)
+        .bind(holiday_id)
         .fetch_optional(pool)
         .await?;
 
@@ -131,6 +136,7 @@ impl HolidayRepository {
     /// 创建假期
     pub async fn create_holiday(
         pool: &PgPool,
+        holiday_id: i64,
         params: CreateHolidayParams,
         creator_id: i64,
     ) -> AppResult<Holiday> {
@@ -138,13 +144,14 @@ impl HolidayRepository {
 
         let holiday = sqlx::query_as::<_, Holiday>(
             r#"
-            INSERT INTO holidays (holiday_name, description, holiday_date, holiday_type, is_recurring,
+            INSERT INTO holidays (id, holiday_name, description, holiday_date, holiday_type, is_recurring,
                                 country_code, creator_id, create_date_time)
-            VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW())
             RETURNING id, holiday_name, description, holiday_date, holiday_type, is_recurring,
                       country_code, creator_id, updater_id, create_date_time, update_date_time
             "#,
         )
+        .bind(holiday_id)
         .bind(&params.holiday_name)
         .bind(&params.description)
         .bind(params.holiday_date)
@@ -161,12 +168,12 @@ impl HolidayRepository {
     /// 更新假期
     pub async fn update_holiday(
         pool: &PgPool,
-        id: i64,
+        holiday_id: i64,
         params: UpdateHolidayParams,
-        updater_id: &str,
+        updater_id: i64,
     ) -> AppResult<Option<Holiday>> {
         // 先检查假期是否存在
-        let existing = Self::get_holiday_by_id(pool, id).await?;
+        let existing = Self::get_holiday_by_id(pool, holiday_id).await?;
         if existing.is_none() {
             return Ok(None);
         }
@@ -239,7 +246,7 @@ impl HolidayRepository {
 
         query = query.bind(updater_id);
         query = query.bind(chrono::Utc::now().naive_utc());
-        query = query.bind(id);
+        query = query.bind(holiday_id);
 
         let holiday = query.fetch_one(pool).await?;
 
@@ -247,9 +254,9 @@ impl HolidayRepository {
     }
 
     /// 删除假期
-    pub async fn delete_holiday(pool: &PgPool, id: i64) -> AppResult<bool> {
+    pub async fn delete_holiday(pool: &PgPool, holiday_id: i64) -> AppResult<bool> {
         let result = sqlx::query("DELETE FROM holidays WHERE id = $1")
-            .bind(id)
+            .bind(holiday_id)
             .execute(pool)
             .await?;
 
@@ -257,17 +264,20 @@ impl HolidayRepository {
     }
 
     /// 批量删除假期
-    pub async fn batch_delete_holidays(pool: &PgPool, ids: Vec<i64>) -> AppResult<i64> {
-        if ids.is_empty() {
+    pub async fn batch_delete_holidays(
+        pool: &PgPool,
+        holiday_ids: Vec<i64>,
+    ) -> AppResult<i64> {
+        if holiday_ids.is_empty() {
             return Ok(0);
         }
 
-        let placeholders: Vec<String> = (1..=ids.len()).map(|i| format!("${}", i)).collect();
+        let placeholders: Vec<String> = (1..=holiday_ids.len()).map(|i| format!("${}", i)).collect();
         let query_str = format!("DELETE FROM holidays WHERE id IN ({})", placeholders.join(", "));
 
         let mut query = sqlx::query(&query_str);
-        for id in ids {
-            query = query.bind(id);
+        for holiday_id in holiday_ids {
+            query = query.bind(holiday_id);
         }
 
         let result = query.execute(pool).await?;

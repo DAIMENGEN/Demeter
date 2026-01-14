@@ -46,9 +46,9 @@ impl ProjectRepository {
             count_query.push_str(&format!(" AND end_date_time <= '{}'", end_date_time.format("%Y-%m-%d %H:%M:%S")));
         }
 
-        if let Some(creator_id) = &params.creator_id {
-            query.push_str(&format!(" AND creator_id = '{}'", creator_id));
-            count_query.push_str(&format!(" AND creator_id = '{}'", creator_id));
+        if let Some(creator_id) = params.creator_id {
+            query.push_str(&format!(" AND creator_id = {}", creator_id.0));
+            count_query.push_str(&format!(" AND creator_id = {}", creator_id.0));
         }
 
         query.push_str(&format!(
@@ -91,8 +91,8 @@ impl ProjectRepository {
             query.push_str(&format!(" AND end_date_time <= '{}'", end_date_time.format("%Y-%m-%d %H:%M:%S")));
         }
 
-        if let Some(creator_id) = &params.creator_id {
-            query.push_str(&format!(" AND creator_id = '{}'", creator_id));
+        if let Some(creator_id) = params.creator_id {
+            query.push_str(&format!(" AND creator_id = {}", creator_id.0));
         }
 
         query.push_str(r#" ORDER BY "order" ASC NULLS LAST, create_date_time DESC"#);
@@ -103,7 +103,7 @@ impl ProjectRepository {
     }
 
     /// 根据 ID 获取项目
-    pub async fn get_project_by_id(pool: &PgPool, id: i64) -> AppResult<Option<Project>> {
+    pub async fn get_project_by_id(pool: &PgPool, project_id: i64) -> AppResult<Option<Project>> {
         let project = sqlx::query_as::<_, Project>(
             r#"
             SELECT id, project_name, description, start_date_time, end_date_time,
@@ -113,7 +113,7 @@ impl ProjectRepository {
             WHERE id = $1
             "#,
         )
-        .bind(id)
+        .bind(project_id)
         .fetch_optional(pool)
         .await?;
 
@@ -144,19 +144,21 @@ impl ProjectRepository {
     /// 创建项目
     pub async fn create_project(
         pool: &PgPool,
+        project_id: i64,
         params: CreateProjectParams,
-        creator_id: &str,
+        creator_id: i64,
     ) -> AppResult<Project> {
         let project = sqlx::query_as::<_, Project>(
             r#"
-            INSERT INTO projects (project_name, description, start_date_time, end_date_time,
+            INSERT INTO projects (id, project_name, description, start_date_time, end_date_time,
                                  project_status, version, "order", creator_id, create_date_time)
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW())
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW())
             RETURNING id, project_name, description, start_date_time, end_date_time,
                       project_status, version, "order", creator_id, updater_id,
                       create_date_time, update_date_time
             "#,
         )
+        .bind(project_id)
         .bind(&params.project_name)
         .bind(&params.description)
         .bind(&params.start_date_time)
@@ -174,12 +176,12 @@ impl ProjectRepository {
     /// 更新项目
     pub async fn update_project(
         pool: &PgPool,
-        id: i64,
+        project_id: i64,
         params: UpdateProjectParams,
-        updater_id: &str,
+        updater_id: i64,
     ) -> AppResult<Option<Project>> {
         // 先检查项目是否存在
-        let existing = Self::get_project_by_id(pool, id).await?;
+        let existing = Self::get_project_by_id(pool, project_id).await?;
         if existing.is_none() {
             return Ok(None);
         }
@@ -249,7 +251,7 @@ impl ProjectRepository {
             query_builder = query_builder.bind(order);
         }
 
-        query_builder = query_builder.bind(id);
+        query_builder = query_builder.bind(project_id);
 
         let project = query_builder.fetch_one(pool).await?;
 
@@ -257,9 +259,9 @@ impl ProjectRepository {
     }
 
     /// 删除项目
-    pub async fn delete_project(pool: &PgPool, id: i64) -> AppResult<bool> {
+    pub async fn delete_project(pool: &PgPool, project_id: i64) -> AppResult<bool> {
         let result = sqlx::query("DELETE FROM projects WHERE id = $1")
-            .bind(id)
+            .bind(project_id)
             .execute(pool)
             .await?;
 
@@ -267,20 +269,20 @@ impl ProjectRepository {
     }
 
     /// 批量删除项目
-    pub async fn batch_delete_projects(pool: &PgPool, ids: Vec<i64>) -> AppResult<u64> {
-        if ids.is_empty() {
+    pub async fn batch_delete_projects(pool: &PgPool, project_ids: Vec<i64>) -> AppResult<u64> {
+        if project_ids.is_empty() {
             return Ok(0);
         }
 
-        let placeholders: Vec<String> = (1..=ids.len()).map(|i| format!("${}", i)).collect();
+        let placeholders: Vec<String> = (1..=project_ids.len()).map(|i| format!("${}", i)).collect();
         let query_str = format!(
             "DELETE FROM projects WHERE id IN ({})",
             placeholders.join(", ")
         );
 
         let mut query = sqlx::query(&query_str);
-        for id in ids {
-            query = query.bind(id);
+        for project_id in project_ids {
+            query = query.bind(project_id);
         }
 
         let result = query.execute(pool).await?;

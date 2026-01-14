@@ -1,14 +1,15 @@
-﻿use serde::{Deserialize, Serialize};
+﻿use crate::common::id::Id;
+use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
 /// 团队数据模型
 #[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
 #[serde(rename_all = "camelCase")]
 pub struct Team {
-    pub id: i64,
+    pub id: Id,
     pub team_name: String,
     pub description: Option<String>,
-    pub creator_id: String,
-    pub updater_id: Option<String>,
+    pub creator_id: Id,
+    pub updater_id: Option<Id>,
     pub create_date_time: chrono::NaiveDateTime,
     pub update_date_time: Option<chrono::NaiveDateTime>,
 }
@@ -37,5 +38,5 @@ pub struct TeamQueryParams {
 /// 批量删除团队请求参数
 #[derive(Debug, Deserialize)]
 pub struct BatchDeleteTeamsParams {
-    pub ids: Vec<i64>,
+    pub ids: Vec<Id>,
 }

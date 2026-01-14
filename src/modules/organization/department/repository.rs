@@ -78,7 +78,7 @@ impl DepartmentRepository {
     /// 根据 ID 获取部门
     pub async fn get_department_by_id(
         pool: &PgPool,
-        id: &str,
+        department_id: i64,
     ) -> AppResult<Option<Department>> {
         let department = sqlx::query_as::<_, Department>(
             r#"
@@ -87,7 +87,7 @@ impl DepartmentRepository {
             WHERE id = $1
             "#,
         )
-        .bind(id)
+        .bind(department_id)
         .fetch_optional(pool)
         .await?;
 
@@ -116,11 +116,10 @@ impl DepartmentRepository {
     /// 创建部门
     pub async fn create_department(
         pool: &PgPool,
+        department_id: i64,
         params: CreateDepartmentParams,
-        creator_id: &str,
+        creator_id: i64,
     ) -> AppResult<Department> {
-        let id = uuid::Uuid::new_v4().to_string();
-
         let department = sqlx::query_as::<_, Department>(
             r#"
             INSERT INTO departments (id, department_name, description, creator_id, create_date_time)
@@ -128,7 +127,7 @@ impl DepartmentRepository {
             RETURNING id, department_name, description, creator_id, updater_id, create_date_time, update_date_time
             "#
         )
-        .bind(&id)
+        .bind(department_id)
         .bind(&params.department_name)
         .bind(&params.description)
         .bind(creator_id)
@@ -141,12 +140,12 @@ impl DepartmentRepository {
     /// 更新部门
     pub async fn update_department(
         pool: &PgPool,
-        id: &str,
+        department_id: i64,
         params: UpdateDepartmentParams,
-        updater_id: &str,
+        updater_id: i64,
     ) -> AppResult<Option<Department>> {
         // 首先检查部门是否存在
-        let existing = Self::get_department_by_id(pool, id).await?;
+        let existing = Self::get_department_by_id(pool, department_id).await?;
         if existing.is_none() {
             return Ok(None);
         }
@@ -162,7 +161,7 @@ impl DepartmentRepository {
             RETURNING id, department_name, description, creator_id, updater_id, create_date_time, update_date_time
             "#
         )
-        .bind(id)
+        .bind(department_id)
         .bind(&params.department_name)
         .bind(&params.description)
         .bind(updater_id)
@@ -173,14 +172,14 @@ impl DepartmentRepository {
     }
 
     /// 删除部门
-    pub async fn delete_department(pool: &PgPool, id: &str) -> AppResult<bool> {
+    pub async fn delete_department(pool: &PgPool, department_id: i64) -> AppResult<bool> {
         let result = sqlx::query(
             r#"
             DELETE FROM departments
             WHERE id = $1
             "#,
         )
-        .bind(id)
+        .bind(department_id)
         .execute(pool)
         .await?;
 
@@ -188,18 +187,20 @@ impl DepartmentRepository {
     }
 
     /// 批量删除部门
-    pub async fn batch_delete_departments(pool: &PgPool, ids: Vec<String>) -> AppResult<u64> {
+    pub async fn batch_delete_departments(
+        pool: &PgPool,
+        department_ids: Vec<i64>,
+    ) -> AppResult<u64> {
         let result = sqlx::query(
             r#"
             DELETE FROM departments
             WHERE id = ANY($1)
             "#,
         )
-        .bind(&ids)
+        .bind(&department_ids)
         .execute(pool)
         .await?;
 
         Ok(result.rows_affected())
     }
 }
-

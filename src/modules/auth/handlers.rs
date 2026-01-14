@@ -1,20 +1,12 @@
+use crate::common::app_state::AppState;
 use crate::common::error::{AppError, AppResult};
 use crate::common::jwt::JwtUtil;
 use crate::common::response::ApiResponse;
-use crate::config::JwtConfig;
 use crate::modules::auth::models::{
     AuthResponse, LoginRequest, RefreshTokenRequest, RegisterRequest, UserInfo,
 };
 use crate::modules::auth::repository::AuthRepository;
 use axum::{extract::State, http::StatusCode, Json};
-use sqlx::PgPool;
-
-/// 应用状态
-#[derive(Clone)]
-pub struct AppState {
-    pub pool: PgPool,
-    pub jwt_config: JwtConfig,
-}
 
 /// 用户注册
 pub async fn register(
@@ -45,8 +37,12 @@ pub async fn register(
         .map_err(|e| AppError::InternalError(format!("密码加密失败: {}", e)))?;
 
     // 创建用户
+    let user_id = state
+        .generate_id()
+        .map_err(|e| AppError::InternalError(format!("生成用户ID失败: {}", e)))?;
     let user = AuthRepository::create_user(
         &state.pool,
+        user_id,
         &request.username,
         &password_hash,
         &request.full_name,
@@ -56,20 +52,23 @@ pub async fn register(
     .await?;
 
     // 生成令牌
-    let access_token = JwtUtil::generate_access_token(&user.id, &user.username, &state.jwt_config)?;
+    let access_token = JwtUtil::generate_access_token(user.id.into(), &user.username, &state.jwt_config)?;
     let refresh_token =
-        JwtUtil::generate_refresh_token(&user.id, &user.username, &state.jwt_config)?;
+        JwtUtil::generate_refresh_token(user.id.into(), &user.username, &state.jwt_config)?;
 
     // 保存刷新令牌
     let expires_at = chrono::Utc::now().naive_utc()
         + chrono::Duration::seconds(state.jwt_config.refresh_token_expires_in);
-    AuthRepository::save_refresh_token(&state.pool, &user.id, &refresh_token, expires_at).await?;
+    let refresh_token_id = state
+        .generate_id()
+        .map_err(|e| AppError::InternalError(format!("生成刷新令牌ID失败: {}", e)))?;
+    AuthRepository::save_refresh_token(&state.pool, refresh_token_id, user.id.into(), &refresh_token, expires_at).await?;
 
     let response = AuthResponse {
         access_token,
         refresh_token,
         user: UserInfo {
-            id: user.id,
+            id: user.id.into(),
             username: user.username,
             full_name: user.full_name,
             email: user.email,
@@ -115,20 +114,23 @@ pub async fn login(
     }
 
     // 生成令牌
-    let access_token = JwtUtil::generate_access_token(&user.id, &user.username, &state.jwt_config)?;
+    let access_token = JwtUtil::generate_access_token(user.id.into(), &user.username, &state.jwt_config)?;
     let refresh_token =
-        JwtUtil::generate_refresh_token(&user.id, &user.username, &state.jwt_config)?;
+        JwtUtil::generate_refresh_token(user.id.into(), &user.username, &state.jwt_config)?;
 
     // 保存刷新令牌
     let expires_at = chrono::Utc::now().naive_utc()
         + chrono::Duration::seconds(state.jwt_config.refresh_token_expires_in);
-    AuthRepository::save_refresh_token(&state.pool, &user.id, &refresh_token, expires_at).await?;
+    let refresh_token_id = state
+        .generate_id()
+        .map_err(|e| AppError::InternalError(format!("生成刷新令牌ID失败: {}", e)))?;
+    AuthRepository::save_refresh_token(&state.pool, refresh_token_id, user.id.into(), &refresh_token, expires_at).await?;
 
     let response = AuthResponse {
         access_token,
         refresh_token,
         user: UserInfo {
-            id: user.id,
+            id: user.id.into(),
             username: user.username,
             full_name: user.full_name,
             email: user.email,
@@ -154,7 +156,7 @@ pub async fn refresh_token(
         .ok_or_else(|| AppError::Unauthorized("刷新令牌无效或已过期".to_string()))?;
 
     // 获取用户信息
-    let user = AuthRepository::get_user_info_by_id(&state.pool, &db_token.user_id)
+    let user = AuthRepository::get_user_info_by_id(&state.pool, db_token.user_id)
         .await?
         .ok_or_else(|| AppError::NotFound("用户不存在".to_string()))?;
 
@@ -165,9 +167,9 @@ pub async fn refresh_token(
 
     // 生成新的令牌
     let new_access_token =
-        JwtUtil::generate_access_token(&user.id, &user.username, &state.jwt_config)?;
+        JwtUtil::generate_access_token(user.id.into(), &user.username, &state.jwt_config)?;
     let new_refresh_token =
-        JwtUtil::generate_refresh_token(&user.id, &user.username, &state.jwt_config)?;
+        JwtUtil::generate_refresh_token(user.id.into(), &user.username, &state.jwt_config)?;
 
     // 删除旧的刷新令牌
     AuthRepository::delete_refresh_token(&state.pool, &request.refresh_token).await?;
@@ -175,7 +177,10 @@ pub async fn refresh_token(
     // 保存新的刷新令牌
     let expires_at = chrono::Utc::now().naive_utc()
         + chrono::Duration::seconds(state.jwt_config.refresh_token_expires_in);
-    AuthRepository::save_refresh_token(&state.pool, &user.id, &new_refresh_token, expires_at)
+    let refresh_token_id = state
+        .generate_id()
+        .map_err(|e| AppError::InternalError(format!("生成刷新令牌ID失败: {}", e)))?;
+    AuthRepository::save_refresh_token(&state.pool, refresh_token_id, user.id.into(), &new_refresh_token, expires_at)
         .await?;
 
     let response = AuthResponse {

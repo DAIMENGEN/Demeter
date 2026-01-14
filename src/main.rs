@@ -4,8 +4,11 @@ mod modules;
 
 use axum::http::{header, HeaderValue, Method};
 use axum::Router;
+use common::app_state::AppState;
+use common::snowflake::SnowflakeIdBucket;
 use modules::{business, hr, organization};
 use sqlx::postgres::PgPoolOptions;
+use std::sync::Arc;
 use tower_http::cors::CorsLayer;
 
 #[tokio::main]
@@ -30,11 +33,23 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     tracing::info!("数据库迁移完成");
 
-    // 创建应用状态
-    let app_state = modules::auth::AppState {
-        pool: pool.clone(),
-        jwt_config: config.jwt.clone(),
-    };
+    // 初始化全局 Snowflake ID 生成器
+    let id_generator = Arc::new(
+        SnowflakeIdBucket::new(
+            config.snowflake.datacenter_id,
+            config.snowflake.machine_id,
+        )
+        .expect("Failed to create Snowflake ID generator"),
+    );
+
+    tracing::info!(
+        "Snowflake ID 生成器初始化成功 (datacenter_id: {}, machine_id: {})",
+        config.snowflake.datacenter_id,
+        config.snowflake.machine_id
+    );
+
+    // 创建全局应用状态
+    let app_state = AppState::new(pool.clone(), config.jwt.clone(), id_generator);
 
     // 配置 CORS
     let cors = CorsLayer::new()
@@ -51,13 +66,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // 将所有路由挂载到 /api 下
     let api_routes = Router::new()
-        .merge(modules::auth::auth_routes(app_state))
-        .merge(modules::user::user_routes().with_state(pool.clone()))
-        .merge(organization::department::department_routes(config.jwt.clone()).with_state(pool.clone()))
-        .merge(hr::holiday::holiday_routes(config.jwt.clone()).with_state(pool.clone()))
-        .merge(organization::team::team_routes(config.jwt.clone()).with_state(pool.clone()))
-        .merge(business::project::project_routes(config.jwt.clone()).with_state(pool.clone()))
-        .merge(business::project::task::task_routes(config.jwt.clone()).with_state(pool));
+        .merge(modules::auth::auth_routes(app_state.clone()))
+        .merge(modules::user::user_routes(app_state.clone()))
+        .merge(organization::department::department_routes(app_state.clone()))
+        .merge(hr::holiday::holiday_routes(app_state.clone()))
+        .merge(organization::team::team_routes(app_state.clone()))
+        .merge(business::project::project_routes(app_state.clone()))
+        .merge(business::project::task::task_routes(app_state.clone()));
 
     let app = Router::new().nest("/api", api_routes).layer(cors);
 
