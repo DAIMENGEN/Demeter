@@ -31,6 +31,7 @@ import {SelectTypeFields} from "./select-type-fields";
 import {UserTypeFields} from "./user-type-fields";
 import {ValueColorMapFields} from "./value-color-map-fields";
 import {DateTypeFields} from "./date-type-fields";
+import {NumberTypeFields} from "./number-type-fields";
 import {
     normalizeColorMapToRows,
     normalizeOptionsToRows,
@@ -496,12 +497,13 @@ export const TaskAttributeConfigDrawer: React.FC<TaskAttributeConfigDrawerProps>
                                     }
                                     return (
                                         <>
-                                            {/* 通用默认值（除 select/user/date/datetime 外） */}
+                                            {/* 通用默认值（除 select/user/date/datetime/number 外） */}
                                             {type &&
                                             type !== "select" &&
                                             type !== "user" &&
                                             type !== "date" &&
-                                            type !== "datetime" ? (
+                                            type !== "datetime" &&
+                                            type !== "number" ? (
                                                 <Form.Item
                                                     name="defaultValue"
                                                     label="默认值"
@@ -510,6 +512,8 @@ export const TaskAttributeConfigDrawer: React.FC<TaskAttributeConfigDrawerProps>
                                                     <Input placeholder="请输入默认值（将以字符串存储）" allowClear />
                                                 </Form.Item>
                                             ) : null}
+
+                                            {type === "number" ? <NumberTypeFields disabled={isSubmitting} /> : null}
 
                                             {type === "date" ? <DateTypeFields mode="date" /> : null}
                                             {type === "datetime" ? <DateTypeFields mode="datetime" /> : null}
