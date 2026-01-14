@@ -72,16 +72,6 @@ export const UserTypeFields: React.FC<{
                                                         }}
                                                     />
                                                 </Form.Item>
-
-                                                {/*/!* 存储 label 用于显示（与 value 同步写入） *!/*/}
-                                                {/*<Form.Item*/}
-                                                {/*    {...fieldProps}*/}
-                                                {/*    name={[field.name, "label"]}*/}
-                                                {/*    rules={[{required: true, message: "缺少 label"}]}*/}
-                                                {/*    style={{marginBottom: 0}}*/}
-                                                {/*    hidden>*/}
-                                                {/*    <Input/>*/}
-                                                {/*</Form.Item>*/}
                                             </Space.Compact>
                                         </Form.Item>
 
