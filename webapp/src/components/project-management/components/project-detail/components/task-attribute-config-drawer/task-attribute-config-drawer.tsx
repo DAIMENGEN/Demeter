@@ -9,6 +9,7 @@ import {
     Popconfirm,
     Select,
     Space,
+    Spin,
     Switch,
     Table,
     type TableColumnsType,
@@ -70,7 +71,15 @@ export const TaskAttributeConfigDrawer: React.FC<TaskAttributeConfigDrawerProps>
 
     const [editing, setEditing] = useState<TaskAttributeConfig | null>(null);
 
-    const saving = createLoading || updateLoading;
+    const isSubmitting = createLoading || updateLoading;
+
+    const resetToCreateMode = () => {
+        setEditing(null);
+        // 清空时同时重置搜索状态
+        resetUserSearch();
+        userPicker.reset();
+        form.resetFields();
+    };
 
     useEffect(() => {
         if (!open) {
@@ -121,6 +130,7 @@ export const TaskAttributeConfigDrawer: React.FC<TaskAttributeConfigDrawerProps>
                 <Space>
                     <Button
                         size="small"
+                        disabled={isSubmitting || deleteLoading}
                         onClick={async () => {
                             setEditing(record);
 
@@ -210,7 +220,7 @@ export const TaskAttributeConfigDrawer: React.FC<TaskAttributeConfigDrawerProps>
                             }
                         }}
                     >
-                        <Button size="small" danger loading={deleteLoading}>
+                        <Button size="small" danger loading={deleteLoading} disabled={isSubmitting}>
                             删除
                         </Button>
                     </Popconfirm>
@@ -220,6 +230,8 @@ export const TaskAttributeConfigDrawer: React.FC<TaskAttributeConfigDrawerProps>
     ];
 
     const handleSubmit = async () => {
+        if (isSubmitting) return;
+
         try {
             const values = await form.validateFields();
 
@@ -313,9 +325,7 @@ export const TaskAttributeConfigDrawer: React.FC<TaskAttributeConfigDrawerProps>
                 message.success("创建成功");
             }
 
-            setEditing(null);
-            userPicker.reset();
-            form.resetFields();
+            resetToCreateMode();
             await refetch();
         } catch (e: unknown) {
             // antd Form validate errors don't need to message.
@@ -332,7 +342,10 @@ export const TaskAttributeConfigDrawer: React.FC<TaskAttributeConfigDrawerProps>
             title="任务自定义字段配置"
             placement="right"
             open={open}
-            onClose={onClose}
+            onClose={() => {
+                if (isSubmitting) return;
+                onClose();
+            }}
             afterOpenChange={(nextOpen) => {
                 if (!nextOpen) {
                     setEditing(null);
@@ -344,175 +357,175 @@ export const TaskAttributeConfigDrawer: React.FC<TaskAttributeConfigDrawerProps>
             footer={
                 <div style={{display: "flex", justifyContent: "space-between"}}>
                     <Space>
-                        <Button
-                            onClick={() => {
-                                setEditing(null);
-                                // 清空时同时重置搜索状态
-                                resetUserSearch();
-                                form.resetFields();
-                            }}
-                            disabled={saving}
-                        >
+                        {editing ? (
+                            <Button onClick={resetToCreateMode} disabled={isSubmitting}>
+                                取消编辑
+                            </Button>
+                        ) : null}
+                        <Button onClick={resetToCreateMode} disabled={isSubmitting}>
                             清空
                         </Button>
-                        <Button onClick={onClose} disabled={saving}>
+                        <Button onClick={onClose} disabled={isSubmitting}>
                             关闭
                         </Button>
                     </Space>
-                    <Button type="primary" onClick={handleSubmit} loading={saving}>
+                    <Button type="primary" onClick={handleSubmit} loading={isSubmitting} disabled={isSubmitting}>
                         {editing ? "保存" : "创建"}
                     </Button>
                 </div>
             }
         >
-            <Space orientation="vertical" style={{width: "100%"}} size="middle">
-                <Text type="secondary">这里配置的是该项目下 Task 支持的额外字段。固定字段不在此处管理。</Text>
+            <Spin spinning={isSubmitting} tip={editing ? "正在保存..." : "正在创建..."}>
+                <Space orientation="vertical" style={{width: "100%"}} size="middle">
+                    <Text type="secondary">这里配置的是该项目下 Task 支持的额外字段。固定字段不在此处管理。</Text>
 
-                <Table<TaskAttributeConfig>
-                    rowKey={(r) => r.id}
-                    size="small"
-                    columns={columns}
-                    dataSource={data}
-                    loading={loading}
-                    pagination={false}
-                />
+                    <Table<TaskAttributeConfig>
+                        rowKey={(r) => r.id}
+                        size="small"
+                        columns={columns}
+                        dataSource={data}
+                        loading={loading}
+                        pagination={false}
+                    />
 
-                <div>
-                    <Typography.Title level={5} style={{marginBottom: 12}}>
-                        {modeTitle}
-                    </Typography.Title>
+                    <div>
+                        <Typography.Title level={5} style={{marginBottom: 12}}>
+                            {modeTitle}
+                        </Typography.Title>
 
-                    <Form
-                        form={form}
-                        layout="vertical"
-                        initialValues={{
-                            attributeType: "text",
-                            isRequired: false,
-                            optionsRows: [],
-                            valueColorMapRows: []
-                        }}
-                    >
-                        <Form.Item
-                            name="attributeName"
-                            label="字段名"
-                            rules={[
-                                {required: true, message: "请输入字段名"},
-                                {
-                                    pattern: /^[a-zA-Z_][a-zA-Z0-9_]*$/,
-                                    message: "只能包含字母/数字/下划线，并且不能以数字开头"
-                                }
-                            ]}
-                            extra="用于存储的 key（建议使用英文 + 下划线）。创建后不能修改。"
-                        >
-                            <Input placeholder="例如：risk_level" disabled={Boolean(editing)}/>
-                        </Form.Item>
-
-                        <Form.Item
-                            name="attributeType"
-                            label="字段类型"
-                            rules={[{required: true, message: "请选择字段类型"}]}
-                        >
-                            <Select options={attributeTypeOptions} disabled={Boolean(editing)}/>
-                        </Form.Item>
-
-                        <Form.Item
-                            name="attributeLabel"
-                            label="显示名称"
-                            rules={[{required: true, message: "请输入显示名称"}]}
-                        >
-                            <Input placeholder="例如：风险等级"/>
-                        </Form.Item>
-
-                        <Form.Item name="isRequired" label="必填" valuePropName="checked">
-                            <Switch/>
-                        </Form.Item>
-
-                        <Form.Item name="order" label="排序">
-                            <InputNumber style={{width: "100%"}} min={0}/>
-                        </Form.Item>
-
-                        <Form.Item
-                            noStyle
-                            shouldUpdate={(prev, cur) =>
-                                prev.attributeType !== cur.attributeType || prev.optionsRows !== cur.optionsRows
-                            }>
-                            {({getFieldValue}) => {
-                                const type = getFieldValue("attributeType") as AttributeType | undefined;
-                                const optionsRows = (getFieldValue("optionsRows") as FormValues["optionsRows"]) ?? [];
-                                let valueOptions: { label: string; value: string }[] = [];
-                                if (type === "select") {
-                                    valueOptions = (optionsRows
-                                        .map((raw) => {
-                                            // select: raw is { label: string, value: string }
-                                            return {
-                                                value: raw.value,
-                                                label: raw.label
-                                            };
-                                        })
-                                        .filter((x): x is { label: string; value: string } => Boolean(x)) as {
-                                        label: string;
-                                        value: string;
-                                    }[]);
-                                } else if (type === "user") {
-                                    valueOptions = (optionsRows
-                                        .map((raw) => {
-                                            const value = raw.value;
-                                            // user: value is { value: userId, label?: ReactNode }
-                                            if (!value || typeof value === "string") return null;
-                                            return {
-                                                value: value.value,
-                                                label: value.label
-                                            };
-                                        })
-                                        .filter((x): x is { label: string; value: string } => Boolean(x)) as {
-                                        label: string;
-                                        value: string;
-                                    }[]);
-                                }
-                                return (
-                                    <>
-                                        {/* 通用默认值（除 select/user/date/datetime 外） */}
-                                        {type &&
-                                        type !== "select" &&
-                                        type !== "user" &&
-                                        type !== "date" &&
-                                        type !== "datetime" ? (
-                                            <Form.Item
-                                                name="defaultValue"
-                                                label="默认值"
-                                                extra="可选。新建任务时，如果该字段未填写，将自动使用默认值。"
-                                            >
-                                                <Input placeholder="请输入默认值（将以字符串存储）" allowClear />
-                                            </Form.Item>
-                                        ) : null}
-
-                                        {type === "date" ? <DateTypeFields mode="date" /> : null}
-                                        {type === "datetime" ? <DateTypeFields mode="datetime" /> : null}
-
-                                        {type === "user" ? (
-                                            <UserTypeFields
-                                                form={form}
-                                                userPicker={userPicker}
-                                                onUserSearch={onUserSearch}
-                                                resetUserSearch={resetUserSearch}
-                                            />
-                                        ) : null}
-
-                                        {type === "select" ? <SelectTypeFields/> : null}
-
-                                        {type === "select" || type === "user" ? (
-                                            <ValueColorMapFields
-                                                valueOptions={valueOptions}
-                                                extra="可选。用于把某些值渲染为指定颜色。"
-                                            />
-                                        ) : null}
-                                    </>
-                                );
+                        <Form
+                            form={form}
+                            layout="vertical"
+                            disabled={isSubmitting}
+                            initialValues={{
+                                attributeType: "text",
+                                isRequired: false,
+                                optionsRows: [],
+                                valueColorMapRows: []
                             }}
-                        </Form.Item>
-                    </Form>
-                </div>
-            </Space>
+                        >
+                            <Form.Item
+                                name="attributeName"
+                                label="字段名"
+                                rules={[
+                                    {required: true, message: "请输入字段名"},
+                                    {
+                                        pattern: /^[a-zA-Z_][a-zA-Z0-9_]*$/,
+                                        message: "只能包含字母/数字/下划线，并且不能以数字开头"
+                                    }
+                                ]}
+                                extra="用于存储的 key（建议使用英文 + 下划线）。创建后不能修改。"
+                            >
+                                <Input placeholder="例如：risk_level" disabled={Boolean(editing)}/>
+                            </Form.Item>
+
+                            <Form.Item
+                                name="attributeType"
+                                label="字段类型"
+                                rules={[{required: true, message: "请选择字段类型"}]}
+                            >
+                                <Select options={attributeTypeOptions} disabled={Boolean(editing)}/>
+                            </Form.Item>
+
+                            <Form.Item
+                                name="attributeLabel"
+                                label="显示名称"
+                                rules={[{required: true, message: "请输入显示名称"}]}
+                            >
+                                <Input placeholder="例如：风险等级"/>
+                            </Form.Item>
+
+                            <Form.Item name="isRequired" label="必填" valuePropName="checked">
+                                <Switch/>
+                            </Form.Item>
+
+                            <Form.Item name="order" label="排序">
+                                <InputNumber style={{width: "100%"}} min={0}/>
+                            </Form.Item>
+
+                            <Form.Item
+                                noStyle
+                                shouldUpdate={(prev, cur) =>
+                                    prev.attributeType !== cur.attributeType || prev.optionsRows !== cur.optionsRows
+                                }>
+                                {({getFieldValue}) => {
+                                    const type = getFieldValue("attributeType") as AttributeType | undefined;
+                                    const optionsRows = (getFieldValue("optionsRows") as FormValues["optionsRows"]) ?? [];
+                                    let valueOptions: { label: string; value: string }[] = [];
+                                    if (type === "select") {
+                                        valueOptions = (optionsRows
+                                            .map((raw) => {
+                                                // select: raw is { label: string, value: string }
+                                                return {
+                                                    value: raw.value,
+                                                    label: raw.label
+                                                };
+                                            })
+                                            .filter((x): x is { label: string; value: string } => Boolean(x)) as {
+                                            label: string;
+                                            value: string;
+                                        }[]);
+                                    } else if (type === "user") {
+                                        valueOptions = (optionsRows
+                                            .map((raw) => {
+                                                const value = raw.value;
+                                                // user: value is { value: userId, label?: ReactNode }
+                                                if (!value || typeof value === "string") return null;
+                                                return {
+                                                    value: value.value,
+                                                    label: value.label
+                                                };
+                                            })
+                                            .filter((x): x is { label: string; value: string } => Boolean(x)) as {
+                                            label: string;
+                                            value: string;
+                                        }[]);
+                                    }
+                                    return (
+                                        <>
+                                            {/* 通用默认值（除 select/user/date/datetime 外） */}
+                                            {type &&
+                                            type !== "select" &&
+                                            type !== "user" &&
+                                            type !== "date" &&
+                                            type !== "datetime" ? (
+                                                <Form.Item
+                                                    name="defaultValue"
+                                                    label="默认值"
+                                                    extra="可选。新建任务时，如果该字段未填写，将自动使用默认值。"
+                                                >
+                                                    <Input placeholder="请输入默认值（将以字符串存储）" allowClear />
+                                                </Form.Item>
+                                            ) : null}
+
+                                            {type === "date" ? <DateTypeFields mode="date" /> : null}
+                                            {type === "datetime" ? <DateTypeFields mode="datetime" /> : null}
+
+                                            {type === "user" ? (
+                                                <UserTypeFields
+                                                    form={form}
+                                                    userPicker={userPicker}
+                                                    onUserSearch={onUserSearch}
+                                                    resetUserSearch={resetUserSearch}
+                                                />
+                                            ) : null}
+
+                                            {type === "select" ? <SelectTypeFields/> : null}
+
+                                            {type === "select" || type === "user" ? (
+                                                <ValueColorMapFields
+                                                    valueOptions={valueOptions}
+                                                    extra="可选。用于把某些值渲染为指定颜色。"
+                                                />
+                                            ) : null}
+                                        </>
+                                    );
+                                }}
+                            </Form.Item>
+                        </Form>
+                    </div>
+                </Space>
+            </Spin>
         </Drawer>
     );
 };
