@@ -1,6 +1,6 @@
 import React, {useState, useEffect, useRef} from "react";
 import {useNavigate, useParams} from "react-router-dom";
-import {Button, Card, Result, Spin} from "antd";
+import {Button, Card, Result, Spin, Space} from "antd";
 import dayjs from "dayjs";
 import {
     type Checkpoint,
@@ -20,6 +20,7 @@ import {
     GanttToolbar,
     GanttLegend,
     ProjectInfo,
+    TaskAttributeConfigDrawer,
     type ViewType,
     type LegendItem,
     viewUnitMap,
@@ -495,6 +496,7 @@ export const ProjectDetail: React.FC = () => {
     const navigate = useNavigate();
     const {data: project, loading, error} = useProjectById(id!);
 
+    const [taskAttributeDrawerOpen, setTaskAttributeDrawerOpen] = useState(false);
     const [events, setEvents] = useState<Event[]>([]);
     const [resources, setResources] = useState<Resource[]>(() => generateMockResources());
     const [milestones, setMilestones] = useState<Milestone[]>([]);
@@ -616,9 +618,14 @@ export const ProjectDetail: React.FC = () => {
                     title="项目不存在"
                     subTitle="抱歉，您访问的项目不存在或已被删除。"
                     extra={
-                        <Button type="primary" onClick={handleBack}>
-                            返回项目列表
-                        </Button>
+                        <Space>
+                            <Button type="primary" onClick={handleBack}>
+                                返回项目列表
+                            </Button>
+                            <Button onClick={() => setTaskAttributeDrawerOpen(true)}>
+                                配置任务自定义字段
+                            </Button>
+                        </Space>
                     }
                 />
             </div>
@@ -671,6 +678,7 @@ export const ProjectDetail: React.FC = () => {
                                 setGanttStartDate(dayjs());
                                 setGanttEndDate(dayjs().add(range, unit as any));
                             }}
+                            onOpenTaskAttributeConfig={() => setTaskAttributeDrawerOpen(true)}
                             onBack={handleBack}
                             lineHeightMode={lineHeightMode}
                             customLineHeight={customLineHeight}
@@ -778,6 +786,12 @@ export const ProjectDetail: React.FC = () => {
                     />
                 </div>
             </Card>
+
+            <TaskAttributeConfigDrawer
+                open={taskAttributeDrawerOpen}
+                projectId={project.id}
+                onClose={() => setTaskAttributeDrawerOpen(false)}
+            />
         </div>
     );
 };

@@ -51,3 +51,23 @@ export interface UserQueryParams {
   phone?: string;
   isActive?: boolean;
 }
+
+/**
+ * 用户选项数据类型 (用于下拉选择)
+ */
+export interface UserOption {
+  id: string;
+  username: string;
+  fullName: string;
+  isActive: boolean;
+}
+
+/**
+ * 用户选项查询参数 (用于下拉选择)
+ */
+export interface UserOptionQueryParams {
+  page?: number;
+  pageSize?: number;
+  keyword?: string;
+  isActive?: boolean;
+}

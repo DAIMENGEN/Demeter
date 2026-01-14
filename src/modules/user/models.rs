@@ -70,3 +70,24 @@ pub struct BatchDeleteUsersParams {
 pub struct ToggleUserStatusParams {
     pub is_active: bool,
 }
+
+/// 用于下拉选择的轻量用户信息
+#[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
+#[serde(rename_all = "camelCase")]
+pub struct UserOption {
+    pub id: Id,
+    pub username: String,
+    pub full_name: String,
+    pub is_active: bool,
+}
+
+/// 用户下拉选项查询参数（支持分页 + keyword 模糊搜索）
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct UserOptionQueryParams {
+    pub page: Option<i64>,
+    pub page_size: Option<i64>,
+    /// 关键字：同时匹配 username 或 full_name
+    pub keyword: Option<String>,
+    pub is_active: Option<bool>,
+}

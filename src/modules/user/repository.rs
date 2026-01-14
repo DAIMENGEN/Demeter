@@ -251,4 +251,50 @@ impl UserRepository {
 
         Ok(user)
     }
+
+    /// 获取用户下拉选项（分页，轻量字段）
+    pub async fn get_user_options(
+        pool: &PgPool,
+        page: i64,
+        page_size: i64,
+        keyword: Option<String>,
+        is_active: Option<bool>,
+    ) -> AppResult<(Vec<crate::modules::user::models::UserOption>, i64)> {
+        use crate::modules::user::models::UserOption;
+
+        let page = if page < 1 { 1 } else { page };
+        let page_size = if page_size < 1 { 10 } else { page_size };
+        let offset = (page - 1) * page_size;
+
+        let mut query = String::from(
+            "SELECT id, username, full_name, is_active FROM users WHERE 1=1",
+        );
+        let mut count_query = String::from("SELECT COUNT(*) FROM users WHERE 1=1");
+
+        if let Some(is_active) = is_active {
+            query.push_str(&format!(" AND is_active = {}", is_active));
+            count_query.push_str(&format!(" AND is_active = {}", is_active));
+        }
+
+        if let Some(keyword) = keyword {
+            // 注意：当前 repo 里其他查询也使用 format 拼接 ILIKE，保持一致；后续建议改为 bind 防 SQL 注入
+            query.push_str(&format!(
+                " AND (username ILIKE '%{0}%' OR full_name ILIKE '%{0}%')",
+                keyword
+            ));
+            count_query.push_str(&format!(
+                " AND (username ILIKE '%{0}%' OR full_name ILIKE '%{0}%')",
+                keyword
+            ));
+        }
+
+        query.push_str(&format!(
+            " ORDER BY create_date_time DESC LIMIT {} OFFSET {}",
+            page_size, offset
+        ));
+
+        let list = sqlx::query_as::<_, UserOption>(&query).fetch_all(pool).await?;
+        let total: (i64,) = sqlx::query_as(&count_query).fetch_one(pool).await?;
+        Ok((list, total.0))
+    }
 }

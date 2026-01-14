@@ -12,6 +12,7 @@ pub fn user_routes(state: AppState) -> Router {
     Router::new()
         .route("/users", get(handlers::get_user_list))
         .route("/users/all", get(handlers::get_all_users))
+        .route("/users/options", get(handlers::get_user_options))
         .route("/users", post(handlers::create_user))
         .route("/users/{id}", get(handlers::get_user_by_id))
         .route("/users/{id}", put(handlers::update_user))

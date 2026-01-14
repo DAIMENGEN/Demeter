@@ -4,7 +4,14 @@
 
 import { get, post, put, del } from "@Webapp/http";
 import type { PageResponse } from "@Webapp/http";
-import type { User, CreateUserParams, UpdateUserParams, UserQueryParams } from "./types";
+import type {
+  User,
+  CreateUserParams,
+  UpdateUserParams,
+  UserQueryParams,
+  UserOptionQueryParams,
+  UserOption
+} from "./types";
 
 /**
  * 用户 API
@@ -72,5 +79,11 @@ export const userApi = {
   toggleUserStatus: (id: string, isActive: boolean) => {
     return put<User>(`/users/${id}/status`, { isActive });
   },
-};
 
+  /**
+   * 获取用户下拉选项（分页，轻量字段）
+   */
+  getUserOptions: (params?: UserOptionQueryParams) => {
+    return get<PageResponse<UserOption>>("/users/options", params);
+  },
+};

@@ -4,7 +4,10 @@ import type {
   Project,
   CreateProjectParams,
   UpdateProjectParams,
-  ProjectQueryParams
+  ProjectQueryParams,
+  TaskAttributeConfig,
+  CreateTaskAttributeConfigParams,
+  UpdateTaskAttributeConfigParams
 } from "./types";
 
 /**
@@ -233,4 +236,76 @@ export const useDeleteProject = () => {
   };
 
   return { deleteProject, loading };
+};
+
+/**
+ * 项目 task 自定义字段配置列表 Hook
+ */
+export const useTaskAttributeConfigs = (projectId: string, enabled = true) => {
+  const [data, setData] = useState<TaskAttributeConfig[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  const fetch = useCallback(async () => {
+    if (!projectId || !enabled) return;
+    setLoading(true);
+    try {
+      const res = await projectApi.getTaskAttributeConfigs(projectId);
+      setData(res.data);
+    } finally {
+      setLoading(false);
+    }
+  }, [projectId, enabled]);
+
+  useEffect(() => {
+    void fetch();
+  }, [fetch]);
+
+  return { data, loading, refetch: fetch };
+};
+
+export const useCreateTaskAttributeConfig = () => {
+  const [loading, setLoading] = useState(false);
+
+  const create = async (projectId: string, data: CreateTaskAttributeConfigParams) => {
+    setLoading(true);
+    try {
+      const res = await projectApi.createTaskAttributeConfig(projectId, data);
+      return res.data;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return { create, loading };
+};
+
+export const useUpdateTaskAttributeConfig = () => {
+  const [loading, setLoading] = useState(false);
+
+  const update = async (projectId: string, id: string, data: UpdateTaskAttributeConfigParams) => {
+    setLoading(true);
+    try {
+      const res = await projectApi.updateTaskAttributeConfig(projectId, id, data);
+      return res.data;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return { update, loading };
+};
+
+export const useDeleteTaskAttributeConfig = () => {
+  const [loading, setLoading] = useState(false);
+
+  const remove = async (projectId: string, id: string) => {
+    setLoading(true);
+    try {
+      await projectApi.deleteTaskAttributeConfig(projectId, id);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return { remove, loading };
 };

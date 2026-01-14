@@ -1,6 +1,12 @@
 import React from "react";
 import {Button, DatePicker, Select, Space, Tooltip} from "antd";
-import {ArrowLeftOutlined, CalendarOutlined, LeftOutlined, RightOutlined} from "@ant-design/icons";
+import {
+    ArrowLeftOutlined,
+    CalendarOutlined,
+    LeftOutlined,
+    RightOutlined,
+    SettingOutlined
+} from "@ant-design/icons";
 import type {Dayjs} from "dayjs";
 import {DisplayConfigPopover} from "./display-config-popover";
 
@@ -55,6 +61,7 @@ export interface GanttToolbarProps {
     onShiftRight: () => void;
     onJumpToToday: () => void;
     onBack: () => void;
+    onOpenTaskAttributeConfig: () => void;
 
     // 显示配置相关
     lineHeightMode: "small" | "medium" | "large" | "custom";
@@ -87,6 +94,7 @@ export const GanttToolbar: React.FC<GanttToolbarProps> = ({
     onShiftRight,
     onJumpToToday,
     onBack,
+    onOpenTaskAttributeConfig,
     lineHeightMode,
     customLineHeight,
     slotMinWidthMode,
@@ -188,6 +196,13 @@ export const GanttToolbar: React.FC<GanttToolbarProps> = ({
                         onCustomSlotMinWidthChange={onCustomSlotMinWidthChange}
                         onVisibleColumnsChange={onVisibleColumnsChange}
                     />
+                    <Tooltip title="配置任务自定义字段">
+                        <Button
+                            type="primary"
+                            icon={<SettingOutlined/>}
+                            onClick={onOpenTaskAttributeConfig}
+                        />
+                    </Tooltip>
                     <Tooltip title="返回项目列表">
                         <Button
                             type="primary"
@@ -200,4 +215,3 @@ export const GanttToolbar: React.FC<GanttToolbarProps> = ({
         </div>
     );
 };
-

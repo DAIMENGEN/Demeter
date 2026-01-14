@@ -94,3 +94,70 @@ export interface BatchDeleteParams {
   ids: string[];
 }
 
+/**
+ * Task attribute config (per-project) - mirrors backend: src/modules/business/project/task/models.rs
+ */
+export type AttributeType = "text" | "number" | "boolean" | "date" | "datetime" | "select" | "user";
+
+export const AttributeTypeLabels: Record<AttributeType, string> = {
+  text: "文本",
+  number: "数字",
+  boolean: "布尔",
+  date: "日期",
+  datetime: "日期时间",
+  select: "选项",
+  user: "人员"
+};
+
+/**
+ * A minimal JSON value type compatible with serde_json::Value.
+ */
+export type JsonValue =
+  | null
+  | boolean
+  | number
+  | string
+  | JsonValue[]
+  | { [key: string]: JsonValue };
+
+export interface TaskAttributeConfig {
+  id: string;
+  projectId: string;
+  attributeName: string;
+  attributeLabel: string;
+  attributeType: AttributeType | string;
+  isRequired: boolean;
+  defaultValue: string | null;
+  options: JsonValue | null;
+  valueColorMap: JsonValue | null;
+  order: number | null;
+  creatorId: string;
+  updaterId: string | null;
+  createDateTime: string;
+  updateDateTime: string | null;
+}
+
+export interface CreateTaskAttributeConfigParams {
+  attributeName: string;
+  attributeLabel: string;
+  /** backend is String; we restrict to enum for UI */
+  attributeType: AttributeType;
+  isRequired: boolean;
+  defaultValue?: string | null;
+  options?: JsonValue | null;
+  valueColorMap?: JsonValue | null;
+  order?: number | null;
+}
+
+export interface UpdateTaskAttributeConfigParams {
+  attributeLabel?: string;
+  isRequired?: boolean;
+  defaultValue?: string | null;
+  options?: JsonValue | null;
+  valueColorMap?: JsonValue | null;
+  order?: number | null;
+}
+
+export interface BatchDeleteTaskAttributeConfigsParams {
+  ids: string[];
+}

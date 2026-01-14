@@ -18,7 +18,9 @@ impl TaskRepository {
     ) -> AppResult<Vec<TaskAttributeConfig>> {
         let configs = sqlx::query_as::<_, TaskAttributeConfig>(
             r#"SELECT id, project_id, attribute_name, attribute_label, attribute_type,
-                      is_required, default_value, options, value_color_map,
+                      is_required, default_value,
+                      COALESCE(options, 'null'::jsonb) AS options,
+                      COALESCE(value_color_map, 'null'::jsonb) AS value_color_map,
                       "order", creator_id, updater_id, create_date_time, update_date_time
                FROM project_task_attribute_configs
                WHERE project_id = $1
@@ -38,7 +40,9 @@ impl TaskRepository {
     ) -> AppResult<Option<TaskAttributeConfig>> {
         let config = sqlx::query_as::<_, TaskAttributeConfig>(
             r#"SELECT id, project_id, attribute_name, attribute_label, attribute_type,
-                      is_required, default_value, options, value_color_map,
+                      is_required, default_value,
+                      COALESCE(options, 'null'::jsonb) AS options,
+                      COALESCE(value_color_map, 'null'::jsonb) AS value_color_map,
                       "order", creator_id, updater_id, create_date_time, update_date_time
                FROM project_task_attribute_configs
                WHERE id = $1"#
@@ -64,7 +68,9 @@ impl TaskRepository {
                 is_required, default_value, options, value_color_map, "order", creator_id, create_date_time)
                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, CURRENT_TIMESTAMP)
                RETURNING id, project_id, attribute_name, attribute_label, attribute_type,
-                         is_required, default_value, options, value_color_map,
+                         is_required, default_value,
+                         COALESCE(options, 'null'::jsonb) AS options,
+                         COALESCE(value_color_map, 'null'::jsonb) AS value_color_map,
                          "order", creator_id, updater_id, create_date_time, update_date_time"#
         )
         .bind(id)
@@ -103,7 +109,9 @@ impl TaskRepository {
                    update_date_time = CURRENT_TIMESTAMP
                WHERE id = $8
                RETURNING id, project_id, attribute_name, attribute_label, attribute_type,
-                         is_required, default_value, options, value_color_map,
+                         is_required, default_value,
+                         COALESCE(options, 'null'::jsonb) AS options,
+                         COALESCE(value_color_map, 'null'::jsonb) AS value_color_map,
                          "order", creator_id, updater_id, create_date_time, update_date_time"#
         )
         .bind(&params.attribute_label)

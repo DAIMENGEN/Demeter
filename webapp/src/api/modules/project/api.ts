@@ -4,7 +4,11 @@ import type {
   CreateProjectParams,
   UpdateProjectParams,
   ProjectQueryParams,
-  BatchDeleteParams
+  BatchDeleteParams,
+  TaskAttributeConfig,
+  CreateTaskAttributeConfigParams,
+  UpdateTaskAttributeConfigParams,
+  BatchDeleteTaskAttributeConfigsParams
 } from "./types";
 
 /**
@@ -79,5 +83,47 @@ export const projectApi = {
    */
   getMyAllProjects: (params?: Omit<ProjectQueryParams, "page" | "pageSize">) => {
     return get<Project[]>("/projects/my/all", { params });
+  },
+
+  /**
+   * 获取项目 task 自定义字段配置
+   */
+  getTaskAttributeConfigs: (projectId: string) => {
+    return get<TaskAttributeConfig[]>(`/projects/${projectId}/task-attribute-configs`);
+  },
+
+  /**
+   * 创建项目 task 自定义字段配置
+   */
+  createTaskAttributeConfig: (projectId: string, data: CreateTaskAttributeConfigParams) => {
+    return post<TaskAttributeConfig>(`/projects/${projectId}/task-attribute-configs`, data);
+  },
+
+  /**
+   * 更新 task 自定义字段配置
+   */
+  updateTaskAttributeConfig: (
+    projectId: string,
+    id: string,
+    data: UpdateTaskAttributeConfigParams
+  ) => {
+    return put<TaskAttributeConfig>(
+      `/projects/${projectId}/task-attribute-configs/${id}`,
+      data
+    );
+  },
+
+  /**
+   * 删除 task 自定义字段配置
+   */
+  deleteTaskAttributeConfig: (projectId: string, id: string) => {
+    return del(`/projects/${projectId}/task-attribute-configs/${id}`);
+  },
+
+  /**
+   * 批量删除 task 自定义字段配置
+   */
+  batchDeleteTaskAttributeConfigs: (projectId: string, data: BatchDeleteTaskAttributeConfigsParams) => {
+    return post(`/projects/${projectId}/task-attribute-configs/batch-delete`, data);
   }
 };

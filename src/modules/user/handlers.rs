@@ -125,3 +125,26 @@ pub async fn toggle_user_status(
         .ok_or(AppError::NotFound(format!("用户不存在: {}", id)))?;
     Ok(Json(ApiResponse::success(user)))
 }
+
+/// 获取用户下拉选项（分页，轻量字段）
+pub async fn get_user_options(
+    State(state): State<AppState>,
+    Query(params): Query<crate::modules::user::models::UserOptionQueryParams>,
+) -> AppResult<Json<ApiResponse<PageResponse<crate::modules::user::models::UserOption>>>> {
+    let page = params.page.unwrap_or(1);
+    let page_size = params.page_size.unwrap_or(20);
+
+    let (list, total) = UserRepository::get_user_options(
+        &state.pool,
+        page,
+        page_size,
+        params.keyword,
+        params.is_active,
+    )
+    .await?;
+
+    Ok(Json(ApiResponse::success(PageResponse {
+        list,
+        total,
+    })))
+}

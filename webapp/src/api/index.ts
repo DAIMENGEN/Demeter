@@ -11,3 +11,5 @@ export * from "./modules/auth";
 // 用户模块
 export * from "./modules/user";
 
+// 项目模块
+export * from "./modules/project";

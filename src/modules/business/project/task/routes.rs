@@ -10,29 +10,29 @@ use axum::{
 /// 任务路由配置
 pub fn task_routes(state: AppState) -> Router {
     Router::new()
-        // 任务属性配置路由
+        // 任务属性配置路由（canonical）
         .route(
-            "/projects/{project_id}/task-attributes",
+            "/projects/{project_id}/task-attribute-configs",
             get(handlers::get_attribute_configs),
         )
         .route(
-            "/projects/{project_id}/task-attributes",
+            "/projects/{project_id}/task-attribute-configs",
             post(handlers::create_attribute_config),
         )
         .route(
-            "/projects/{project_id}/task-attributes/{config_id}",
+            "/projects/{project_id}/task-attribute-configs/{config_id}",
             get(handlers::get_attribute_config_by_id),
         )
         .route(
-            "/projects/{project_id}/task-attributes/{config_id}",
+            "/projects/{project_id}/task-attribute-configs/{config_id}",
             put(handlers::update_attribute_config),
         )
         .route(
-            "/projects/{project_id}/task-attributes/{config_id}",
+            "/projects/{project_id}/task-attribute-configs/{config_id}",
             delete(handlers::delete_attribute_config),
         )
         .route(
-            "/projects/{project_id}/task-attributes/batch-delete",
+            "/projects/{project_id}/task-attribute-configs/batch-delete",
             post(handlers::batch_delete_attribute_configs),
         )
         // 任务路由
