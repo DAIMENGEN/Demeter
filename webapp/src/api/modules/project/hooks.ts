@@ -7,7 +7,11 @@ import type {
   ProjectQueryParams,
   TaskAttributeConfig,
   CreateTaskAttributeConfigParams,
-  UpdateTaskAttributeConfigParams
+  UpdateTaskAttributeConfigParams,
+  Task,
+  CreateTaskParams,
+  UpdateTaskParams,
+  ReorderTasksParams
 } from "./types";
 
 /**
@@ -308,4 +312,85 @@ export const useDeleteTaskAttributeConfig = () => {
   };
 
   return { remove, loading };
+};
+
+/**
+ * 项目 tasks 列表 Hook
+ */
+export const useTasks = (projectId: string, enabled = true) => {
+  const [data, setData] = useState<Task[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  const fetch = useCallback(async () => {
+    if (!projectId || !enabled) return;
+    setLoading(true);
+    try {
+      const res = await projectApi.getTasks(projectId);
+      setData(res.data);
+    } finally {
+      setLoading(false);
+    }
+  }, [projectId, enabled]);
+
+  useEffect(() => {
+    void fetch();
+  }, [fetch]);
+
+  return { data, loading, refetch: fetch };
+};
+
+/**
+ * 创建 task Hook
+ */
+export const useCreateTask = () => {
+  const [loading, setLoading] = useState(false);
+
+  const create = async (projectId: string, data: CreateTaskParams) => {
+    setLoading(true);
+    try {
+      const res = await projectApi.createTask(projectId, data);
+      return res.data;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return { create, loading };
+};
+
+/**
+ * 更新 task Hook
+ */
+export const useUpdateTask = () => {
+  const [loading, setLoading] = useState(false);
+
+  const update = async (projectId: string, taskId: string, data: UpdateTaskParams) => {
+    setLoading(true);
+    try {
+      const res = await projectApi.updateTask(projectId, taskId, data);
+      return res.data;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return { update, loading };
+};
+
+/**
+ * 重排 tasks Hook（同一 parentId 下）
+ */
+export const useReorderTasks = () => {
+  const [loading, setLoading] = useState(false);
+
+  const reorder = async (projectId: string, data: ReorderTasksParams) => {
+    setLoading(true);
+    try {
+      await projectApi.reorderTasks(projectId, data);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return { reorder, loading };
 };

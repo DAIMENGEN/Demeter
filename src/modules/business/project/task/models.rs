@@ -39,6 +39,31 @@ impl AttributeType {
     }
 }
 
+/// 任务类型（业务枚举）
+///
+/// 说明：数据库存储为 INT，API 传输也使用数字；该枚举用于代码语义化。
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[repr(i32)]
+pub enum TaskType {
+    /// 未指定/默认
+    Unknown = 0,
+    Default = 1,
+    Milestone = 2,
+    Checkpoint = 3,
+}
+
+impl TaskType {
+    pub fn from_i32(v: i32) -> Self {
+        match v {
+            _ => TaskType::Unknown,
+        }
+    }
+
+    pub fn as_i32(self) -> i32 {
+        self as i32
+    }
+}
+
 /// 任务属性配置数据模型
 #[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
 #[serde(rename_all = "camelCase")]
@@ -73,6 +98,9 @@ pub struct Task {
     pub order: Option<f64>,
     #[sqlx(json)]
     pub custom_attributes: serde_json::Value,
+    pub start_date_time: chrono::NaiveDateTime,
+    pub end_date_time: chrono::NaiveDateTime,
+    pub task_type: i32,
     pub creator_id: Id,
     pub updater_id: Option<Id>,
     pub create_date_time: chrono::NaiveDateTime,
@@ -112,6 +140,9 @@ pub struct CreateTaskParams {
     pub task_name: String,
     pub parent_id: Option<Id>,
     pub order: Option<f64>,
+    pub start_date_time: chrono::NaiveDateTime,
+    pub end_date_time: chrono::NaiveDateTime,
+    pub task_type: i32,
     pub custom_attributes: Option<serde_json::Value>,
 }
 
@@ -122,6 +153,9 @@ pub struct UpdateTaskParams {
     pub task_name: Option<String>,
     pub parent_id: Option<Id>,
     pub order: Option<f64>,
+    pub start_date_time: Option<chrono::NaiveDateTime>,
+    pub end_date_time: Option<chrono::NaiveDateTime>,
+    pub task_type: Option<i32>,
     pub custom_attributes: Option<serde_json::Value>,
 }
 
@@ -145,4 +179,12 @@ pub struct BatchDeleteTasksParams {
 #[derive(Debug, Deserialize)]
 pub struct BatchDeleteTaskAttributeConfigsParams {
     pub ids: Vec<Id>,
+}
+
+/// 批量重排 tasks（同一 parentId 下），将 order 归一为 1..N
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ReorderTasksParams {
+    /// null 表示重排根任务
+    pub parent_id: Option<Id>,
 }

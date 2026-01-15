@@ -19,6 +19,9 @@ Task 模块是 Project 模块的子模块，为项目提供任务管理功能。
 - `parentId`: 父任务ID（支持任务层级结构）
 - `projectId`: 所属项目ID
 - `order`: 排序字段
+- `startDateTime`: 开始时间
+- `endDateTime`: 结束时间
+- `taskType`: 任务类型（整型枚举）
 - `creatorId`: 创建者ID
 - `updaterId`: 更新者ID
 - `createDateTime`: 创建时间
@@ -120,6 +123,9 @@ Content-Type: application/json
   "taskName": "完成需求分析",
   "parentId": null,
   "order": 1.0,
+  "startDateTime": "2026-01-15T09:00:00",
+  "endDateTime": "2026-01-15T18:00:00",
+  "taskType": 1,
   "customAttributes": {
     "priority": "高",
     "estimatedHours": 8,

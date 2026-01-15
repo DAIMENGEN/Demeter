@@ -4,6 +4,7 @@ import {
     ArrowLeftOutlined,
     CalendarOutlined,
     LeftOutlined,
+    PlusOutlined,
     RightOutlined,
     SettingOutlined
 } from "@ant-design/icons";
@@ -62,6 +63,7 @@ export interface GanttToolbarProps {
     onJumpToToday: () => void;
     onBack: () => void;
     onOpenTaskAttributeConfig: () => void;
+    onOpenCreateTask: () => void;
 
     // 显示配置相关
     lineHeightMode: "small" | "medium" | "large" | "custom";
@@ -95,6 +97,7 @@ export const GanttToolbar: React.FC<GanttToolbarProps> = ({
     onJumpToToday,
     onBack,
     onOpenTaskAttributeConfig,
+    onOpenCreateTask,
     lineHeightMode,
     customLineHeight,
     slotMinWidthMode,
@@ -196,6 +199,13 @@ export const GanttToolbar: React.FC<GanttToolbarProps> = ({
                         onCustomSlotMinWidthChange={onCustomSlotMinWidthChange}
                         onVisibleColumnsChange={onVisibleColumnsChange}
                     />
+                    <Tooltip title="创建任务">
+                        <Button
+                            type="primary"
+                            icon={<PlusOutlined/>}
+                            onClick={onOpenCreateTask}
+                        />
+                    </Tooltip>
                     <Tooltip title="配置任务自定义字段">
                         <Button
                             type="primary"

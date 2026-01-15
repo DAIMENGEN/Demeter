@@ -161,3 +161,67 @@ export interface UpdateTaskAttributeConfigParams {
 export interface BatchDeleteTaskAttributeConfigsParams {
   ids: string[];
 }
+
+/**
+ * Task - mirrors backend: src/modules/business/project/task/models.rs
+ */
+export const TaskType = {
+  UNKNOWN: 0,
+  DEFAULT: 1,
+  MILESTONE: 2,
+  CHECKPOINT: 3
+} as const;
+
+export type TaskType = (typeof TaskType)[keyof typeof TaskType];
+
+export const TaskTypeLabels: Record<TaskType, string> = {
+  [TaskType.UNKNOWN]: "未指定",
+  [TaskType.DEFAULT]: "普通任务",
+  [TaskType.MILESTONE]: "里程碑",
+  [TaskType.CHECKPOINT]: "检查点"
+};
+
+export interface Task {
+  id: string;
+  taskName: string;
+  parentId: string | null;
+  projectId: string;
+  order: number | null;
+  customAttributes: JsonValue;
+  startDateTime: string;
+  endDateTime: string;
+  taskType: number;
+  creatorId: string;
+  updaterId: string | null;
+  createDateTime: string;
+  updateDateTime: string | null;
+}
+
+export interface CreateTaskParams {
+  taskName: string;
+  parentId?: string | null;
+  order?: number | null;
+  startDateTime: string;
+  endDateTime: string;
+  taskType: number;
+  customAttributes?: JsonValue | null;
+}
+
+/**
+ * 更新 task 参数
+ * Mirrors backend UpdateTaskParams (all optional)
+ */
+export interface UpdateTaskParams {
+  taskName?: string;
+  parentId?: string | null;
+  order?: number | null;
+  startDateTime?: string;
+  endDateTime?: string;
+  taskType?: number;
+  customAttributes?: JsonValue | null;
+}
+
+export interface ReorderTasksParams {
+  /** null 表示重排根任务 */
+  parentId?: string | null;
+}

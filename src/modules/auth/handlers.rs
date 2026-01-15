@@ -3,7 +3,7 @@ use crate::common::error::{AppError, AppResult};
 use crate::common::jwt::JwtUtil;
 use crate::common::middleware::get_current_user;
 use crate::common::response::ApiResponse;
-use crate::modules::auth::models::{AuthResponse, LoginRequest, RegisterRequest, UserInfo};
+use crate::modules::auth::models::{AuthResponse, LoginRequest, RegisterRequest};
 use crate::modules::auth::repository::AuthRepository;
 use axum::{extract::State, http::StatusCode, response::IntoResponse, Json};
 use cookie::{time::Duration as CookieDuration, Cookie, SameSite};
@@ -11,45 +11,37 @@ use cookie::{time::Duration as CookieDuration, Cookie, SameSite};
 const REFRESH_COOKIE_NAME: &str = "refresh_token";
 const ACCESS_COOKIE_NAME: &str = "access_token";
 
-fn build_refresh_cookie(token: String, max_age_seconds: i64) -> Cookie<'static> {
+const COOKIE_PATH: &str = "/api";
+
+fn build_auth_cookie(name: &'static str, value: String, max_age_seconds: i64) -> Cookie<'static> {
     // 本地开发：Secure=false；生产环境建议通过 env 控制为 true
-    Cookie::build((REFRESH_COOKIE_NAME, token))
+    Cookie::build((name, value))
         .http_only(true)
         .secure(false)
         .same_site(SameSite::Lax)
-        .path("/api/auth")
+        .path(COOKIE_PATH)
         .max_age(CookieDuration::seconds(max_age_seconds))
         .build()
+}
+
+fn clear_auth_cookie(name: &'static str) -> Cookie<'static> {
+    build_auth_cookie(name, "".to_string(), 0)
+}
+
+fn build_refresh_cookie(token: String, max_age_seconds: i64) -> Cookie<'static> {
+    build_auth_cookie(REFRESH_COOKIE_NAME, token, max_age_seconds)
 }
 
 fn clear_refresh_cookie() -> Cookie<'static> {
-    Cookie::build((REFRESH_COOKIE_NAME, ""))
-        .http_only(true)
-        .secure(false)
-        .same_site(SameSite::Lax)
-        .path("/api/auth")
-        .max_age(CookieDuration::seconds(0))
-        .build()
+    clear_auth_cookie(REFRESH_COOKIE_NAME)
 }
 
 fn build_access_cookie(token: String, max_age_seconds: i64) -> Cookie<'static> {
-    Cookie::build((ACCESS_COOKIE_NAME, token))
-        .http_only(true)
-        .secure(false)
-        .same_site(SameSite::Lax)
-        .path("/api")
-        .max_age(CookieDuration::seconds(max_age_seconds))
-        .build()
+    build_auth_cookie(ACCESS_COOKIE_NAME, token, max_age_seconds)
 }
 
 fn clear_access_cookie() -> Cookie<'static> {
-    Cookie::build((ACCESS_COOKIE_NAME, ""))
-        .http_only(true)
-        .secure(false)
-        .same_site(SameSite::Lax)
-        .path("/api")
-        .max_age(CookieDuration::seconds(0))
-        .build()
+    clear_auth_cookie(ACCESS_COOKIE_NAME)
 }
 
 fn extract_refresh_token_from_cookie(headers: &axum::http::HeaderMap) -> AppResult<String> {
@@ -69,6 +61,52 @@ fn extract_refresh_token_from_cookie(headers: &axum::http::HeaderMap) -> AppResu
     }
 
     Err(AppError::Unauthorized("缺少刷新令牌".to_string()))
+}
+
+fn auth_set_cookie_headers(
+    state: &AppState,
+    access_token: String,
+    refresh_token: String,
+) -> axum::http::HeaderMap {
+    use axum::http::{header::SET_COOKIE, HeaderValue};
+    let refresh_cookie =
+        build_refresh_cookie(refresh_token, state.jwt_config.refresh_token_expires_in);
+    let access_cookie = build_access_cookie(access_token, state.jwt_config.access_token_expires_in);
+    let mut headers = axum::http::HeaderMap::new();
+    headers.append(
+        SET_COOKIE,
+        HeaderValue::from_str(&refresh_cookie.to_string())
+            .expect("valid refresh Set-Cookie header value"),
+    );
+    headers.append(
+        SET_COOKIE,
+        HeaderValue::from_str(&access_cookie.to_string())
+            .expect("valid access Set-Cookie header value"),
+    );
+    headers
+}
+
+async fn persist_refresh_token(
+    state: &AppState,
+    user_id: i64,
+    refresh_token: &str,
+) -> AppResult<()> {
+    let expires_at = chrono::Utc::now().naive_utc()
+        + chrono::Duration::seconds(state.jwt_config.refresh_token_expires_in);
+    let refresh_token_id = state
+        .generate_id()
+        .map_err(|e| AppError::InternalError(format!("生成刷新令牌ID失败: {}", e)))?;
+
+    AuthRepository::save_refresh_token(
+        &state.pool,
+        refresh_token_id,
+        user_id,
+        refresh_token,
+        expires_at,
+    )
+    .await?;
+
+    Ok(())
 }
 
 /// 用户注册
@@ -114,48 +152,20 @@ pub async fn register(
     )
     .await?;
 
-    // 生成令牌
+    // 生成令牌 + 保存刷新令牌 + Set-Cookie
     let access_token =
         JwtUtil::generate_access_token(user.id.into(), &user.username, &state.jwt_config)?;
     let refresh_token =
         JwtUtil::generate_refresh_token(user.id.into(), &user.username, &state.jwt_config)?;
+    persist_refresh_token(&state, user.id.into(), &refresh_token).await?;
 
-    // 保存刷新令牌
-    let expires_at = chrono::Utc::now().naive_utc()
-        + chrono::Duration::seconds(state.jwt_config.refresh_token_expires_in);
-    let refresh_token_id = state
-        .generate_id()
-        .map_err(|e| AppError::InternalError(format!("生成刷新令牌ID失败: {}", e)))?;
-    AuthRepository::save_refresh_token(
-        &state.pool,
-        refresh_token_id,
-        user.id.into(),
-        &refresh_token,
-        expires_at,
-    )
-    .await?;
+    let response = AuthResponse { user: user.into() };
 
-    let response = AuthResponse {
-        user: UserInfo {
-            id: user.id.into(),
-            username: user.username,
-            full_name: user.full_name,
-            email: user.email,
-            phone: user.phone,
-            is_active: user.is_active,
-        },
-    };
-
-    let refresh_cookie =
-        build_refresh_cookie(refresh_token, state.jwt_config.refresh_token_expires_in);
-    let access_cookie = build_access_cookie(access_token, state.jwt_config.access_token_expires_in);
+    let headers = auth_set_cookie_headers(&state, access_token, refresh_token);
 
     Ok((
         StatusCode::CREATED,
-        [
-            (axum::http::header::SET_COOKIE, refresh_cookie.to_string()),
-            (axum::http::header::SET_COOKIE, access_cookie.to_string()),
-        ],
+        headers,
         Json(ApiResponse::success(response)),
     ))
 }
@@ -193,49 +203,18 @@ pub async fn login(
         return Err(AppError::Unauthorized("用户名或密码错误".to_string()));
     }
 
-    // 生成令牌
+    // 生成令牌 + 保存刷新令牌 + Set-Cookie
     let access_token =
         JwtUtil::generate_access_token(user.id.into(), &user.username, &state.jwt_config)?;
     let refresh_token =
         JwtUtil::generate_refresh_token(user.id.into(), &user.username, &state.jwt_config)?;
+    persist_refresh_token(&state, user.id.into(), &refresh_token).await?;
 
-    // 保存刷新令牌
-    let expires_at = chrono::Utc::now().naive_utc()
-        + chrono::Duration::seconds(state.jwt_config.refresh_token_expires_in);
-    let refresh_token_id = state
-        .generate_id()
-        .map_err(|e| AppError::InternalError(format!("生成刷新令牌ID失败: {}", e)))?;
-    AuthRepository::save_refresh_token(
-        &state.pool,
-        refresh_token_id,
-        user.id.into(),
-        &refresh_token,
-        expires_at,
-    )
-    .await?;
+    let response = AuthResponse { user: user.into() };
 
-    let response = AuthResponse {
-        user: UserInfo {
-            id: user.id.into(),
-            username: user.username,
-            full_name: user.full_name,
-            email: user.email,
-            phone: user.phone,
-            is_active: user.is_active,
-        },
-    };
+    let headers = auth_set_cookie_headers(&state, access_token, refresh_token);
 
-    let refresh_cookie =
-        build_refresh_cookie(refresh_token, state.jwt_config.refresh_token_expires_in);
-    let access_cookie = build_access_cookie(access_token, state.jwt_config.access_token_expires_in);
-
-    Ok((
-        [
-            (axum::http::header::SET_COOKIE, refresh_cookie.to_string()),
-            (axum::http::header::SET_COOKIE, access_cookie.to_string()),
-        ],
-        Json(ApiResponse::success(response)),
-    ))
+    Ok((headers, Json(ApiResponse::success(response))))
 }
 
 /// 刷新令牌
@@ -273,35 +252,12 @@ pub async fn refresh_token(
     AuthRepository::delete_refresh_token(&state.pool, &refresh_token).await?;
 
     // 保存新的刷新令牌
-    let expires_at = chrono::Utc::now().naive_utc()
-        + chrono::Duration::seconds(state.jwt_config.refresh_token_expires_in);
-    let refresh_token_id = state
-        .generate_id()
-        .map_err(|e| AppError::InternalError(format!("生成刷新令牌ID失败: {}", e)))?;
-    AuthRepository::save_refresh_token(
-        &state.pool,
-        refresh_token_id,
-        user.id.into(),
-        &new_refresh_token,
-        expires_at,
-    )
-    .await?;
+    persist_refresh_token(&state, user.id.into(), &new_refresh_token).await?;
 
-    let response = AuthResponse {
-        user,
-    };
+    let response = AuthResponse { user };
+    let headers = auth_set_cookie_headers(&state, new_access_token, new_refresh_token);
 
-    let refresh_cookie =
-        build_refresh_cookie(new_refresh_token, state.jwt_config.refresh_token_expires_in);
-    let access_cookie = build_access_cookie(new_access_token, state.jwt_config.access_token_expires_in);
-
-    Ok((
-        [
-            (axum::http::header::SET_COOKIE, refresh_cookie.to_string()),
-            (axum::http::header::SET_COOKIE, access_cookie.to_string()),
-        ],
-        Json(ApiResponse::success(response)),
-    ))
+    Ok((headers, Json(ApiResponse::success(response))))
 }
 
 /// 退出登录
@@ -310,20 +266,35 @@ pub async fn logout(
     request: axum::extract::Request,
 ) -> AppResult<impl IntoResponse> {
     // 有 cookie 就删 DB 记录；没有也允许登出（幂等）
-    if let Ok(refresh_token) = extract_refresh_token_from_cookie(request.headers()) {
-        let _ = AuthRepository::delete_refresh_token(&state.pool, &refresh_token).await;
+    match extract_refresh_token_from_cookie(request.headers()) {
+        Ok(refresh_token) => {
+            let _ = AuthRepository::delete_refresh_token(&state.pool, &refresh_token).await;
+        }
+        Err(_) => {
+            // 只打印是否存在 Cookie header，避免泄漏敏感信息
+            tracing::debug!(
+                has_cookie_header = request.headers().contains_key(axum::http::header::COOKIE),
+                "logout request missing refresh_token cookie"
+            );
+        }
     }
 
     let refresh_cookie = clear_refresh_cookie();
     let access_cookie = clear_access_cookie();
 
-    Ok((
-        [
-            (axum::http::header::SET_COOKIE, refresh_cookie.to_string()),
-            (axum::http::header::SET_COOKIE, access_cookie.to_string()),
-        ],
-        Json(ApiResponse::success(())),
-    ))
+    let mut headers = axum::http::HeaderMap::new();
+    headers.append(
+        axum::http::header::SET_COOKIE,
+        axum::http::HeaderValue::from_str(&refresh_cookie.to_string())
+            .expect("valid refresh Set-Cookie header value"),
+    );
+    headers.append(
+        axum::http::header::SET_COOKIE,
+        axum::http::HeaderValue::from_str(&access_cookie.to_string())
+            .expect("valid access Set-Cookie header value"),
+    );
+
+    Ok((headers, Json(ApiResponse::success(()))))
 }
 
 /// 会话检查（纯 cookie 鉴权下用于前端判断是否仍登录）

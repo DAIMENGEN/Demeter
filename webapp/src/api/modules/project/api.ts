@@ -8,7 +8,11 @@ import type {
   TaskAttributeConfig,
   CreateTaskAttributeConfigParams,
   UpdateTaskAttributeConfigParams,
-  BatchDeleteTaskAttributeConfigsParams
+  BatchDeleteTaskAttributeConfigsParams,
+  Task,
+  CreateTaskParams,
+  UpdateTaskParams,
+  ReorderTasksParams
 } from "./types";
 
 /**
@@ -83,6 +87,34 @@ export const projectApi = {
    */
   getMyAllProjects: (params?: Omit<ProjectQueryParams, "page" | "pageSize">) => {
     return get<Project[]>("/projects/my/all", { params });
+  },
+
+  /**
+   * 获取项目 tasks
+   */
+  getTasks: (projectId: string) => {
+    return get<Task[]>(`/projects/${projectId}/tasks/all`);
+  },
+
+  /**
+   * 创建项目 task
+   */
+  createTask: (projectId: string, data: CreateTaskParams) => {
+    return post<Task>(`/projects/${projectId}/tasks`, data);
+  },
+
+  /**
+   * 更新项目 task
+   */
+  updateTask: (projectId: string, taskId: string, data: UpdateTaskParams) => {
+    return put<Task>(`/projects/${projectId}/tasks/${taskId}`, data);
+  },
+
+  /**
+   * 重排项目 tasks（同一 parentId 下），将 order 归一为 1..N
+   */
+  reorderTasks: (projectId: string, data: ReorderTasksParams) => {
+    return post<void>(`/projects/${projectId}/tasks/reorder`, data);
   },
 
   /**

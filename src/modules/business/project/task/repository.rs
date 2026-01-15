@@ -184,8 +184,9 @@ impl TaskRepository {
 
         let query = format!(
             r#"SELECT id, task_name, parent_id, project_id, "order",
-                      custom_attributes, creator_id, updater_id,
-                      create_date_time, update_date_time
+                      custom_attributes,
+                      start_date_time, end_date_time, task_type,
+                      creator_id, updater_id, create_date_time, update_date_time
                FROM project_tasks
                {}
                ORDER BY "order" ASC NULLS LAST, create_date_time DESC
@@ -244,8 +245,9 @@ impl TaskRepository {
 
         let query = format!(
             r#"SELECT id, task_name, parent_id, project_id, "order",
-                      custom_attributes, creator_id, updater_id,
-                      create_date_time, update_date_time
+                      custom_attributes,
+                      start_date_time, end_date_time, task_type,
+                      creator_id, updater_id, create_date_time, update_date_time
                FROM project_tasks
                {}
                ORDER BY "order" ASC NULLS LAST, create_date_time DESC"#,
@@ -272,6 +274,7 @@ impl TaskRepository {
         let task = sqlx::query_as::<_, Task>(
             r#"SELECT id, task_name, parent_id, project_id, "order",
                       custom_attributes,
+                      start_date_time, end_date_time, task_type,
                       creator_id, updater_id, create_date_time, update_date_time
                FROM project_tasks
                WHERE id = $1"#,
@@ -295,10 +298,15 @@ impl TaskRepository {
 
         let task = sqlx::query_as::<_, Task>(
             r#"INSERT INTO project_tasks
-               (id, task_name, parent_id, project_id, "order", custom_attributes, creator_id, create_date_time)
-               VALUES ($1, $2, $3, $4, $5, $6, $7, CURRENT_TIMESTAMP)
+               (id, task_name, parent_id, project_id, "order", custom_attributes,
+                start_date_time, end_date_time, task_type,
+                creator_id, create_date_time)
+               VALUES ($1, $2, $3, $4, $5, $6,
+                       $7, $8, $9,
+                       $10, CURRENT_TIMESTAMP)
                RETURNING id, task_name, parent_id, project_id, "order",
                          custom_attributes,
+                         start_date_time, end_date_time, task_type,
                          creator_id, updater_id, create_date_time, update_date_time"#,
         )
         .bind(id)
@@ -307,6 +315,9 @@ impl TaskRepository {
         .bind(project_id)
         .bind(params.order)
         .bind(&custom_attrs)
+        .bind(params.start_date_time)
+        .bind(params.end_date_time)
+        .bind(params.task_type)
         .bind(creator_id)
         .fetch_one(pool)
         .await?;
@@ -326,17 +337,24 @@ impl TaskRepository {
                SET task_name = COALESCE($1, task_name),
                    parent_id = COALESCE($2, parent_id),
                    "order" = COALESCE($3, "order"),
-                   custom_attributes = COALESCE($4, custom_attributes),
-                   updater_id = $5,
+                   start_date_time = COALESCE($4, start_date_time),
+                   end_date_time = COALESCE($5, end_date_time),
+                   task_type = COALESCE($6, task_type),
+                   custom_attributes = COALESCE($7, custom_attributes),
+                   updater_id = $8,
                    update_date_time = CURRENT_TIMESTAMP
-               WHERE id = $6
+               WHERE id = $9
                RETURNING id, task_name, parent_id, project_id, "order",
                          custom_attributes,
+                         start_date_time, end_date_time, task_type,
                          creator_id, updater_id, create_date_time, update_date_time"#,
         )
         .bind(&params.task_name)
         .bind(params.parent_id)
         .bind(params.order)
+        .bind(params.start_date_time)
+        .bind(params.end_date_time)
+        .bind(params.task_type)
         .bind(&params.custom_attributes)
         .bind(updater_id)
         .bind(task_id)
@@ -365,5 +383,57 @@ impl TaskRepository {
 
         Ok(())
     }
-}
 
+    /// 将指定 project + parent_id 下的 tasks 的 order 归一为 1..N（整数，存为 f64）
+    pub async fn reorder_tasks(
+        pool: &PgPool,
+        project_id: i64,
+        parent_id: Option<i64>,
+        updater_id: i64,
+    ) -> AppResult<()> {
+        let mut tx = pool.begin().await?;
+
+        // 按当前 order + create_date_time 的稳定顺序取出同级 tasks
+        let task_ids: Vec<i64> = if let Some(pid) = parent_id {
+            sqlx::query_scalar(
+                r#"SELECT id
+                   FROM project_tasks
+                   WHERE project_id = $1 AND parent_id = $2
+                   ORDER BY "order" ASC NULLS LAST, create_date_time ASC"#,
+            )
+            .bind(project_id)
+            .bind(pid)
+            .fetch_all(&mut *tx)
+            .await?
+        } else {
+            sqlx::query_scalar(
+                r#"SELECT id
+                   FROM project_tasks
+                   WHERE project_id = $1 AND parent_id IS NULL
+                   ORDER BY "order" ASC NULLS LAST, create_date_time ASC"#,
+            )
+            .bind(project_id)
+            .fetch_all(&mut *tx)
+            .await?
+        };
+
+        for (idx, task_id) in task_ids.into_iter().enumerate() {
+            let new_order = (idx as f64) + 1.0;
+            sqlx::query(
+                r#"UPDATE project_tasks
+                   SET "order" = $1,
+                       updater_id = $2,
+                       update_date_time = CURRENT_TIMESTAMP
+                   WHERE id = $3"#,
+            )
+            .bind(new_order)
+            .bind(updater_id)
+            .bind(task_id)
+            .execute(&mut *tx)
+            .await?;
+        }
+
+        tx.commit().await?;
+        Ok(())
+    }
+}

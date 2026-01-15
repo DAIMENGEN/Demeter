@@ -64,6 +64,10 @@ pub fn task_routes(state: AppState) -> Router {
             "/projects/{project_id}/tasks/batch-delete",
             post(handlers::batch_delete_tasks),
         )
+        .route(
+            "/projects/{project_id}/tasks/reorder",
+            post(handlers::reorder_tasks),
+        )
         .layer(middleware::from_fn_with_state(
             state.jwt_config.clone(),
             jwt_auth_middleware,

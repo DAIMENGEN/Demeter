@@ -1,4 +1,4 @@
-import React, {useState, useEffect, useRef} from "react";
+import React, {useState, useEffect, useRef, useMemo} from "react";
 import {useNavigate, useParams} from "react-router-dom";
 import {Button, Card, Result, Spin, Space} from "antd";
 import dayjs from "dayjs";
@@ -8,9 +8,13 @@ import {
     type EventResizeMountArg,
     type Milestone,
     type Resource,
+    type CheckpointMoveMountArg,
+    type EventMoveMountArg,
+    type MilestoneMoveMountArg,
+    type ResourceAreaColumn,
     Schedulant
 } from "schedulant";
-import {useProjectById} from "@Webapp/api/modules/project";
+import {TaskType, useProjectById, useTasks, useUpdateTask, useReorderTasks} from "@Webapp/api/modules/project";
 import isSameOrBefore from "dayjs/plugin/isSameOrBefore";
 import quarterOfYear from "dayjs/plugin/quarterOfYear";
 import weekOfYear from "dayjs/plugin/weekOfYear";
@@ -21,6 +25,7 @@ import {
     GanttLegend,
     ProjectInfo,
     TaskAttributeConfigDrawer,
+    CreateTaskDrawer,
     type ViewType,
     type LegendItem,
     viewUnitMap,
@@ -34,450 +39,85 @@ dayjs.extend(quarterOfYear);
 dayjs.extend(weekOfYear);
 dayjs.extend(weekYear);
 
-
-// 生成模拟资源数据
-const generateMockResources = (): Resource[] => {
-    return [
-        {
-            id: "8968845952632643583",
-            title: "AI Learning Platform",
-            parentId: "4575511461886459807",
-            extendedProps: {
-                order: 1
-            }
-        },
-        {
-            id: "8858562325095899135",
-            title: "Digital Twin Prototype",
-            parentId: "8638818878966724025",
-            extendedProps: {
-                order: 1
-            }
-        },
-        {
-            id: "4577873557542726875",
-            title: "Sensor Data Aggregator",
-            parentId: "6769994271325942397",
-            extendedProps: {
-                order: 1
-            }
-        },
-        {
-            id: "6845329583583619071",
-            title: "Quantum Computing Core",
-            extendedProps: {
-                order: 4
-            }
-        },
-        {
-            id: "8056891328444594143",
-            title: "Ocean Mapping System",
-            parentId: "8638818878966724025",
-            extendedProps: {
-                order: 2
-            }
-        },
-        {
-            id: "6769994271325942397",
-            title: "Predictive Analytics",
-            parentId: "8638818878966724025",
-            extendedProps: {
-                order: 3
-            }
-        },
-        {
-            id: "9061206907937352414",
-            title: "Network Optimization Tool",
-            parentId: "4575511461886459807",
-            extendedProps: {
-                order: 2
-            }
-        },
-        {
-            id: "4520338440843026263",
-            title: "Cloud Service Manager",
-            parentId: "6769994271325942397",
-            extendedProps: {
-                order: 2
-            }
-        },
-        {
-            id: "4611544951484800763",
-            title: "Genomics Data Editor",
-            parentId: "1441150215284248447",
-            extendedProps: {
-                order: 1
-            }
-        },
-        {
-            id: "8646207595906260967",
-            title: "IoT Device Simulator",
-            parentId: "6845329583583619071",
-            extendedProps: {
-                order: 3
-            }
-        },
-        {
-            id: "2155243416680034047",
-            title: "AI Model Trainer",
-            parentId: "7782148686900483486",
-            extendedProps: {
-                order: 1
-            }
-        },
-        {
-            id: "8638818878966724025",
-            title: "Real-Time Data Processor",
-            extendedProps: {
-                order: 2
-            }
-        },
-        {
-            id: "3382749776007979989",
-            title: "Cybersecurity Platform",
-            parentId: "8638818878966724025",
-            extendedProps: {
-                order: 4
-            }
-        },
-        {
-            id: "1583538290775185917",
-            title: "Augmented Reality Engine",
-            parentId: "8638818878966724025",
-            extendedProps: {
-                order: 5
-            }
-        },
-        {
-            id: "9204513212332502410",
-            title: "Blockchain Validator",
-            parentId: "6845329583583619071",
-            extendedProps: {
-                order: 1
-            }
-        },
-        {
-            id: "2304010924003085308",
-            title: "Autonomous Vehicle Software",
-            parentId: "1583538290775185917",
-            extendedProps: {
-                order: 1
-            }
-        },
-        {
-            id: "9194801021046288383",
-            title: "Smart Grid Control",
-            parentId: "6769994271325942397",
-            extendedProps: {
-                order: 3
-            }
-        },
-        {
-            id: "7782148686900483486",
-            title: "AI-Assisted Diagnosis",
-            parentId: "8638818878966724025",
-            extendedProps: {
-                order: 6
-            }
-        },
-        {
-            id: "1441150215284248447",
-            title: "Edge Computing Platform",
-            parentId: "8638818878966724025",
-            extendedProps: {
-                order: 7
-            }
-        },
-        {
-            id: "4575511461886459807",
-            title: "Supply Chain Management",
-            extendedProps: {
-                order: 1
-            }
-        },
-        {
-            id: "8023584809911544803",
-            title: "Virtual Reality Studio",
-            parentId: "6845329583583619071",
-            extendedProps: {
-                order: 2
-            }
-        },
-        {
-            id: "9173832440948347237",
-            title: "AI Voice Assistant",
-            parentId: "8056891328444594143",
-            extendedProps: {
-                order: 1
-            }
-        },
-        {
-            id: "2265117022552053554",
-            title: "Remote Sensing Software",
-            parentId: "1441150215284248447",
-            extendedProps: {
-                order: 2
-            }
-        },
-        {
-            id: "6340927533520682495",
-            title: "Data Analytics Dashboard",
-            parentId: "3382749776007979989",
-            extendedProps: {
-                order: 2
-            }
-        },
-        {
-            id: "8892353061358296541",
-            title: "Energy Management System",
-            parentId: "3382749776007979989",
-            extendedProps: {
-                order: 1
-            }
-        },
-        {
-            id: "3601612769371250673",
-            title: "Cloud Resource Allocator",
-            parentId: "4575511461886459807",
-            extendedProps: {
-                order: 3
-            }
-        }
-    ];
+/**
+ * Backend expects chrono::NaiveDateTime which can't parse ISO strings with milliseconds/timezone.
+ * Use a stable 'YYYY-MM-DDTHH:mm:ss' format.
+ */
+const toNaiveDateTimeString = (value: Date | dayjs.Dayjs) => {
+    const d = dayjs(value);
+    return d.format("YYYY-MM-DDTHH:mm:ss");
 };
 
-// 生成模拟事件数据
-const generateMockEvents = (): Event[] => {
-    return [
-        {
-            id: "8968845952632643583",
-            title: "AI Learning Platform",
-            color: "#FF6F61",
-            start: dayjs("2024-08-01"),
-            end: dayjs("2024-08-15"),
-            resourceId: "8968845952632643583"
-        },
-        {
-            id: "8858562325095899135",
-            title: "Digital Twin Prototype",
-            color: "#6B5B95",
-            start: dayjs("2024-08-02"),
-            end: dayjs("2024-08-08"),
-            resourceId: "8858562325095899135"
-        },
-        {
-            id: "4577873557542726875",
-            title: "Sensor Data Aggregator",
-            color: "#88B04B",
-            start: dayjs("2024-08-16"),
-            end: dayjs("2024-08-25"),
-            resourceId: "4577873557542726875"
-        },
-        {
-            id: "6845329583583619071",
-            title: "Quantum Computing Core",
-            color: "#F7CAC9",
-            start: dayjs("2024-08-10"),
-            end: dayjs("2024-09-20"),
-            resourceId: "6845329583583619071"
-        },
-        {
-            id: "8056891328444594143",
-            title: "Ocean Mapping System",
-            color: "#92A8D1",
-            start: dayjs("2024-08-20"),
-            end: dayjs("2024-09-10"),
-            resourceId: "8056891328444594143"
-        },
-        {
-            id: "6769994271325942397",
-            title: "Predictive Analytics",
-            color: "#955251",
-            start: dayjs("2024-08-01"),
-            end: dayjs("2024-08-20"),
-            resourceId: "6769994271325942397"
-        },
-        {
-            id: "9061206907937352414",
-            title: "Network Optimization Tool",
-            color: "#B565A7",
-            start: dayjs("2024-08-15"),
-            end: dayjs("2024-08-25"),
-            resourceId: "9061206907937352414"
-        },
-        {
-            id: "4520338440843026263",
-            title: "Cloud Service Manager",
-            color: "#009B77",
-            start: dayjs("2024-08-05"),
-            end: dayjs("2024-08-15"),
-            resourceId: "4520338440843026263"
-        },
-        {
-            id: "4611544951484800763",
-            title: "Genomics Data Editor",
-            color: "#DD4124",
-            start: dayjs("2024-08-03"),
-            end: dayjs("2024-08-18"),
-            resourceId: "4611544951484800763"
-        },
-        {
-            id: "8646207595906260967",
-            title: "IoT Device Simulator",
-            color: "#45B8AC",
-            start: dayjs("2024-08-14"),
-            end: dayjs("2024-08-22"),
-            resourceId: "8646207595906260967"
-        },
-        {
-            id: "2155243416680034047",
-            title: "AI Model Trainer",
-            color: "#EFC050",
-            start: dayjs("2024-08-01"),
-            end: dayjs("2024-08-15"),
-            resourceId: "2155243416680034047"
-        },
-        {
-            id: "8638818878966724025",
-            title: "Real-Time Data Processor",
+const safeDayjs = (value: string) => {
+    const d = dayjs(value);
+    return d.isValid() ? d : dayjs();
+};
+
+const tasksToSchedulantModels = (tasks: import("@Webapp/api/modules/project").Task[]) => {
+    const resources: Resource[] = tasks.map((t) => ({
+        id: t.id,
+        title: t.taskName,
+        parentId: t.parentId ?? undefined,
+        extendedProps: {
+            order: t.order ?? undefined
+        }
+    }));
+
+    const events: Event[] = [];
+    const milestones: Milestone[] = [];
+    const checkpoints: Checkpoint[] = [];
+
+    for (const t of tasks) {
+        const start = safeDayjs(t.startDateTime);
+        const end = safeDayjs(t.endDateTime);
+
+        if (t.taskType === TaskType.MILESTONE) {
+            milestones.push({
+                id: t.id,
+                title: t.taskName,
+                time: start,
+                status: "Success",
+                resourceId: t.id
+            });
+            continue;
+        }
+
+        if (t.taskType === TaskType.CHECKPOINT) {
+            checkpoints.push({
+                id: t.id,
+                title: t.taskName,
+                color: "green",
+                time: start,
+                resourceId: t.id
+            });
+            continue;
+        }
+
+        events.push({
+            id: t.id,
+            title: t.taskName,
             color: "rgba(0,0,0,0.57)",
-            start: dayjs("2024-08-10"),
-            end: dayjs("2024-09-30"),
-            resourceId: "8638818878966724025",
-        },
-        {
-            id: "3382749776007979989",
-            title: "Cybersecurity Platform",
-            color: "#5B5EA6",
-            start: dayjs("2024-08-12"),
-            end: dayjs("2024-09-05"),
-            resourceId: "3382749776007979989"
-        },
-        {
-            id: "1583538290775185917",
-            title: "Augmented Reality Engine",
-            color: "#9B2335",
-            start: dayjs("2024-08-10"),
-            end: dayjs("2024-08-30"),
-            resourceId: "1583538290775185917"
-        },
-        {
-            id: "9204513212332502410",
-            title: "Blockchain Validator",
-            color: "#BC243C",
-            start: dayjs("2024-08-15"),
-            end: dayjs("2024-08-22"),
-            resourceId: "9204513212332502410"
-        },
-        {
-            id: "2304010924003085308",
-            title: "Autonomous Vehicle Software",
-            color: "#C3447A",
-            start: dayjs("2024-08-15"),
-            end: dayjs("2024-08-20"),
-            resourceId: "2304010924003085308"
-        },
-        {
-            id: "7782148686900483486",
-            title: "AI-Assisted Diagnosis",
-            color: "#98B4D4",
-            start: dayjs("2024-08-01"),
-            end: dayjs("2024-08-31"),
-            resourceId: "7782148686900483486"
-        },
-        {
-            id: "1441150215284248447",
-            title: "Edge Computing Platform",
-            color: "#FF6F61",
-            start: dayjs("2024-08-05"),
-            end: dayjs("2024-08-12"),
-            resourceId: "1441150215284248447"
-        },
-        {
-            id: "4575511461886459807",
-            title: "Supply Chain Management",
-            color: "#6B5B95",
-            start: dayjs("2024-08-10"),
-            end: dayjs("2024-08-18"),
-            resourceId: "4575511461886459807"
-        },
-        {
-            id: "8023584809911544803",
-            url: "https://fullcalendar.io/",
-            title: "Virtual Reality Studio",
-            color: "#88B04B",
-            start: dayjs("2024-08-15"),
-            end: dayjs("2024-08-20"),
-            textColor: "red",
-            resourceId: "8023584809911544803"
-        },
-        {
-            id: "9173832440948347237",
-            title: "AI Voice Assistant",
-            color: "#F7CAC9",
-            start: dayjs("2024-08-25"),
-            end: dayjs("2024-09-05"),
-            resourceId: "9173832440948347237"
-        },
-        {
-            id: "2265117022552053554",
-            title: "Remote Sensing Software",
-            color: "#92A8D1",
-            start: dayjs("2024-08-02"),
-            end: dayjs("2024-08-10"),
-            resourceId: "2265117022552053554"
-        },
-        {
-            id: "6340927533520682495",
-            title: "Data Analytics Dashboard",
-            color: "#955251",
-            start: dayjs("2024-08-10"),
-            end: dayjs("2024-08-20"),
-            resourceId: "6340927533520682495"
-        },
-        {
-            id: "8892353061358296541",
-            title: "Energy Management System",
-            color: "#B565A7",
-            start: dayjs("2024-08-01"),
-            end: dayjs("2024-08-15"),
-            resourceId: "8892353061358296541"
-        },
-        {
-            id: "3601612769371250673",
-            title: "Cloud Resource Allocator",
-            color: "#009B77",
-            start: dayjs("2024-09-01"),
-            end: dayjs("2024-09-20"),
-            resourceId: "3601612769371250673"
-        }
-    ];
+            start,
+            end: end.isBefore(start) ? start : end,
+            resourceId: t.id
+        });
+    }
+
+    return {resources, events, milestones, checkpoints};
 };
 
-// 生成模拟里程碑
-const generateMockMilestones = (): Milestone[] => {
-    return [
-        {
-            id: "1",
-            title: "milestone1",
-            time: dayjs("2024-08-31"),
-            status: "Success",
-            resourceId: "8638818878966724025",
-        }
-    ];
+const calcFractionalOrder = (prev?: number, next?: number) => {
+    if (prev != null && next != null) return (prev + next) / 2;
+    if (prev != null) return prev + 1;
+    if (next != null) return next - 1;
+    return 0;
 };
 
-// 生成模拟检查点
-const generateMockCheckpoints = (): Checkpoint[] => {
-    return [
-        {
-            id: "1",
-            title: "Test Condition Monitor",
-            color: "green",
-            time: dayjs("2024-09-05"),
-            resourceId: "8056891328444594143",
-        },
-    ];
+type ResourceLaneMovePayload = {
+    // matches schedulant ResourceLaneMoveMountArg shape used by resourceLaneMove callback
+    draggedResourceApi: { getId: () => string };
+    targetResourceApi: { getId: () => string };
+    position: "child" | "before" | "after";
 };
 
 // 图例数据
@@ -494,11 +134,26 @@ const legendItems: LegendItem[] = [
 export const ProjectDetail: React.FC = () => {
     const {id} = useParams<{ id: string }>();
     const navigate = useNavigate();
-    const {data: project, loading, error} = useProjectById(id!);
+    const projectId = id ?? "";
+    const {data: project, loading, error} = useProjectById(projectId);
+
+    const {data: tasks, refetch: refetchTasks} = useTasks(projectId, Boolean(projectId));
+    const {update: updateTask} = useUpdateTask();
+    const {reorder: reorderTasks} = useReorderTasks();
+
+    const parentTaskOptions = useMemo(
+        () =>
+            tasks.map((t) => ({
+                value: t.id,
+                label: t.taskName
+            })),
+        [tasks]
+    );
 
     const [taskAttributeDrawerOpen, setTaskAttributeDrawerOpen] = useState(false);
+    const [createTaskDrawerOpen, setCreateTaskDrawerOpen] = useState(false);
     const [events, setEvents] = useState<Event[]>([]);
-    const [resources, setResources] = useState<Resource[]>(() => generateMockResources());
+    const [resources, setResources] = useState<Resource[]>([]);
     const [milestones, setMilestones] = useState<Milestone[]>([]);
     const [checkpoints, setCheckpoints] = useState<Checkpoint[]>([]);
 
@@ -550,19 +205,21 @@ export const ProjectDetail: React.FC = () => {
     // 使用自定义 Hook 计算动态高度
     const { height: schedulantHeight, containerRef } = useSchedulantHeight(cardHeaderRef, legendRef);
 
-    // 当项目数据加载完成后，初始化事件、里程碑和检查点
+    // 当项目数据加载完成后，初始化甘特图时间范围
     useEffect(() => {
-        if (project) {
-            setEvents(generateMockEvents());
-            setMilestones(generateMockMilestones());
-            setCheckpoints(generateMockCheckpoints());
-
-            // 初始化甘特图时间范围
-            setGanttStartDate(dayjs(project.startDateTime));
-            setGanttEndDate(project.endDateTime ? dayjs(project.endDateTime) : dayjs(project.startDateTime).add(3, "month"));
-        }
+        if (!project) return;
+        setGanttStartDate(dayjs(project.startDateTime));
+        setGanttEndDate(project.endDateTime ? dayjs(project.endDateTime) : dayjs(project.startDateTime).add(3, "month"));
     }, [project]);
 
+    // 当 tasks 加载/刷新时，用真实数据驱动甘特图
+    useEffect(() => {
+        const {resources, events, milestones, checkpoints} = tasksToSchedulantModels(tasks);
+        setResources(resources);
+        setEvents(events);
+        setMilestones(milestones);
+        setCheckpoints(checkpoints);
+    }, [tasks]);
 
     const handleBack = () => {
         navigate("/home/project-management");
@@ -596,6 +253,19 @@ export const ProjectDetail: React.FC = () => {
             newEvents[index] = {...events[index], [field]: date};
             return newEvents;
         });
+
+        // persist to backend (best-effort)
+        void (async () => {
+            try {
+                await updateTask(projectId, targetId, {
+                    [field === "start" ? "startDateTime" : "endDateTime"]: toNaiveDateTimeString(date)
+                });
+                await refetchTasks();
+            } catch {
+                // rollback by re-fetching canonical server state
+                await refetchTasks();
+            }
+        })();
     };
 
     // 加载状态
@@ -640,20 +310,23 @@ export const ProjectDetail: React.FC = () => {
     const displayEndDate = ganttEndDate || endDate;
 
     // 根据配置生成显示的列
-    const resourceAreaColumns = [
-        visibleColumns.title && {
-            field: "title",
-            headerContent: "任务/团队"
-        },
-        visibleColumns.order && {
-            field: "order",
-            headerContent: "排序"
-        },
-        visibleColumns.parentId && {
-            field: "parentId",
-            headerContent: "父级ID"
-        }
-    ].filter((col): col is { field: string; headerContent: string } => Boolean(col));
+    // Schedulant types this prop as ReactNode; we still pass its expected column objects.
+    const resourceAreaColumns = (
+        [
+            visibleColumns.title && {
+                field: "title",
+                headerContent: "任务/团队"
+            },
+            visibleColumns.order && {
+                field: "order",
+                headerContent: "排序"
+            },
+            visibleColumns.parentId && {
+                field: "parentId",
+                headerContent: "父级ID"
+            }
+        ].filter((col): col is {field: string; headerContent: string} => Boolean(col))
+    ) as unknown as ResourceAreaColumn[];
 
 
     return (
@@ -679,6 +352,7 @@ export const ProjectDetail: React.FC = () => {
                                 setGanttEndDate(dayjs().add(range, unit as any));
                             }}
                             onOpenTaskAttributeConfig={() => setTaskAttributeDrawerOpen(true)}
+                            onOpenCreateTask={() => setCreateTaskDrawerOpen(true)}
                             onBack={handleBack}
                             lineHeightMode={lineHeightMode}
                             customLineHeight={customLineHeight}
@@ -714,7 +388,7 @@ export const ProjectDetail: React.FC = () => {
                             selectionColor="rgba(66, 133, 244, 0.08)"
                             resourceAreaWidth={"20%"}
                             resourceAreaColumns={resourceAreaColumns}
-                            milestoneMove={(milestoneMoveMountArg) => {
+                            milestoneMove={(milestoneMoveMountArg: MilestoneMoveMountArg) => {
                                 const {date, milestoneApi} = milestoneMoveMountArg;
                                 const targetId = milestoneApi.getId();
                                 setMilestones(milestones => {
@@ -724,8 +398,22 @@ export const ProjectDetail: React.FC = () => {
                                     newMilestones[index] = {...milestones[index], time: date};
                                     return newMilestones;
                                 });
+
+                                void (async () => {
+                                    try {
+                                        // milestone uses startDateTime; keep end aligned too
+                                        const dt = toNaiveDateTimeString(date);
+                                        await updateTask(projectId, targetId, {
+                                            startDateTime: dt,
+                                            endDateTime: dt
+                                        });
+                                        await refetchTasks();
+                                    } catch {
+                                        await refetchTasks();
+                                    }
+                                })();
                             }}
-                            checkpointMove={(checkpointMoveMountArg) => {
+                            checkpointMove={(checkpointMoveMountArg: CheckpointMoveMountArg) => {
                                 const {date, checkpointApi} = checkpointMoveMountArg;
                                 const targetId = checkpointApi.getId();
                                 setCheckpoints(checkpoints => {
@@ -735,8 +423,21 @@ export const ProjectDetail: React.FC = () => {
                                     newCheckpoints[index] = {...checkpoints[index], time: date};
                                     return newCheckpoints;
                                 });
+
+                                void (async () => {
+                                    try {
+                                        const dt = toNaiveDateTimeString(date);
+                                        await updateTask(projectId, targetId, {
+                                            startDateTime: dt,
+                                            endDateTime: dt
+                                        });
+                                        await refetchTasks();
+                                    } catch {
+                                        await refetchTasks();
+                                    }
+                                })();
                             }}
-                            eventMove={(eventMoveMountArg) => {
+                            eventMove={(eventMoveMountArg: EventMoveMountArg) => {
                                 const {startDate, endDate, eventApi} = eventMoveMountArg;
                                 const targetId = eventApi.getId();
                                 setEvents(events => {
@@ -746,31 +447,96 @@ export const ProjectDetail: React.FC = () => {
                                     newEvents[index] = {...events[index], start: startDate, end: endDate};
                                     return newEvents;
                                 });
+
+                                void (async () => {
+                                    try {
+                                        await updateTask(projectId, targetId, {
+                                            startDateTime: toNaiveDateTimeString(startDate),
+                                            endDateTime: toNaiveDateTimeString(endDate)
+                                        });
+                                        await refetchTasks();
+                                    } catch {
+                                        await refetchTasks();
+                                    }
+                                })();
                             }}
-                            eventResizeStart={(eventResizeMountArg) => handleEventResize(eventResizeMountArg, "start")}
-                            eventResizeEnd={(eventResizeMountArg) => handleEventResize(eventResizeMountArg, "end")}
-                            resourceLaneMove={(resourceLaneMoveArg) => {
+                            eventResizeStart={(eventResizeMountArg: EventResizeMountArg) => handleEventResize(eventResizeMountArg, "start")}
+                            eventResizeEnd={(eventResizeMountArg: EventResizeMountArg) => handleEventResize(eventResizeMountArg, "end")}
+                            resourceLaneMove={(resourceLaneMoveArg: ResourceLaneMovePayload) => {
                                 const {draggedResourceApi, targetResourceApi, position} = resourceLaneMoveArg;
                                 const draggedId = draggedResourceApi.getId();
                                 const targetId = targetResourceApi.getId();
 
-                                setResources(resources => {
+                                // compute new parentId + a best-effort order (fractional order to allow inserts)
+                                const draggedTask = tasks.find((t) => t.id === draggedId);
+                                const targetTask = tasks.find((t) => t.id === targetId);
+                                if (!draggedTask || !targetTask) return;
+
+                                const oldParentId = draggedTask.parentId ?? null;
+                                const newParentId =
+                                    position === "child" ? targetTask.id : (targetTask.parentId ?? null);
+
+                                const siblings = tasks
+                                    .filter((t) => (t.parentId ?? null) === newParentId && t.id !== draggedId)
+                                    .slice()
+                                    .sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+
+                                const targetIndex = siblings.findIndex((t) => t.id === targetId);
+
+                                let newOrder: number | null = draggedTask.order ?? null;
+                                if (position === "before") {
+                                    const next = targetIndex >= 0 ? siblings[targetIndex] : undefined;
+                                    const prev = targetIndex > 0 ? siblings[targetIndex - 1] : undefined;
+                                    newOrder = calcFractionalOrder(prev?.order ?? undefined, next?.order ?? undefined);
+                                } else if (position === "after") {
+                                    const prev = targetIndex >= 0 ? siblings[targetIndex] : siblings[siblings.length - 1];
+                                    const next =
+                                        targetIndex >= 0 && targetIndex + 1 < siblings.length
+                                            ? siblings[targetIndex + 1]
+                                            : undefined;
+                                    newOrder = calcFractionalOrder(prev?.order ?? undefined, next?.order ?? undefined);
+                                } else {
+                                    // child: append to end of new parent's children
+                                    const last = siblings[siblings.length - 1];
+                                    newOrder = (last?.order ?? 0) + 1;
+                                }
+
+                                // optimistic UI update
+                                setResources((resources) => {
                                     const newResources = [...resources];
-                                    const draggedIndex = newResources.findIndex(r => r.id === draggedId);
+                                    const draggedIndex = newResources.findIndex((r) => r.id === draggedId);
                                     if (draggedIndex === -1) return resources;
 
-                                    const draggedResource = {...newResources[draggedIndex]};
-                                    const targetResource = newResources.find(r => r.id === targetId);
+                                    newResources[draggedIndex] = {
+                                        ...newResources[draggedIndex],
+                                        parentId: newParentId ?? undefined,
+                                        extendedProps: {
+                                            ...(newResources[draggedIndex].extendedProps as any),
+                                            order: newOrder ?? undefined
+                                        }
+                                    };
 
-                                    if (position === "child") {
-                                        draggedResource.parentId = targetId;
-                                    } else {
-                                        draggedResource.parentId = targetResource?.parentId;
-                                    }
-
-                                    newResources[draggedIndex] = draggedResource;
                                     return newResources;
                                 });
+
+                                void (async () => {
+                                    try {
+                                        await updateTask(projectId, draggedId, {
+                                            parentId: newParentId,
+                                            order: newOrder
+                                        });
+
+                                        // integer normalize: reorder both source siblings and destination siblings
+                                        await reorderTasks(projectId, {parentId: oldParentId});
+                                        if (newParentId !== oldParentId) {
+                                            await reorderTasks(projectId, {parentId: newParentId});
+                                        }
+
+                                        await refetchTasks();
+                                    } catch {
+                                        await refetchTasks();
+                                    }
+                                })();
                             }}
                         />
                     </div>
@@ -791,6 +557,20 @@ export const ProjectDetail: React.FC = () => {
                 open={taskAttributeDrawerOpen}
                 projectId={project.id}
                 onClose={() => setTaskAttributeDrawerOpen(false)}
+            />
+
+            <CreateTaskDrawer
+                open={createTaskDrawerOpen}
+                projectId={project.id}
+                parentOptions={parentTaskOptions}
+                defaultRange={{
+                    start: displayStartDate.startOf("day"),
+                    end: displayStartDate.startOf("day").add(7, "day")
+                }}
+                onClose={() => setCreateTaskDrawerOpen(false)}
+                onCreated={async () => {
+                    await refetchTasks();
+                }}
             />
         </div>
     );

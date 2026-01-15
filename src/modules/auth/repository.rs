@@ -143,7 +143,7 @@ impl AuthRepository {
     }
 
     /// 删除用户的所有刷新令牌
-    pub async fn delete_user_refresh_tokens(pool: &PgPool, user_id: &str) -> AppResult<()> {
+    pub async fn delete_user_refresh_tokens(pool: &PgPool, user_id: i64) -> AppResult<()> {
         sqlx::query(
             r#"
             DELETE FROM refresh_tokens

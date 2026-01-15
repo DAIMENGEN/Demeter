@@ -1,6 +1,8 @@
 use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
 
+use crate::modules::user::models::User;
+
 /// 注册请求参数
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -36,6 +38,19 @@ pub struct UserInfo {
     pub email: String,
     pub phone: Option<String>,
     pub is_active: bool,
+}
+
+impl From<User> for UserInfo {
+    fn from(user: User) -> Self {
+        Self {
+            id: user.id.into(),
+            username: user.username,
+            full_name: user.full_name,
+            email: user.email,
+            phone: user.phone,
+            is_active: user.is_active,
+        }
+    }
 }
 
 /// 刷新令牌数据库模型

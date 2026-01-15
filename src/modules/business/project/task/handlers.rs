@@ -6,7 +6,7 @@ use crate::common::id::Id;
 use crate::modules::business::project::task::models::{
     BatchDeleteTaskAttributeConfigsParams, BatchDeleteTasksParams, CreateTaskAttributeConfigParams,
     CreateTaskParams, Task, TaskAttributeConfig, TaskQueryParams, UpdateTaskAttributeConfigParams,
-    UpdateTaskParams,
+    UpdateTaskParams, ReorderTasksParams,
 };
 use crate::modules::business::project::task::repository::TaskRepository;
 use axum::{
@@ -188,5 +188,24 @@ pub async fn batch_delete_tasks(
 ) -> AppResult<StatusCode> {
     let ids: Vec<i64> = params.ids.into_iter().map(|id| id.0).collect();
     TaskRepository::batch_delete_tasks(&state.pool, ids).await?;
+    Ok(StatusCode::NO_CONTENT)
+}
+
+/// 重排任务（同一 parentId 下）
+pub async fn reorder_tasks(
+    State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
+    Path(project_id): Path<Id>,
+    Json(params): Json<ReorderTasksParams>,
+) -> AppResult<StatusCode> {
+    let updater_id = claims.sub;
+    TaskRepository::reorder_tasks(
+        &state.pool,
+        project_id.0,
+        params.parent_id.map(|id| id.0),
+        updater_id,
+    )
+    .await?;
+
     Ok(StatusCode::NO_CONTENT)
 }
