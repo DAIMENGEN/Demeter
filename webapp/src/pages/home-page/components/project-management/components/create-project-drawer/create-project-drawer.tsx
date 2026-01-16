@@ -2,8 +2,8 @@ import React from "react";
 import { Drawer, Form, Input, DatePicker, Select, Button, Space } from "antd";
 import dayjs from "dayjs";
 import { useCreateProject } from "@Webapp/api/modules/project";
-import { ProjectStatus, ProjectStatusLabels } from "@Webapp/api/modules/project/types";
-import type { CreateProjectParams } from "@Webapp/api/modules/project/types";
+import { ProjectStatus, ProjectStatusLabels } from "@Webapp/api/modules/project/types.ts";
+import type { CreateProjectParams } from "@Webapp/api/modules/project/types.ts";
 import "./create-project-drawer.scss";
 
 const { TextArea } = Input;

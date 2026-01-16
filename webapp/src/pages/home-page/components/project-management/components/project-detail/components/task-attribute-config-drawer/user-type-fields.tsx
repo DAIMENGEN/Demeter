@@ -1,7 +1,7 @@
 import React from "react";
 import {Button, Form, type FormInstance, Select, type SelectProps, Space} from "antd";
 
-import type {SelectOptionRow} from "./types";
+import type {SelectOptionRow} from "./types.ts";
 
 type UserPicker = {
     options: { label: string; value: string }[];

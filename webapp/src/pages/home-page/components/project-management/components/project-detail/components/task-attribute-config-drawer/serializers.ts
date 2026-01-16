@@ -1,6 +1,6 @@
 import type {JsonValue} from "@Webapp/api/modules/project";
 
-import type {ColorMapRow, SelectOptionRow} from "./types";
+import type {ColorMapRow, SelectOptionRow} from "./types.ts";
 
 export const normalizeOptionsToRows = (options: JsonValue | null): SelectOptionRow[] => {
     if (!options) return [];

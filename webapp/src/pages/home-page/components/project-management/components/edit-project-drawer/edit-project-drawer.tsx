@@ -2,8 +2,8 @@ import React, {useEffect} from "react";
 import {Button, DatePicker, Drawer, Form, Input, Select, Space} from "antd";
 import dayjs from "dayjs";
 import {useUpdateProject} from "@Webapp/api/modules/project";
-import type {Project, UpdateProjectParams} from "@Webapp/api/modules/project/types";
-import {ProjectStatusLabels} from "@Webapp/api/modules/project/types";
+import type {Project, UpdateProjectParams} from "@Webapp/api/modules/project/types.ts";
+import {ProjectStatusLabels} from "@Webapp/api/modules/project/types.ts";
 import "./edit-project-drawer.scss";
 
 const { TextArea } = Input;

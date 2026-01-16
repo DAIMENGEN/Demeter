@@ -29,13 +29,13 @@ import {
 } from "@Webapp/api/modules/project";
 import {userApi, useUserSelectOptionsInfinite} from "@Webapp/api/modules/user";
 
-import {SelectTypeFields} from "./select-type-fields";
-import {UserTypeFields} from "./user-type-fields";
-import {ValueColorMapFields} from "./value-color-map-fields";
-import {DateTypeFields} from "./date-type-fields";
-import {NumberTypeFields} from "./number-type-fields";
-import {BooleanTypeFields} from "./boolean-type-fields";
-import {TextTypeFields} from "./text-type-fields";
+import {SelectTypeFields} from "./select-type-fields.tsx";
+import {UserTypeFields} from "./user-type-fields.tsx";
+import {ValueColorMapFields} from "./value-color-map-fields.tsx";
+import {DateTypeFields} from "./date-type-fields.tsx";
+import {NumberTypeFields} from "./number-type-fields.tsx";
+import {BooleanTypeFields} from "./boolean-type-fields.tsx";
+import {TextTypeFields} from "./text-type-fields.tsx";
 import {
     normalizeColorMapToRows,
     normalizeOptionsToRows,
@@ -43,9 +43,9 @@ import {
     rowsToColorMapJson,
     selectRowsToOptionsJson,
     userRowsToOptionsJson
-} from "./serializers";
-import type {FormValues} from "./types";
-import {useDebouncedUserSearch} from "./use-debounced-user-search";
+} from "./serializers.ts";
+import type {FormValues} from "./types.ts";
+import {useDebouncedUserSearch} from "./use-debounced-user-search.ts";
 
 const {Text} = Typography;
 

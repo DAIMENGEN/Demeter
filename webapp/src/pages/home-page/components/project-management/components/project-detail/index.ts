@@ -1,0 +1,2 @@
+export {ProjectDetail} from "./project-detail.tsx";
+

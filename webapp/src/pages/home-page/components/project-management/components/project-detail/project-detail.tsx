@@ -19,7 +19,7 @@ import isSameOrBefore from "dayjs/plugin/isSameOrBefore";
 import quarterOfYear from "dayjs/plugin/quarterOfYear";
 import weekOfYear from "dayjs/plugin/weekOfYear";
 import weekYear from "dayjs/plugin/weekYear";
-import {useSchedulantHeight} from "./hooks";
+import {useSchedulantHeight} from "./hooks.ts";
 import {
     GanttToolbar,
     GanttLegend,

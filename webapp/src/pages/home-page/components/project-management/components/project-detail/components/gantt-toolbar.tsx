@@ -9,7 +9,7 @@ import {
     SettingOutlined
 } from "@ant-design/icons";
 import type {Dayjs} from "dayjs";
-import {DisplayConfigPopover} from "./display-config-popover";
+import {DisplayConfigPopover} from "./display-config-popover.tsx";
 
 // 视图类型定义
 export type ViewType = "Day" | "Week" | "Month" | "Quarter" | "Year";

@@ -3,7 +3,9 @@ import {LoginPage} from "@Webapp/pages/login-page/login-page.tsx";
 import {RegisterPage} from "@Webapp/pages/register-page/register-page.tsx";
 import {HomePage} from "@Webapp/pages/home-page/home-page.tsx";
 import {HomeContent} from "@Webapp/pages/home-page/components/home-content/home-content.tsx";
-import {Calendar, ProjectManagement, ProjectDetail, AuthSessionGuard} from "@Webapp/components";
+import {AuthSessionGuard} from "@Webapp/components";
+import {ProjectDetail, ProjectManagement} from "@Webapp/pages/home-page/components/project-management";
+import {Calendar} from "@Webapp/pages/home-page/components/calendar";
 
 export const AppRoutes = () => {
     return (
