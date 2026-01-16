@@ -258,22 +258,56 @@ impl ProjectRepository {
         Ok(Some(project))
     }
 
-    /// 删除项目
+    /// 删除项目（级联删除所有任务和任务属性配置）
     pub async fn delete_project(pool: &PgPool, project_id: i64) -> AppResult<bool> {
-        let result = sqlx::query("DELETE FROM projects WHERE id = $1")
+        let mut tx = pool.begin().await?;
+
+        // 1. 删除该项目下的所有任务（包括子任务）
+        sqlx::query("DELETE FROM project_tasks WHERE project_id = $1")
             .bind(project_id)
-            .execute(pool)
+            .execute(&mut *tx)
             .await?;
 
-        Ok(result.rows_affected() > 0)
+        // 2. 删除该项目的所有任务属性配置
+        sqlx::query("DELETE FROM project_task_attribute_configs WHERE project_id = $1")
+            .bind(project_id)
+            .execute(&mut *tx)
+            .await?;
+
+        // 3. 删除项目本身
+        let result = sqlx::query("DELETE FROM projects WHERE id = $1")
+            .bind(project_id)
+            .execute(&mut *tx)
+            .await?;
+
+        let deleted = result.rows_affected() > 0;
+
+        tx.commit().await?;
+
+        Ok(deleted)
     }
 
-    /// 批量删除项目
+    /// 批量删除项目（级联删除所有任务和任务属性配置）
     pub async fn batch_delete_projects(pool: &PgPool, project_ids: Vec<i64>) -> AppResult<u64> {
         if project_ids.is_empty() {
             return Ok(0);
         }
 
+        let mut tx = pool.begin().await?;
+
+        // 1. 删除这些项目下的所有任务（包括子任务）
+        sqlx::query("DELETE FROM project_tasks WHERE project_id = ANY($1)")
+            .bind(&project_ids)
+            .execute(&mut *tx)
+            .await?;
+
+        // 2. 删除这些项目的所有任务属性配置
+        sqlx::query("DELETE FROM project_task_attribute_configs WHERE project_id = ANY($1)")
+            .bind(&project_ids)
+            .execute(&mut *tx)
+            .await?;
+
+        // 3. 删除项目本身
         let placeholders: Vec<String> = (1..=project_ids.len()).map(|i| format!("${}", i)).collect();
         let query_str = format!(
             "DELETE FROM projects WHERE id IN ({})",
@@ -285,7 +319,9 @@ impl ProjectRepository {
             query = query.bind(project_id);
         }
 
-        let result = query.execute(pool).await?;
+        let result = query.execute(&mut *tx).await?;
+
+        tx.commit().await?;
 
         Ok(result.rows_affected())
     }

@@ -1,7 +1,7 @@
 import React, {useState} from "react";
-import {Layout, Modal, Menu} from "antd";
+import {App, Layout, Menu} from "antd";
 import {useNavigate} from "react-router-dom";
-import {ExclamationCircleOutlined, ClockCircleOutlined, FolderOutlined, TeamOutlined} from "@ant-design/icons";
+import {ClockCircleOutlined, ExclamationCircleOutlined, FolderOutlined, TeamOutlined} from "@ant-design/icons";
 import type {Project} from "@Webapp/api/modules/project";
 import {
     useDeleteProject,
@@ -19,6 +19,7 @@ const {Sider, Content} = Layout;
 export type ProjectViewType = "myCreated" | "myAccessible" | "recentlyAccessed";
 
 export const ProjectManagement: React.FC = () => {
+    const {modal} = App.useApp();
     const [selectedView, setSelectedView] = useState<ProjectViewType>("myCreated");
     const [collapsed, setCollapsed] = useState(false);
     const [createDrawerOpen, setCreateDrawerOpen] = useState(false);
@@ -83,7 +84,7 @@ export const ProjectManagement: React.FC = () => {
 
     // 处理删除项目
     const handleDeleteProject = (project: Project) => {
-        Modal.confirm({
+        modal.confirm({
             title: "确认删除",
             icon: <ExclamationCircleOutlined/>,
             content: `确定要删除项目 "${project.projectName}" 吗？此操作无法撤销。`,
