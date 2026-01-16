@@ -111,6 +111,13 @@ export const projectApi = {
   },
 
   /**
+   * 删除项目 task
+   */
+  deleteTask: (projectId: string, taskId: string) => {
+    return del(`/projects/${projectId}/tasks/${taskId}`);
+  },
+
+  /**
    * 重排项目 tasks（同一 parentId 下），将 order 归一为 1..N
    */
   reorderTasks: (projectId: string, data: ReorderTasksParams) => {

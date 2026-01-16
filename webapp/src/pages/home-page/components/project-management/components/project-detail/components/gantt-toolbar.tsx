@@ -10,6 +10,7 @@ import {
 } from "@ant-design/icons";
 import type {Dayjs} from "dayjs";
 import {DisplayConfigPopover} from "./display-config-popover.tsx";
+import type {TaskAttributeConfig} from "@Webapp/api/modules/project";
 
 // 视图类型定义
 export type ViewType = "Day" | "Week" | "Month" | "Quarter" | "Year";
@@ -82,6 +83,14 @@ export interface GanttToolbarProps {
     onSlotMinWidthModeChange: (mode: "small" | "medium" | "large" | "custom") => void;
     onCustomSlotMinWidthChange: (value: number) => void;
     onVisibleColumnsChange: (columns: {title: boolean; order: boolean; parentId: boolean}) => void;
+
+    /**
+     * 用于“任务颜色渲染”的字段来源（只取 select/user 自定义字段）。
+     * 由 ProjectDetail 拉取并传入。
+     */
+    attributeConfigs?: TaskAttributeConfig[];
+    colorRenderAttributeName?: string | null;
+    onColorRenderAttributeNameChange?: (name: string | null) => void;
 }
 
 export const GanttToolbar: React.FC<GanttToolbarProps> = ({
@@ -110,6 +119,9 @@ export const GanttToolbar: React.FC<GanttToolbarProps> = ({
     onSlotMinWidthModeChange,
     onCustomSlotMinWidthChange,
     onVisibleColumnsChange,
+    attributeConfigs,
+    colorRenderAttributeName,
+    onColorRenderAttributeNameChange,
 }) => {
     return (
         <div style={{display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%", flexWrap: "wrap", gap: "12px"}}>
@@ -198,6 +210,9 @@ export const GanttToolbar: React.FC<GanttToolbarProps> = ({
                         onSlotMinWidthModeChange={onSlotMinWidthModeChange}
                         onCustomSlotMinWidthChange={onCustomSlotMinWidthChange}
                         onVisibleColumnsChange={onVisibleColumnsChange}
+                        attributeConfigs={attributeConfigs}
+                        colorRenderAttributeName={colorRenderAttributeName}
+                        onColorRenderAttributeNameChange={onColorRenderAttributeNameChange}
                     />
                     <Tooltip title="创建任务">
                         <Button

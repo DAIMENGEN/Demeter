@@ -1,6 +1,7 @@
-import React, {useState} from "react";
-import {Button, Checkbox, Collapse, InputNumber, Popover, Segmented, Tooltip} from "antd";
+import React, {useMemo, useState} from "react";
+import {Button, Checkbox, Collapse, InputNumber, Popover, Segmented, Select, Tooltip} from "antd";
 import {ControlOutlined} from "@ant-design/icons";
+import type {TaskAttributeConfig} from "@Webapp/api/modules/project";
 
 export interface DisplayConfigPopoverProps {
     lineHeightMode: "small" | "medium" | "large" | "custom";
@@ -19,6 +20,15 @@ export interface DisplayConfigPopoverProps {
     onSlotMinWidthModeChange: (mode: "small" | "medium" | "large" | "custom") => void;
     onCustomSlotMinWidthChange: (value: number) => void;
     onVisibleColumnsChange: (columns: {title: boolean; order: boolean; parentId: boolean}) => void;
+
+    /**
+     * 任务颜色渲染字段来源：仅允许用户自定义字段中的 select/user 类型。
+     * 传入以便在“显示配置”中选择用于上色的字段。
+     */
+    attributeConfigs?: TaskAttributeConfig[];
+    /** 当前用于渲染颜色的 attributeName；null/undefined 表示不启用 */
+    colorRenderAttributeName?: string | null;
+    onColorRenderAttributeNameChange?: (name: string | null) => void;
 }
 
 export const DisplayConfigPopover: React.FC<DisplayConfigPopoverProps> = ({
@@ -34,8 +44,31 @@ export const DisplayConfigPopover: React.FC<DisplayConfigPopoverProps> = ({
     onSlotMinWidthModeChange,
     onCustomSlotMinWidthChange,
     onVisibleColumnsChange,
+    attributeConfigs,
+    colorRenderAttributeName,
+    onColorRenderAttributeNameChange,
 }) => {
     const [open, setOpen] = useState(false);
+
+    type PresetMode = "small" | "medium" | "large" | "custom";
+
+    const colorRenderFieldOptions = useMemo(() => {
+        const configs = attributeConfigs ?? [];
+        const renderable = configs
+            .filter((c) => c.attributeName && (c.attributeType === "select" || c.attributeType === "user"))
+            .slice()
+            .sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+
+        return [
+            {label: "不按字段上色", value: ""},
+            ...renderable.map((c) => ({
+                label: c.attributeLabel || c.attributeName,
+                value: c.attributeName
+            }))
+        ];
+    }, [attributeConfigs]);
+
+    const hideColorRender = !onColorRenderAttributeNameChange;
 
     return (
         <Popover
@@ -45,12 +78,36 @@ export const DisplayConfigPopover: React.FC<DisplayConfigPopoverProps> = ({
             onOpenChange={setOpen}
             content={
                 <div style={{display: "flex", flexDirection: "column", gap: "16px", minWidth: "280px"}}>
+                    {/* 任务颜色渲染 */}
+                    {!hideColorRender && (
+                        <div>
+                            <div style={{marginBottom: "8px", fontWeight: 500, fontSize: "14px"}}>
+                                任务颜色渲染
+                            </div>
+                            <Select
+                                value={colorRenderAttributeName ?? ""}
+                                onChange={(v) => onColorRenderAttributeNameChange(v ? String(v) : null)}
+                                options={colorRenderFieldOptions}
+                                style={{width: "100%"}}
+                                placeholder="选择用于上色的字段"
+                            />
+                            <div style={{marginTop: "4px", fontSize: "12px", color: "#8c8c8c"}}>
+                                仅支持自定义字段中的「人员 / 选项」类型
+                            </div>
+                        </div>
+                    )}
+
                     {/* 行高配置 */}
                     <div>
-                        <div style={{marginBottom: "8px", fontWeight: 500, fontSize: "14px"}}>行高</div>
+                        <div style={{marginBottom: "8px", fontWeight: 500, fontSize: "14px"}}>
+                            行高
+                        </div>
                         <Segmented
                             value={lineHeightMode}
-                            onChange={(value) => onLineHeightModeChange(value as any)}
+                            onChange={(value) => {
+                                const next = value as PresetMode;
+                                onLineHeightModeChange(next);
+                            }}
                             options={[
                                 {label: "小", value: "small"},
                                 {label: "中", value: "medium"},
@@ -79,10 +136,15 @@ export const DisplayConfigPopover: React.FC<DisplayConfigPopoverProps> = ({
 
                     {/* 时间槽最小宽度配置 */}
                     <div>
-                        <div style={{marginBottom: "8px", fontWeight: 500, fontSize: "14px"}}>时间槽宽度</div>
+                        <div style={{marginBottom: "8px", fontWeight: 500, fontSize: "14px"}}>
+                            时间槽宽度
+                        </div>
                         <Segmented
                             value={slotMinWidthMode}
-                            onChange={(value) => onSlotMinWidthModeChange(value as any)}
+                            onChange={(value) => {
+                                const next = value as PresetMode;
+                                onSlotMinWidthModeChange(next);
+                            }}
                             options={[
                                 {label: "小", value: "small"},
                                 {label: "中", value: "medium"},
@@ -188,4 +250,3 @@ export const DisplayConfigPopover: React.FC<DisplayConfigPopoverProps> = ({
         </Popover>
     );
 };
-

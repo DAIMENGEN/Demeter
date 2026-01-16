@@ -378,6 +378,24 @@ export const useUpdateTask = () => {
 };
 
 /**
+ * 删除 task Hook
+ */
+export const useDeleteTask = () => {
+  const [loading, setLoading] = useState(false);
+
+  const remove = async (projectId: string, taskId: string) => {
+    setLoading(true);
+    try {
+      await projectApi.deleteTask(projectId, taskId);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return { remove, loading };
+};
+
+/**
  * 重排 tasks Hook（同一 parentId 下）
  */
 export const useReorderTasks = () => {

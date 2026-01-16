@@ -366,20 +366,66 @@ impl TaskRepository {
 
     /// 删除任务
     pub async fn delete_task(pool: &PgPool, task_id: i64) -> AppResult<()> {
-        sqlx::query("DELETE FROM project_tasks WHERE id = $1")
-            .bind(task_id)
-            .execute(pool)
-            .await?;
+        // Use a recursive CTE to gather the task subtree within the same project.
+        // This avoids relying solely on FK ON DELETE CASCADE and guarantees we don't cross project boundaries.
+        sqlx::query(
+            r#"
+            WITH RECURSIVE subtree AS (
+                SELECT id, project_id
+                FROM project_tasks
+                WHERE id = $1
+
+                UNION ALL
+
+                SELECT t.id, t.project_id
+                FROM project_tasks t
+                INNER JOIN subtree s ON t.parent_id = s.id
+                WHERE t.project_id = s.project_id
+            )
+            DELETE FROM project_tasks
+            WHERE id IN (SELECT id FROM subtree)
+            "#,
+        )
+        .bind(task_id)
+        .execute(pool)
+        .await?;
 
         Ok(())
     }
 
-    /// 批量删除任务
+    /// 批量删除任务（级联删除：包含每个任务的所有子孙任务；自动去重）
     pub async fn batch_delete_tasks(pool: &PgPool, task_ids: Vec<i64>) -> AppResult<()> {
-        sqlx::query("DELETE FROM project_tasks WHERE id = ANY($1)")
-            .bind(&task_ids)
-            .execute(pool)
-            .await?;
+        if task_ids.is_empty() {
+            return Ok(());
+        }
+
+        // Same idea as delete_task(), but for multiple roots.
+        // We compute the union of all subtrees and delete them in one statement.
+        sqlx::query(
+            r#"
+            WITH RECURSIVE roots AS (
+                SELECT id, project_id
+                FROM project_tasks
+                WHERE id = ANY($1)
+            ),
+            subtree AS (
+                SELECT id, project_id
+                FROM roots
+
+                UNION ALL
+
+                SELECT t.id, t.project_id
+                FROM project_tasks t
+                INNER JOIN subtree s ON t.parent_id = s.id
+                WHERE t.project_id = s.project_id
+            )
+            DELETE FROM project_tasks
+            WHERE id IN (SELECT DISTINCT id FROM subtree)
+            "#,
+        )
+        .bind(&task_ids)
+        .execute(pool)
+        .await?;
 
         Ok(())
     }
