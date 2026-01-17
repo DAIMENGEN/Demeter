@@ -111,8 +111,16 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({
                     <CalendarOutlined className="meta-icon"/>
                     <Text type="secondary" className="meta-text">
                         {dayjs(project.startDateTime).format("YYYY-MM-DD")}
-                        {project.endDateTime &&
-                            ` ~ ${dayjs(project.endDateTime).format("YYYY-MM-DD")}`}
+                        {project.endDateTime ? (
+                            ` ~ ${dayjs(project.endDateTime).format("YYYY-MM-DD")}`
+                        ) : (
+                            <>
+                                {" ~ "}
+                                <Tag style={{marginInlineStart: 4}} color="processing">
+                                    长期
+                                </Tag>
+                            </>
+                        )}
                     </Text>
                 </Space>
 

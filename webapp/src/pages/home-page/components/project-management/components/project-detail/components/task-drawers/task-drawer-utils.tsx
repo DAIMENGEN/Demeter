@@ -19,8 +19,7 @@ export interface TaskDrawerFormValues {
     taskName: string;
     parentId?: string;
     order?: number;
-    startDateTime: Dayjs;
-    endDateTime: Dayjs;
+    dateRange?: [Dayjs, Dayjs];
     taskType: number;
     customAttributes?: Record<string, CustomAttributeFormValue>;
 }

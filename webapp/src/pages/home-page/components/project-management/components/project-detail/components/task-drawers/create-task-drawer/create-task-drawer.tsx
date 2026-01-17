@@ -1,5 +1,5 @@
 import React, {useEffect, useMemo} from "react";
-import {App, Button, DatePicker, Drawer, Form, Input, InputNumber, Select, Space, Spin, Typography} from "antd";
+import {App, Button, Drawer, Form, Space, Spin, Typography} from "antd";
 import dayjs, {type Dayjs} from "dayjs";
 import {
     type CreateTaskParams,
@@ -15,6 +15,7 @@ import {
     renderCustomAttributeItems,
     type TaskDrawerFormValues
 } from "../index.ts";
+import {TaskDrawerFormFields} from "../task-drawer-form-fields";
 
 const {Text} = Typography;
 
@@ -60,10 +61,9 @@ export const CreateTaskDrawer: React.FC<CreateTaskDrawerProps> = ({
             form.setFieldsValue({
                 taskType: TaskType.DEFAULT,
                 parentId: defaultParentId,
-                startDateTime: start,
-                endDateTime: end,
+                dateRange: [start, end],
                 customAttributes: defaults
-            });
+            } satisfies Partial<TaskDrawerFormValues>);
         } else {
             form.resetFields();
         }
@@ -76,10 +76,8 @@ export const CreateTaskDrawer: React.FC<CreateTaskDrawerProps> = ({
         try {
             const values = await form.validateFields();
 
-            if (values.endDateTime.isBefore(values.startDateTime)) {
-                message.error("结束时间不能早于开始时间");
-                return;
-            }
+            const [startDateTime, endDateTime] = values.dateRange ?? [];
+            if (!startDateTime || !endDateTime) return;
 
             const customAttributes = normalizeCustomAttributesToStrings(values.customAttributes, attributeTypeMap);
 
@@ -87,8 +85,8 @@ export const CreateTaskDrawer: React.FC<CreateTaskDrawerProps> = ({
                 taskName: values.taskName,
                 parentId: values.parentId ?? null,
                 order: values.order ?? null,
-                startDateTime: values.startDateTime.format("YYYY-MM-DDTHH:mm:ss"),
-                endDateTime: values.endDateTime.format("YYYY-MM-DDTHH:mm:ss"),
+                startDateTime: startDateTime.format("YYYY-MM-DDTHH:mm:ss"),
+                endDateTime: endDateTime.format("YYYY-MM-DDTHH:mm:ss"),
                 taskType: values.taskType,
                 customAttributes
             };
@@ -134,54 +132,10 @@ export const CreateTaskDrawer: React.FC<CreateTaskDrawerProps> = ({
         >
             <Spin spinning={loading} tip="正在创建...">
                 <Form layout="vertical" form={form} disabled={loading}>
-                    <Form.Item
-                        label="任务名称"
-                        name="taskName"
-                        rules={[{required: true, message: "请输入任务名称"}]}
-                    >
-                        <Input placeholder="请输入任务名称" allowClear/>
-                    </Form.Item>
-
-                    <Form.Item label="父任务" name="parentId">
-                        <Select
-                            placeholder="可选"
-                            allowClear
-                            options={parentOptions}
-                            showSearch={{
-                                optionFilterProp: "label"
-                            }}
-                        />
-                    </Form.Item>
-
-                    <Form.Item label="任务类型" name="taskType" rules={[{required: true, message: "请选择任务类型"}]}>
-                        <Select options={taskTypeOptions}/>
-                    </Form.Item>
-
-                    <Form.Item label="开始时间" name="startDateTime" rules={[{required: true, message: "请选择开始时间"}]}>
-                        <DatePicker showTime style={{width: "100%"}}/>
-                    </Form.Item>
-
-                    <Form.Item label="结束时间" name="endDateTime" rules={[{required: true, message: "请选择结束时间"}]}>
-                        <DatePicker
-                            showTime
-                            style={{width: "100%"}}
-                            disabledDate={(current) => {
-                                const start = form.getFieldValue("startDateTime");
-                                if (!start || !current) return false;
-                                return current.isBefore(start, "day");
-                            }}
-                        />
-                    </Form.Item>
-
-                    <Form.Item label="排序" name="order">
-                        <InputNumber
-                            placeholder="可选"
-                            style={{width: "100%"}}
-                            step={0.1}
-                            precision={2}
-                            stringMode={false}
-                        />
-                    </Form.Item>
+                    <TaskDrawerFormFields
+                        parentOptions={parentOptions}
+                        taskTypeOptions={taskTypeOptions}
+                    />
 
                     <div style={{marginTop: 8, marginBottom: 8}}>
                         <Text strong>自定义属性</Text>

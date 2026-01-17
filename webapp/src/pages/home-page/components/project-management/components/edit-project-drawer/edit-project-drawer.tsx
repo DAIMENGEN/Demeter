@@ -1,13 +1,12 @@
 import React, {useEffect} from "react";
-import {Button, DatePicker, Drawer, Form, Input, InputNumber, Select, Space} from "antd";
+import {Button, Drawer, Form, Space} from "antd";
+import type {Dayjs} from "dayjs";
 import dayjs from "dayjs";
 import {useUpdateProject} from "@Webapp/api/modules/project";
 import type {Project, UpdateProjectParams} from "@Webapp/api/modules/project/types.ts";
-import {ProjectStatusLabels} from "@Webapp/api/modules/project/types.ts";
 import "./edit-project-drawer.scss";
-
-const { TextArea } = Input;
-const { RangePicker } = DatePicker;
+import {ProjectDrawerFormFields} from "../project-drawer-form-fields.tsx";
+import {parseOptionalNonNegativeInteger, toNaiveDateTimeString} from "../project-drawer-utils.ts";
 
 export interface EditProjectDrawerProps {
   open: boolean;
@@ -53,26 +52,15 @@ export const EditProjectDrawer: React.FC<EditProjectDrawerProps> = ({
 
     try {
       const values = await form.validateFields();
-      const [startDate, endDate] = values.dateRange || [];
-
-      const rawOrder: unknown = values.order;
-      const order =
-        rawOrder === undefined || rawOrder === null || rawOrder === ""
-          ? undefined
-          : typeof rawOrder === "number"
-            ? (Number.isFinite(rawOrder) ? rawOrder : undefined)
-            : (() => {
-                const n = Number(rawOrder);
-                return Number.isFinite(n) ? n : undefined;
-              })();
+      const [startDate, endDate] = (values.dateRange ?? []) as [Dayjs | null | undefined, Dayjs | null | undefined];
 
       const params: UpdateProjectParams = {
         projectName: values.projectName,
         description: values.description,
-        startDateTime: startDate ? startDate.format("YYYY-MM-DDTHH:mm:ss") : undefined,
-        endDateTime: endDate ? endDate.format("YYYY-MM-DDTHH:mm:ss") : undefined,
+        startDateTime: startDate ? toNaiveDateTimeString(startDate) : undefined,
+        endDateTime: endDate ? toNaiveDateTimeString(endDate) : undefined,
         projectStatus: values.projectStatus,
-        order
+        order: parseOptionalNonNegativeInteger(values.order)
       };
 
       await updateProject(project.id, params);
@@ -87,12 +75,6 @@ export const EditProjectDrawer: React.FC<EditProjectDrawerProps> = ({
   const handleCancel = () => {
     onClose();
   };
-
-  // 状态选项
-  const statusOptions = Object.entries(ProjectStatusLabels).map(([value, label]) => ({
-    label,
-    value: Number(value)
-  }));
 
   return (
     <Drawer
@@ -122,72 +104,8 @@ export const EditProjectDrawer: React.FC<EditProjectDrawerProps> = ({
         form={form}
         layout="vertical"
       >
-        <Form.Item
-          name="projectName"
-          label="项目名称"
-          rules={[
-            { required: true, message: "请输入项目名称" },
-            { max: 100, message: "项目名称不能超过100个字符" }
-          ]}
-        >
-          <Input placeholder="请输入项目名称" />
-        </Form.Item>
-
-        <Form.Item
-          name="description"
-          label="项目描述"
-          rules={[
-            { max: 500, message: "项目描述不能超过500个字符" }
-          ]}
-        >
-          <TextArea
-            rows={4}
-            placeholder="请输入项目描述（可选）"
-            showCount
-            maxLength={500}
-          />
-        </Form.Item>
-
-        <Form.Item
-          name="dateRange"
-          label="项目时间"
-          rules={[
-            { required: true, message: "请选择项目开始时间" }
-          ]}
-        >
-          <RangePicker
-            showTime
-            format="YYYY-MM-DD HH:mm:ss"
-            style={{ width: "100%" }}
-            placeholder={["开始时间", "结束时间（可选）"]}
-          />
-        </Form.Item>
-
-        <Form.Item
-          name="projectStatus"
-          label="项目状态"
-          rules={[{ required: true, message: "请选择项目状态" }]}
-        >
-          <Select
-            placeholder="请选择项目状态"
-            options={statusOptions}
-          />
-        </Form.Item>
-
-        <Form.Item
-          name="order"
-          label="排序序号"
-          tooltip="数字越小，排序越靠前"
-        >
-          <InputNumber
-            placeholder="请输入排序序号（可选）"
-            min={0}
-            precision={0}
-            style={{ width: "100%" }}
-          />
-        </Form.Item>
+        <ProjectDrawerFormFields />
       </Form>
     </Drawer>
   );
 };
-
