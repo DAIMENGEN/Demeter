@@ -17,8 +17,7 @@ export const useLogin = () => {
         setLoading(true);
         try {
             const response = await authApi.login(params);
-            assertApiOk(response);
-            return response;
+            return assertApiOk(response);
         } finally {
             setLoading(false);
         }

@@ -22,8 +22,6 @@ export interface User {
 export interface UserState {
     currentUser: User | null;  // 当前登录的用户信息,未登录时为 null
     isAuthenticated: boolean;  // 用户是否已认证(已登录)
-    loading: boolean;          // 是否正在加载(用于显示加载动画)
-    error: string | null;      // 错误信息,无错误时为 null
 }
 
 /**
@@ -33,8 +31,6 @@ export interface UserState {
 const initialState: UserState = {
     currentUser: null,         // 初始未登录
     isAuthenticated: false,    // 初始未认证
-    loading: false,            // 初始无加载状态
-    error: null,               // 初始无错误
 };
 
 /**
@@ -45,12 +41,6 @@ const userSlice = createSlice({
     name: "user",
     initialState,
     reducers: {
-        // 设置当前用户
-        setUser: (state, action: PayloadAction<User>) => {
-            state.currentUser = action.payload;
-            state.isAuthenticated = true;
-            state.error = null;
-        },
         // 更新用户信息
         updateUser: (state, action: PayloadAction<Partial<User>>) => {
             if (state.currentUser) {
@@ -60,51 +50,25 @@ const userSlice = createSlice({
                 };
             }
         },
-        // 清除用户信息（登出）
-        clearUser: (state) => {
-            state.currentUser = null;
-            state.isAuthenticated = false;
-            state.error = null;
-        },
-        // 设置加载状态
-        setLoading: (state, action: PayloadAction<boolean>) => {
-            state.loading = action.payload;
-        },
-        // 设置错误信息
-        setError: (state, action: PayloadAction<string | null>) => {
-            state.error = action.payload;
-            state.loading = false;
-        },
         // 登录成功
         loginSuccess: (state, action: PayloadAction<User>) => {
             state.currentUser = action.payload;
             state.isAuthenticated = true;
-            state.loading = false;
-            state.error = null;
         },
         // 登录失败
-        loginFailure: (state, action: PayloadAction<string>) => {
+        loginFailure: (state) => {
             state.currentUser = null;
             state.isAuthenticated = false;
-            state.loading = false;
-            state.error = action.payload;
         },
         // 登出
         logout: (state) => {
             state.currentUser = null;
-            state.isAuthenticated = false;
-            state.loading = false;
-            state.error = null;
         },
     },
 });
 // 导出 actions
 export const {
-    setUser,
     updateUser,
-    clearUser,
-    setLoading,
-    setError,
     loginSuccess,
     loginFailure,
     logout,
@@ -113,7 +77,5 @@ export const {
 // 使用 any 类型避免循环依赖，实际使用时会通过 useAppSelector 获得正确的类型推断
 export const selectCurrentUser = (state: any) => state.user.currentUser;
 export const selectIsAuthenticated = (state: any) => state.user.isAuthenticated;
-export const selectUserLoading = (state: any) => state.user.loading;
-export const selectUserError = (state: any) => state.user.error;
 // 导出 reducer
 export default userSlice.reducer;

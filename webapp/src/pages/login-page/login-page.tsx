@@ -4,7 +4,7 @@ import {Button, Form, Input, Layout, message, Space} from "antd";
 import {useNavigate} from "react-router-dom";
 import {type LoginParams, useLogin} from "@Webapp/api";
 import {useAppDispatch} from "@Webapp/store/hooks";
-import {loginSuccess} from "@Webapp/store/slices/user-slice";
+import {loginFailure, loginSuccess} from "@Webapp/store/slices/user-slice";
 import loginBgImage from "@Webapp/assets/backgrounds/auth-bg-image.jpeg";
 import loginLogoImage from "@Webapp/assets/trademark/wine-red-logo.jpg";
 
@@ -20,17 +20,11 @@ export const LoginPage = () => {
         async (values: LoginParams) => {
             try {
                 const response = await login(values);
-                dispatch(
-                    loginSuccess({
-                        id: response.data.user.id,
-                        username: response.data.user.username,
-                        email: response.data.user.email,
-                        fullName: response.data.user.fullName,
-                    })
-                );
+                dispatch(loginSuccess(response.user));
                 await messageApi.success("Login successful", 0.5);
                 navigate("/home");
             } catch (error) {
+                dispatch(loginFailure())
                 await messageApi.error(error instanceof Error ? error.message : "Login failed, please try again");
             }
         },

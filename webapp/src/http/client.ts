@@ -89,7 +89,7 @@ httpClient.interceptors.request.use(
     return config;
   },
   (error: AxiosError) => {
-    log.error("请求错误:", error);
+    log.error("Request error:", error);
     return Promise.reject(error);
   }
 );
@@ -164,7 +164,7 @@ httpClient.interceptors.response.use(
     // 处理其他错误
     const httpError: HttpError = {
       code: 0,
-      message: "未知错误",
+      message: "Unknown error",
     };
 
     if (error.response) {
@@ -172,30 +172,30 @@ httpClient.interceptors.response.use(
       const { status, data } = error.response;
       httpError.status = status;
       httpError.code = data?.code || status;
-      httpError.message = data?.message || "服务器错误";
+      httpError.message = data?.message || "Server error";
       httpError.data = data?.data;
 
       // 根据状态码处理不同的错误
       switch (status) {
         case 403:
-          httpError.message = "没有权限访问该资源";
+          httpError.message = "You do not have permission to access this resource";
           break;
         case 404:
-          httpError.message = "请求的资源不存在";
+          httpError.message = "The requested resource does not exist";
           break;
         case 500:
-          httpError.message = "服务器内部错误";
+          httpError.message = "Internal server error";
           break;
       }
     } else if (error.request) {
       // 请求已发送但没有收到响应
-      httpError.message = "网络错误，请检查网络连接";
+      httpError.message = "Network error, please check your connection";
     } else {
       // 请求配置出错
-      httpError.message = error.message || "请求配置错误";
+      httpError.message = error.message || "Request configuration error";
     }
 
-    console.error("响应错误:", httpError);
+    log.error("Response error:", httpError);
     return Promise.reject(httpError);
   }
 );
