@@ -2,6 +2,7 @@ import React, {useMemo, useState} from "react";
 import {Button, Checkbox, Collapse, InputNumber, Popover, Segmented, Select, Tooltip} from "antd";
 import {ControlOutlined} from "@ant-design/icons";
 import type {TaskAttributeConfig} from "@Webapp/api/modules/project";
+import type {AvailableColumn} from "./gantt-view.ts";
 
 export interface DisplayConfigPopoverProps {
     lineHeightMode: "small" | "medium" | "large" | "custom";
@@ -10,16 +11,15 @@ export interface DisplayConfigPopoverProps {
     customSlotMinWidth: number;
     actualLineHeight: number;
     actualSlotMinWidth: number;
-    visibleColumns: {
-        title: boolean;
-        order: boolean;
-        parentId: boolean;
-    };
+
+    availableColumns: AvailableColumn[];
+    selectedColumnKeys: string[];
+    onSelectedColumnKeysChange: (updater: string[] | ((prev: string[]) => string[])) => void;
+
     onLineHeightModeChange: (mode: "small" | "medium" | "large" | "custom") => void;
     onCustomLineHeightChange: (value: number) => void;
     onSlotMinWidthModeChange: (mode: "small" | "medium" | "large" | "custom") => void;
     onCustomSlotMinWidthChange: (value: number) => void;
-    onVisibleColumnsChange: (columns: {title: boolean; order: boolean; parentId: boolean}) => void;
 
     /**
      * 任务颜色渲染字段来源：仅允许用户自定义字段中的 select/user 类型。
@@ -38,12 +38,13 @@ export const DisplayConfigPopover: React.FC<DisplayConfigPopoverProps> = ({
     customSlotMinWidth,
     actualLineHeight,
     actualSlotMinWidth,
-    visibleColumns,
+    availableColumns,
+    selectedColumnKeys,
+    onSelectedColumnKeysChange,
     onLineHeightModeChange,
     onCustomLineHeightChange,
     onSlotMinWidthModeChange,
     onCustomSlotMinWidthChange,
-    onVisibleColumnsChange,
     attributeConfigs,
     colorRenderAttributeName,
     onColorRenderAttributeNameChange,
@@ -69,6 +70,34 @@ export const DisplayConfigPopover: React.FC<DisplayConfigPopoverProps> = ({
     }, [attributeConfigs]);
 
     const hideColorRender = !onColorRenderAttributeNameChange;
+
+    const columnsForUi = useMemo(() => {
+        const cols = availableColumns.slice();
+        cols.sort((a, b) => {
+            if (a.locked && !b.locked) return -1;
+            if (!a.locked && b.locked) return 1;
+            const da = a.defaultVisible ? 0 : 1;
+            const db = b.defaultVisible ? 0 : 1;
+            if (da !== db) return da - db;
+            return a.label.localeCompare(b.label);
+        });
+        return cols;
+    }, [availableColumns]);
+
+    const selectedSet = useMemo(() => new Set(selectedColumnKeys), [selectedColumnKeys]);
+
+    const toggleColumn = (col: AvailableColumn) => {
+        if (col.locked) return;
+        onSelectedColumnKeysChange((prev) => {
+            const set = new Set(prev);
+            if (set.has(col.key)) {
+                set.delete(col.key);
+            } else {
+                set.add(col.key);
+            }
+            return Array.from(set);
+        });
+    };
 
     return (
         <Popover
@@ -171,7 +200,7 @@ export const DisplayConfigPopover: React.FC<DisplayConfigPopoverProps> = ({
                         </div>
                     </div>
 
-                    {/* 列配置 - 使用 Collapse 组件，默认折叠 */}
+                    {/* 列配置 */}
                     <Collapse
                         ghost
                         size="small"
@@ -181,57 +210,36 @@ export const DisplayConfigPopover: React.FC<DisplayConfigPopoverProps> = ({
                                 label: <span style={{fontWeight: 500, fontSize: "14px"}}>列配置</span>,
                                 children: (
                                     <div style={{display: "flex", flexDirection: "column", gap: "4px"}}>
-                                        <div
-                                            style={{
-                                                padding: "5px 12px",
-                                                borderRadius: "4px",
-                                                cursor: "pointer",
-                                                transition: "background-color 0.2s",
-                                                display: "flex",
-                                                alignItems: "center",
-                                                gap: "8px"
-                                            }}
-                                            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "rgba(0, 0, 0, 0.04)"}
-                                            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "transparent"}
-                                            onClick={() => onVisibleColumnsChange({...visibleColumns, title: !visibleColumns.title})}
-                                        >
-                                            <Checkbox checked={visibleColumns.title}/>
-                                            <span>任务/团队</span>
-                                        </div>
-                                        <div
-                                            style={{
-                                                padding: "5px 12px",
-                                                borderRadius: "4px",
-                                                cursor: "pointer",
-                                                transition: "background-color 0.2s",
-                                                display: "flex",
-                                                alignItems: "center",
-                                                gap: "8px"
-                                            }}
-                                            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "rgba(0, 0, 0, 0.04)"}
-                                            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "transparent"}
-                                            onClick={() => onVisibleColumnsChange({...visibleColumns, order: !visibleColumns.order})}
-                                        >
-                                            <Checkbox checked={visibleColumns.order}/>
-                                            <span>排序</span>
-                                        </div>
-                                        <div
-                                            style={{
-                                                padding: "5px 12px",
-                                                borderRadius: "4px",
-                                                cursor: "pointer",
-                                                transition: "background-color 0.2s",
-                                                display: "flex",
-                                                alignItems: "center",
-                                                gap: "8px"
-                                            }}
-                                            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "rgba(0, 0, 0, 0.04)"}
-                                            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "transparent"}
-                                            onClick={() => onVisibleColumnsChange({...visibleColumns, parentId: !visibleColumns.parentId})}
-                                        >
-                                            <Checkbox checked={visibleColumns.parentId}/>
-                                            <span>父级ID</span>
-                                        </div>
+                                        {columnsForUi.map((col) => {
+                                            const checked = selectedSet.has(col.key);
+                                            const disabled = Boolean(col.locked);
+                                            return (
+                                                <div
+                                                    key={col.key}
+                                                    style={{
+                                                        padding: "5px 12px",
+                                                        borderRadius: "4px",
+                                                        cursor: disabled ? "not-allowed" : "pointer",
+                                                        transition: "background-color 0.2s",
+                                                        display: "flex",
+                                                        alignItems: "center",
+                                                        gap: "8px",
+                                                        opacity: disabled ? 0.7 : 1,
+                                                    }}
+                                                    onMouseEnter={(e) => {
+                                                        if (disabled) return;
+                                                        e.currentTarget.style.backgroundColor = "rgba(0, 0, 0, 0.04)";
+                                                    }}
+                                                    onMouseLeave={(e) => {
+                                                        e.currentTarget.style.backgroundColor = "transparent";
+                                                    }}
+                                                    onClick={() => toggleColumn(col)}
+                                                >
+                                                    <Checkbox checked={checked} disabled={disabled}/>
+                                                    <span>{col.label}</span>
+                                                </div>
+                                            );
+                                        })}
                                     </div>
                                 )
                             }

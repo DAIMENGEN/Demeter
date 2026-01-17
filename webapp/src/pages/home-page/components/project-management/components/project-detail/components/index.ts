@@ -1,4 +1,5 @@
-export {GanttToolbar, type GanttToolbarProps, type ViewType, viewUnitMap, viewPickerMap, viewDefaultRangeMap} from "./gantt-toolbar.tsx";
+export {GanttToolbar, type GanttToolbarProps} from "./gantt-toolbar.tsx";
+export {type ViewType, type AvailableColumn, viewUnitMap, viewPickerMap, viewDefaultRangeMap} from "./gantt-view.ts";
 export {DisplayConfigPopover, type DisplayConfigPopoverProps} from "./display-config-popover.tsx";
 export {GanttLegend, type GanttLegendProps, type LegendItem} from "./gantt-legend.tsx";
 export {ProjectInfo, type ProjectInfoProps} from "./project-info.tsx";

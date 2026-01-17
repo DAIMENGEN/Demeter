@@ -10,12 +10,31 @@ use modules::{business, hr, organization};
 use sqlx::postgres::PgPoolOptions;
 use std::sync::Arc;
 use tower_http::cors::CorsLayer;
+use tower_http::trace::{DefaultMakeSpan, DefaultOnFailure, DefaultOnRequest, DefaultOnResponse, TraceLayer};
+use tower_http::timeout::TimeoutLayer;
+use std::time::Duration;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // 初始化日志系统（文件 + 控制台）
     let log_config = config::logging::LogConfig::from_env();
-    log_config.init()?;
+    let _log_guard = log_config.init()?;
+
+    // 捕获 panic（例如 unwrap/expect），确保也能落日志
+    std::panic::set_hook(Box::new(|info| {
+        let location = info
+            .location()
+            .map(|l| format!("{}:{}:{}", l.file(), l.line(), l.column()))
+            .unwrap_or_else(|| "<unknown>".to_string());
+
+        if let Some(s) = info.payload().downcast_ref::<&str>() {
+            tracing::error!("panic at {}: {}", location, s);
+        } else if let Some(s) = info.payload().downcast_ref::<String>() {
+            tracing::error!("panic at {}: {}", location, s);
+        } else {
+            tracing::error!("panic at {}", location);
+        }
+    }));
 
     // 加载配置
     let config = config::AppConfig::from_env()?;
@@ -72,7 +91,30 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .merge(hr::holiday::holiday_routes(app_state.clone()))
         .merge(organization::team::team_routes(app_state.clone()))
         .merge(business::project::project_routes(app_state.clone()))
-        .merge(business::project::task::task_routes(app_state.clone()));
+        .merge(business::project::task::task_routes(app_state.clone()))
+        .layer(
+            TraceLayer::new_for_http()
+                .make_span_with(
+                    DefaultMakeSpan::new()
+                        .include_headers(false)
+                        .level(tracing::Level::INFO),
+                )
+                .on_request(DefaultOnRequest::new().level(tracing::Level::INFO))
+                .on_response(
+                    DefaultOnResponse::new()
+                        .level(tracing::Level::INFO)
+                        .latency_unit(tower_http::LatencyUnit::Millis),
+                )
+                .on_failure(
+                    DefaultOnFailure::new()
+                        .level(tracing::Level::ERROR)
+                        .latency_unit(tower_http::LatencyUnit::Millis),
+                ),
+        )
+        .layer(TimeoutLayer::with_status_code(
+            axum::http::StatusCode::REQUEST_TIMEOUT,
+            Duration::from_secs(30),
+        ));
 
     let app = Router::new().nest("/api", api_routes).layer(cors);
 

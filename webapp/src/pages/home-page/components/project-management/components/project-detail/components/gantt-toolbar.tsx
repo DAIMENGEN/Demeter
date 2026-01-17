@@ -11,9 +11,7 @@ import {
 import type {Dayjs} from "dayjs";
 import {DisplayConfigPopover} from "./display-config-popover.tsx";
 import type {TaskAttributeConfig} from "@Webapp/api/modules/project";
-
-// 视图类型定义
-export type ViewType = "Day" | "Week" | "Month" | "Quarter" | "Year";
+import {viewPickerMap, type AvailableColumn, type ViewType} from "./gantt-view.ts";
 
 // 视图选项
 const viewOptions = [
@@ -23,33 +21,6 @@ const viewOptions = [
     {label: "季", value: "Quarter" as ViewType},
     {label: "年", value: "Year" as ViewType},
 ];
-
-// 视图对应的时间单位
-export const viewUnitMap: Record<ViewType, "day" | "week" | "month" | "quarter" | "year"> = {
-    Day: "day",
-    Week: "week",
-    Month: "month",
-    Quarter: "quarter",
-    Year: "year",
-};
-
-// 视图对应的 DatePicker picker 类型
-export const viewPickerMap: Record<ViewType, "date" | "week" | "month" | "quarter" | "year"> = {
-    Day: "date",
-    Week: "week",
-    Month: "month",
-    Quarter: "quarter",
-    Year: "year",
-};
-
-// 视图对应的默认时间范围（用于"跳转到今天"功能）
-export const viewDefaultRangeMap: Record<ViewType, number> = {
-    Day: 30,      // 30天
-    Week: 12,     // 12周
-    Month: 3,     // 3个月
-    Quarter: 4,   // 4个季度
-    Year: 1,      // 1年
-};
 
 export interface GanttToolbarProps {
     projectName: string;
@@ -73,16 +44,15 @@ export interface GanttToolbarProps {
     customSlotMinWidth: number;
     actualLineHeight: number;
     actualSlotMinWidth: number;
-    visibleColumns: {
-        title: boolean;
-        order: boolean;
-        parentId: boolean;
-    };
+
+    availableColumns: AvailableColumn[];
+    selectedColumnKeys: string[];
+    onSelectedColumnKeysChange: (updater: string[] | ((prev: string[]) => string[])) => void;
+
     onLineHeightModeChange: (mode: "small" | "medium" | "large" | "custom") => void;
     onCustomLineHeightChange: (value: number) => void;
     onSlotMinWidthModeChange: (mode: "small" | "medium" | "large" | "custom") => void;
     onCustomSlotMinWidthChange: (value: number) => void;
-    onVisibleColumnsChange: (columns: {title: boolean; order: boolean; parentId: boolean}) => void;
 
     /**
      * 用于“任务颜色渲染”的字段来源（只取 select/user 自定义字段）。
@@ -113,16 +83,37 @@ export const GanttToolbar: React.FC<GanttToolbarProps> = ({
     customSlotMinWidth,
     actualLineHeight,
     actualSlotMinWidth,
-    visibleColumns,
+    availableColumns,
+    selectedColumnKeys,
+    onSelectedColumnKeysChange,
     onLineHeightModeChange,
     onCustomLineHeightChange,
     onSlotMinWidthModeChange,
     onCustomSlotMinWidthChange,
-    onVisibleColumnsChange,
     attributeConfigs,
     colorRenderAttributeName,
     onColorRenderAttributeNameChange,
 }) => {
+    const disabledEndDate = (current: Dayjs | null, start: Dayjs | null, viewType: ViewType) => {
+        if (!start || !current) return false;
+
+        switch (viewType) {
+            case "Day":
+                return current.isBefore(start, "day");
+            case "Week":
+                return current.isBefore(start, "week");
+            case "Month":
+                return current.isBefore(start, "month");
+            case "Quarter":
+                // dayjs typings don't include 'quarter' in isBefore(). Month granularity is close enough for the picker semantics.
+                return current.isBefore(start, "month");
+            case "Year":
+                return current.isBefore(start, "year");
+            default:
+                return current.isBefore(start, "day");
+        }
+    };
+
     return (
         <div style={{display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%", flexWrap: "wrap", gap: "12px"}}>
             <Space size="middle" align="center" style={{flex: "0 0 auto"}}>
@@ -191,11 +182,7 @@ export const GanttToolbar: React.FC<GanttToolbarProps> = ({
                             "YYYY"
                         }
                         style={{width: 140}}
-                        disabledDate={(current) => {
-                            if (!ganttStartDate) return false;
-                            const unit = viewUnitMap[viewType];
-                            return current && current.isBefore(ganttStartDate, unit as any);
-                        }}
+                        disabledDate={(current) => disabledEndDate(current, ganttStartDate, viewType)}
                     />
                     <DisplayConfigPopover
                         lineHeightMode={lineHeightMode}
@@ -204,12 +191,13 @@ export const GanttToolbar: React.FC<GanttToolbarProps> = ({
                         customSlotMinWidth={customSlotMinWidth}
                         actualLineHeight={actualLineHeight}
                         actualSlotMinWidth={actualSlotMinWidth}
-                        visibleColumns={visibleColumns}
+                        availableColumns={availableColumns}
+                        selectedColumnKeys={selectedColumnKeys}
+                        onSelectedColumnKeysChange={onSelectedColumnKeysChange}
                         onLineHeightModeChange={onLineHeightModeChange}
                         onCustomLineHeightChange={onCustomLineHeightChange}
                         onSlotMinWidthModeChange={onSlotMinWidthModeChange}
                         onCustomSlotMinWidthChange={onCustomSlotMinWidthChange}
-                        onVisibleColumnsChange={onVisibleColumnsChange}
                         attributeConfigs={attributeConfigs}
                         colorRenderAttributeName={colorRenderAttributeName}
                         onColorRenderAttributeNameChange={onColorRenderAttributeNameChange}

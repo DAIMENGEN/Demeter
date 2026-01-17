@@ -17,6 +17,8 @@ import {
 import {
     type JsonValue,
     TaskType,
+    TaskTypeLabels,
+    type TaskAttributeConfig,
     useDeleteTask,
     useProjectById,
     useReorderTasks,
@@ -64,52 +66,146 @@ const safeDayjs = (value: string) => {
     return d.isValid() ? d : dayjs();
 };
 
-const jsonValueToString = (v: JsonValue | undefined): string | null => {
-    if (v == null) return null;
-    if (typeof v === "string") {
-        const s = v.trim();
-        return s ? s : null;
-    }
-    if (typeof v === "number" || typeof v === "boolean") return String(v);
-    return null;
+type ColorMap = ReadonlyMap<string, string>;
+
+// 列 key 直接用 string
+
+type AvailableColumn = {
+    key: string;
+    label: string;
+    locked?: boolean;
+    defaultVisible?: boolean;
 };
 
-type ColorMap = ReadonlyMap<string, string>;
+const RESOURCE_COLUMN_TITLE_KEY = "title";
+const CUSTOM_ATTRIBUTE_PREFIX = "ca.";
+
+const ensureTitleSelected = (keys: readonly string[]) => {
+    const set = new Set(keys);
+    set.add(RESOURCE_COLUMN_TITLE_KEY);
+    return Array.from(set);
+};
+
+const normalizeExtendedPropValue = (v: unknown): string | number | boolean | null | undefined => {
+    if (v == null) return v as null | undefined;
+    if (typeof v === "string") return v;
+    if (typeof v === "number" || typeof v === "boolean") return v;
+    return null;
+};
 
 const buildColorMap = (valueColorMap: JsonValue | null): ColorMap => {
     const rows = normalizeColorMapToRows(valueColorMap);
     return new Map(rows.map((r) => [r.value, r.color] as const));
 };
 
-const buildOptionLabelMap = (attributeType: string, options: JsonValue | null): ReadonlyMap<string, string> => {
-    const rows = attributeType === "user" ? normalizeUserOptionsToRows(options) : normalizeOptionsToRows(options);
+const buildSelectValueLabelMap = (options: JsonValue | null): DisplayValueMap => {
+    const rows = normalizeOptionsToRows(options);
+    return new Map(rows.map((r) => [String(r.value), r.label] as const));
+};
+
+const buildUserValueLabelMap = (options: JsonValue | null): DisplayValueMap => {
+    const rows = normalizeUserOptionsToRows(options);
+    // user rows value is { value: string; label: string }
     const pairs: Array<readonly [string, string]> = [];
     for (const r of rows) {
-        if (attributeType === "user") {
-            const v = r.value;
-            if (typeof v === "string") continue;
-            pairs.push([v.value, r.label]);
-        } else {
-            if (typeof r.value !== "string") continue;
-            pairs.push([r.value, r.label]);
-        }
+        const v = r.value;
+        if (typeof v === "string") continue;
+        pairs.push([v.value, r.label]);
     }
     return new Map(pairs);
+};
+
+const toScalarString = (v: JsonValue | undefined): string | null => {
+    if (v == null) return null;
+    if (typeof v === "string") return v;
+    if (typeof v === "number" || typeof v === "boolean") return String(v);
+    return null;
+};
+
+const toUserIdFromJson = (v: JsonValue | undefined): string | null => {
+    if (v == null) return null;
+    if (typeof v === "string" || typeof v === "number" || typeof v === "boolean") return String(v);
+    if (typeof v === "object" && !Array.isArray(v)) {
+        const obj = v as Record<string, JsonValue>;
+        const inner = obj.value;
+        if (typeof inner === "string" || typeof inner === "number" || typeof inner === "boolean") return String(inner);
+    }
+    return null;
+};
+
+const getDisplayFieldKey = (key: string): string => {
+    // taskType 显示 label
+    if (key === "taskType") return "taskTypeLabel";
+    // 自定义字段一律用 <key>Label 展示（key 已包含 ca. 前缀）
+    if (key.startsWith(CUSTOM_ATTRIBUTE_PREFIX)) return `${key}Label`;
+    return key;
 };
 
 const tasksToSchedulantModels = (
     tasks: import("@Webapp/api/modules/project").Task[],
     colorRenderAttributeName: string | null,
-    colorMap: ColorMap | null
+    colorMap: ColorMap | null,
+    attributeConfigs: readonly TaskAttributeConfig[]
 ) => {
-    const resources: Resource[] = tasks.map((t) => ({
-        id: t.id,
-        title: t.taskName,
-        parentId: t.parentId ?? undefined,
-        extendedProps: {
-            order: t.order ?? undefined
+    const configByName = new Map(attributeConfigs.map((c) => [c.attributeName, c] as const));
+
+    const selectLabelMaps = new Map<string, DisplayValueMap>();
+    const userLabelMaps = new Map<string, DisplayValueMap>();
+
+    for (const c of attributeConfigs) {
+        if (!c.attributeName) continue;
+        if (c.attributeType === "select") {
+            selectLabelMaps.set(c.attributeName, buildSelectValueLabelMap(c.options));
         }
-    }));
+        if (c.attributeType === "user") {
+            userLabelMaps.set(c.attributeName, buildUserValueLabelMap(c.options));
+        }
+    }
+
+    const resources: Resource[] = tasks.map((t) => {
+        const baseExtendedProps: Record<string, unknown> = {
+            order: t.order ?? undefined,
+            taskType: t.taskType,
+            taskTypeLabel: TaskTypeLabels[(t.taskType as TaskType) ?? TaskType.UNKNOWN] ?? String(t.taskType),
+            startDateTime: t.startDateTime,
+            endDateTime: t.endDateTime,
+            parentId: t.parentId ?? null,
+        };
+
+        const ca = t.customAttributes;
+        if (ca && typeof ca === "object" && !Array.isArray(ca)) {
+            const caObj = ca as Record<string, JsonValue>;
+            for (const [k, v] of Object.entries(caObj)) {
+                const storedKey = `${CUSTOM_ATTRIBUTE_PREFIX}${k}`;
+                baseExtendedProps[storedKey] = v;
+
+                const cfg = configByName.get(k);
+                if (cfg?.attributeType === "select") {
+                    const raw = toScalarString(v);
+                    const label = raw ? selectLabelMaps.get(k)?.get(raw) : null;
+                    baseExtendedProps[`${storedKey}Label`] = label ?? raw;
+                    continue;
+                }
+
+                if (cfg?.attributeType === "user") {
+                    const userId = toUserIdFromJson(v);
+                    const label = userId ? userLabelMaps.get(k)?.get(userId) : null;
+                    baseExtendedProps[`${storedKey}Label`] = label ?? userId;
+                    continue;
+                }
+
+                // 其它类型：尽量转为可读字符串
+                baseExtendedProps[`${storedKey}Label`] = toScalarString(v);
+            }
+        }
+
+        return {
+            id: t.id,
+            title: t.taskName,
+            parentId: t.parentId ?? undefined,
+            extendedProps: baseExtendedProps,
+        };
+    });
 
     const getColorForTask = (t: import("@Webapp/api/modules/project").Task): string | undefined => {
         if (!colorRenderAttributeName || !colorMap) return undefined;
@@ -194,6 +290,10 @@ export const ProjectDetail: React.FC = () => {
         return projectId ? `demeter:project:${projectId}:taskColorRenderAttributeName` : null;
     }, [projectId]);
 
+    const visibleColumnsStorageKey = useMemo(() => {
+        return projectId ? `demeter:project:${projectId}:ganttVisibleColumns` : null;
+    }, [projectId]);
+
     const {data: project, loading: projectLoading, error} = useProjectById(projectId);
 
     const {data: tasks, loading: tasksLoading, refetch: refetchTasks} = useTasks(projectId, Boolean(projectId));
@@ -204,6 +304,82 @@ export const ProjectDetail: React.FC = () => {
     const {data: attributeConfigs, loading: attributeConfigsLoading} = useTaskAttributeConfigs(projectId, Boolean(projectId));
 
     const [colorRenderAttributeName, setColorRenderAttributeName] = useState<string | null>(null);
+
+    // 列配置状态（title 必选；以 key 数组存储，便于支持动态列）
+    const [selectedColumnKeys, setSelectedColumnKeys] = useState<string[]>([RESOURCE_COLUMN_TITLE_KEY]);
+
+    // 根据 task 字段 + 自定义字段配置，生成统一的“可选列”列表
+    const availableColumns = useMemo<AvailableColumn[]>(() => {
+        const cols: AvailableColumn[] = [
+            {key: RESOURCE_COLUMN_TITLE_KEY, label: "任务/团队", locked: true, defaultVisible: true},
+            {key: "order", label: "排序", defaultVisible: false},
+            {key: "taskType", label: "类型", defaultVisible: false},
+            {key: "startDateTime", label: "开始时间", defaultVisible: false},
+            {key: "endDateTime", label: "结束时间", defaultVisible: false},
+            // parentId 默认不展示，但保留为可选项（便于排查/调试）
+            {key: "parentId", label: "父级ID", defaultVisible: false},
+        ];
+
+        // 自定义字段：用 ca.<attributeName> 做 key
+        const configs = attributeConfigs
+            .filter((c) => c.attributeName)
+            .slice()
+            .sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+
+        for (const c of configs) {
+            cols.push({
+                key: `${CUSTOM_ATTRIBUTE_PREFIX}${c.attributeName}`,
+                label: c.attributeLabel || c.attributeName,
+                defaultVisible: false,
+            });
+        }
+
+        return cols;
+    }, [attributeConfigs]);
+
+    const setSelectedColumnKeysAndPersist = useCallback((updater: string[] | ((prev: string[]) => string[])) => {
+        setSelectedColumnKeys((prev) => {
+            const next = typeof updater === "function" ? updater(prev) : updater;
+            const normalized = ensureTitleSelected(next);
+
+            if (visibleColumnsStorageKey) {
+                try {
+                    localStorage.setItem(visibleColumnsStorageKey, JSON.stringify(normalized));
+                } catch {
+                    // ignore
+                }
+            }
+
+            return normalized;
+        });
+    }, [visibleColumnsStorageKey]);
+
+    // 清理无效列 key（比如自定义字段被删了）
+    useEffect(() => {
+        const allowed = new Set(availableColumns.map((c) => c.key));
+        setSelectedColumnKeysAndPersist((prev) => prev.filter((k) => allowed.has(k)));
+    }, [availableColumns, setSelectedColumnKeysAndPersist]);
+
+    // 初次进入：从 localStorage 读取用户上次选择的列
+    useEffect(() => {
+        if (!visibleColumnsStorageKey) return;
+        try {
+            const raw = localStorage.getItem(visibleColumnsStorageKey);
+            if (!raw) {
+                setSelectedColumnKeys([RESOURCE_COLUMN_TITLE_KEY]);
+                return;
+            }
+            const parsed = JSON.parse(raw) as unknown;
+            if (!Array.isArray(parsed)) {
+                setSelectedColumnKeys([RESOURCE_COLUMN_TITLE_KEY]);
+                return;
+            }
+            const keys = parsed.filter((k): k is string => typeof k === "string");
+            setSelectedColumnKeys(ensureTitleSelected(keys));
+        } catch {
+            // ignore
+        }
+    }, [visibleColumnsStorageKey]);
 
     const setColorRenderAttributeNameAndPersist = useCallback((name: string | null) => {
         setColorRenderAttributeName(name);
@@ -333,11 +509,12 @@ export const ProjectDetail: React.FC = () => {
     const [viewType, setViewType] = useState<ViewType>("Day");
 
     // 列配置状态
-    const [visibleColumns, setVisibleColumns] = useState({
-        title: true,
-        order: false,
-        parentId: false
-    });
+    // 已废弃，改用 selectedColumnKeys
+    // const [visibleColumns, setVisibleColumns] = useState({
+    //     title: true,
+    //     order: false,
+    //     parentId: false
+    // });
 
 
     // lineHeight 配置
@@ -385,11 +562,60 @@ export const ProjectDetail: React.FC = () => {
         const {resources, events, milestones, checkpoints} = tasksToSchedulantModels(
             tasks,
             colorRenderAttributeName,
-            activeColorMap
+            activeColorMap,
+            attributeConfigs
         );
-        // 一次性更新所有数据，只触发一次重渲染
         setGanttData({resources, events, milestones, checkpoints});
-    }, [tasks, colorRenderAttributeName, activeColorMap]);
+    }, [tasks, colorRenderAttributeName, activeColorMap, attributeConfigs]);
+
+    // 注意：Hook 必须在任何 early-return 之前调用（lint: rules-of-hooks）
+    // 根据配置生成显示的列
+    const resourceAreaColumns = useMemo(() => {
+        const selected = new Set(ensureTitleSelected(selectedColumnKeys));
+        const columns = availableColumns
+            .filter((c) => selected.has(c.key))
+            .map((c) => {
+                const field = getDisplayFieldKey(c.key);
+                return {
+                    field,
+                    headerContent: c.label,
+                };
+            });
+
+        return columns as unknown as ResourceAreaColumn[];
+    }, [availableColumns, selectedColumnKeys]);
+
+    // 同步把列值铺到 resource.extendedProps 上，让 schedulant 能通过 field 读取
+    useEffect(() => {
+        if (!selectedColumnKeys.length) return;
+        const selected = ensureTitleSelected(selectedColumnKeys);
+        const keysToProject = selected.filter((k) => k !== RESOURCE_COLUMN_TITLE_KEY);
+        if (!keysToProject.length) return;
+
+        setGanttData((prev) => {
+            if (!prev.resources.length) return prev;
+
+            const nextResources = prev.resources.map((r) => {
+                const current = (r.extendedProps ?? {}) as Record<string, unknown>;
+                const nextExtendedProps: Record<string, unknown> = {...current};
+
+                for (const k of keysToProject) {
+                    if (k in nextExtendedProps) continue;
+                    nextExtendedProps[k] = normalizeExtendedPropValue(current[k]);
+                }
+
+                // 保持 order 可读
+                nextExtendedProps.order = nextExtendedProps.order ?? current.order;
+
+                return {
+                    ...r,
+                    extendedProps: nextExtendedProps,
+                };
+            });
+
+            return {...prev, resources: nextResources};
+        });
+    }, [selectedColumnKeys]);
 
     const handleBack = () => {
         navigate("/home/project-management");
@@ -477,26 +703,6 @@ export const ProjectDetail: React.FC = () => {
     const displayStartDate = ganttStartDate || startDate;
     const displayEndDate = ganttEndDate || endDate;
 
-    // 根据配置生成显示的列
-    // Schedulant types this prop as ReactNode; we still pass its expected column objects.
-    const resourceAreaColumns = (
-        [
-            visibleColumns.title && {
-                field: "title",
-                headerContent: "任务/团队"
-            },
-            visibleColumns.order && {
-                field: "order",
-                headerContent: "排序"
-            },
-            visibleColumns.parentId && {
-                field: "parentId",
-                headerContent: "父级ID"
-            }
-        ].filter((col): col is { field: string; headerContent: string } => Boolean(col))
-    ) as unknown as ResourceAreaColumn[];
-
-
     return (
         <div ref={containerRef} className="project-detail">
             <Card
@@ -531,12 +737,13 @@ export const ProjectDetail: React.FC = () => {
                             customSlotMinWidth={customSlotMinWidth}
                             actualLineHeight={actualLineHeight}
                             actualSlotMinWidth={actualSlotMinWidth}
-                            visibleColumns={visibleColumns}
+                            availableColumns={availableColumns}
+                            selectedColumnKeys={selectedColumnKeys}
+                            onSelectedColumnKeysChange={setSelectedColumnKeysAndPersist}
                             onLineHeightModeChange={setLineHeightMode}
                             onCustomLineHeightChange={setCustomLineHeight}
                             onSlotMinWidthModeChange={setSlotMinWidthMode}
                             onCustomSlotMinWidthChange={setCustomSlotMinWidth}
-                            onVisibleColumnsChange={setVisibleColumns}
                             attributeConfigs={attributeConfigs}
                             colorRenderAttributeName={colorRenderAttributeName}
                             onColorRenderAttributeNameChange={setColorRenderAttributeNameAndPersist}
@@ -685,7 +892,7 @@ export const ProjectDetail: React.FC = () => {
                                         ...newResources[draggedIndex],
                                         parentId: newParentId ?? undefined,
                                         extendedProps: {
-                                            ...(newResources[draggedIndex].extendedProps as any),
+                                            ...(newResources[draggedIndex].extendedProps as Record<string, unknown>),
                                             order: newOrder ?? undefined
                                         }
                                     };
@@ -836,3 +1043,30 @@ export const ProjectDetail: React.FC = () => {
     );
 };
 
+const jsonValueToString = (v: JsonValue | undefined): string | null => {
+    if (v == null) return null;
+    if (typeof v === "string") {
+        const s = v.trim();
+        return s ? s : null;
+    }
+    if (typeof v === "number" || typeof v === "boolean") return String(v);
+    return null;
+};
+
+type DisplayValueMap = ReadonlyMap<string, string>;
+
+const buildOptionLabelMap = (attributeType: string, options: JsonValue | null): ReadonlyMap<string, string> => {
+    const rows = attributeType === "user" ? normalizeUserOptionsToRows(options) : normalizeOptionsToRows(options);
+    const pairs: Array<readonly [string, string]> = [];
+    for (const r of rows) {
+        if (attributeType === "user") {
+            const v = r.value;
+            if (typeof v === "string") continue;
+            pairs.push([v.value, r.label]);
+        } else {
+            if (typeof r.value !== "string") continue;
+            pairs.push([r.value, r.label]);
+        }
+    }
+    return new Map(pairs);
+};

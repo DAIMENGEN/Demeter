@@ -1,5 +1,5 @@
 import React, {useEffect} from "react";
-import {Button, DatePicker, Drawer, Form, Input, Select, Space} from "antd";
+import {Button, DatePicker, Drawer, Form, Input, InputNumber, Select, Space} from "antd";
 import dayjs from "dayjs";
 import {useUpdateProject} from "@Webapp/api/modules/project";
 import type {Project, UpdateProjectParams} from "@Webapp/api/modules/project/types.ts";
@@ -55,13 +55,24 @@ export const EditProjectDrawer: React.FC<EditProjectDrawerProps> = ({
       const values = await form.validateFields();
       const [startDate, endDate] = values.dateRange || [];
 
+      const rawOrder: unknown = values.order;
+      const order =
+        rawOrder === undefined || rawOrder === null || rawOrder === ""
+          ? undefined
+          : typeof rawOrder === "number"
+            ? (Number.isFinite(rawOrder) ? rawOrder : undefined)
+            : (() => {
+                const n = Number(rawOrder);
+                return Number.isFinite(n) ? n : undefined;
+              })();
+
       const params: UpdateProjectParams = {
         projectName: values.projectName,
         description: values.description,
         startDateTime: startDate ? startDate.format("YYYY-MM-DDTHH:mm:ss") : undefined,
         endDateTime: endDate ? endDate.format("YYYY-MM-DDTHH:mm:ss") : undefined,
         projectStatus: values.projectStatus,
-        order: values.order
+        order
       };
 
       await updateProject(project.id, params);
@@ -168,10 +179,11 @@ export const EditProjectDrawer: React.FC<EditProjectDrawerProps> = ({
           label="排序序号"
           tooltip="数字越小，排序越靠前"
         >
-          <Input
-            type="number"
+          <InputNumber
             placeholder="请输入排序序号（可选）"
             min={0}
+            precision={0}
+            style={{ width: "100%" }}
           />
         </Form.Item>
       </Form>

@@ -2,6 +2,7 @@ use std::fs;
 use std::path::Path;
 use std::time::{Duration, SystemTime};
 use tracing_appender::rolling::{RollingFileAppender, Rotation};
+use tracing_appender::non_blocking::WorkerGuard;
 use tracing_subscriber::{fmt, layer::SubscriberExt, util::SubscriberInitExt, EnvFilter};
 
 /// 日志配置
@@ -47,12 +48,17 @@ impl LogConfig {
     }
 
     /// 初始化日志系统
-    pub fn init(self) -> Result<(), Box<dyn std::error::Error>> {
+    pub fn init(self) -> Result<WorkerGuard, Box<dyn std::error::Error>> {
         // 创建日志目录
         fs::create_dir_all(&self.log_dir)?;
 
         // 清理过期日志
         Self::cleanup_old_logs(&self.log_dir, self.retention_days)?;
+
+        // 记录绝对路径，便于排查工作目录变化导致“日志写到别处”
+        if let Ok(abs) = std::fs::canonicalize(&self.log_dir) {
+            tracing::info!("日志目录(absolute): {}", abs.display());
+        }
 
         // 配置文件滚动策略 - 每天滚动
         let file_appender = RollingFileAppender::builder()
@@ -62,13 +68,16 @@ impl LogConfig {
             .max_log_files(self.retention_days as usize)
             .build(&self.log_dir)?;
 
+        // non-blocking 写入，避免请求线程被文件 IO 拖慢；同时需要持有 guard 防止丢日志
+        let (file_writer, guard) = tracing_appender::non_blocking(file_appender);
+
         // 配置环境过滤器
         let env_filter = EnvFilter::try_from_default_env()
             .unwrap_or_else(|_| EnvFilter::new("info"));
 
         // 创建文件日志层
         let file_layer = fmt::layer()
-            .with_writer(file_appender)
+            .with_writer(file_writer)
             .with_ansi(false)
             .with_target(true)
             .with_thread_ids(true)
@@ -95,7 +104,7 @@ impl LogConfig {
             self.retention_days
         );
 
-        Ok(())
+        Ok(guard)
     }
 
     /// 清理过期的日志文件
@@ -149,4 +158,3 @@ mod tests {
         assert_eq!(config.retention_days, 7);
     }
 }
-
