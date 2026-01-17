@@ -185,13 +185,6 @@ impl AuthRepository {
         .fetch_optional(pool)
         .await?;
 
-        Ok(user.map(|u| UserInfo {
-            id: u.id.into(),
-            username: u.username,
-            full_name: u.full_name,
-            email: u.email,
-            phone: u.phone,
-            is_active: u.is_active,
-        }))
+        Ok(user.map(Into::into))
     }
 }

@@ -40,15 +40,7 @@ export const AuthSessionGuard = ({ children }: AuthSessionGuardProps) => {
     (async () => {
       try {
         const response = await getSession();
-        const u = response.data.user;
-        dispatch(
-          loginSuccess({
-            id: u.id,
-            username: u.username,
-            email: u.email,
-            fullName: u.fullName,
-          })
-        );
+        dispatch(loginSuccess(response.user));
       } catch {
         if (!notifiedRef.current) {
           notifiedRef.current = true;

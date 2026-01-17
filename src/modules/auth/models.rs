@@ -38,6 +38,7 @@ pub struct UserInfo {
     pub email: String,
     pub phone: Option<String>,
     pub is_active: bool,
+    pub create_date_time: chrono::NaiveDateTime,
 }
 
 impl From<User> for UserInfo {
@@ -49,6 +50,7 @@ impl From<User> for UserInfo {
             email: user.email,
             phone: user.phone,
             is_active: user.is_active,
+            create_date_time: user.create_date_time,
         }
     }
 }

@@ -59,7 +59,7 @@ export const useSession = () => {
         try {
             const response = await authApi.getSession();
             assertApiOk(response);
-            return response;
+            return response.data;
         } finally {
             setLoading(false);
         }
