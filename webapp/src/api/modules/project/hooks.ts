@@ -46,7 +46,6 @@ export const useProjects = (params?: ProjectQueryParams) => {
 export const useProjectById = (id: string) => {
     const [project, setProject] = useState<Project | null>(null);
     const [loading, setLoading] = useState(false);
-    const [error, setError] = useState<Error | null>(null);
 
     const fetchProject = useCallback(async () => {
         if (!id) return;
@@ -55,9 +54,6 @@ export const useProjectById = (id: string) => {
             const response = await projectApi.getProjectById(id);
             const project = assertApiOk(response);
             setProject(project);
-        } catch (err) {
-            setError(err as Error);
-            throw err;
         } finally {
             setLoading(false);
         }
@@ -67,7 +63,7 @@ export const useProjectById = (id: string) => {
         void fetchProject();
     }, [fetchProject]);
 
-    return {project, loading, error, refetch: fetchProject};
+    return {project, loading, refetch: fetchProject};
 };
 
 /**

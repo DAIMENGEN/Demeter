@@ -1,6 +1,6 @@
 import React, {useCallback, useEffect, useMemo, useRef, useState} from "react";
 import {useNavigate, useParams} from "react-router-dom";
-import {App, Button, Card, Result, Space, Spin} from "antd";
+import {App, Card, Spin} from "antd";
 import dayjs from "dayjs";
 import {
     type Checkpoint,
@@ -16,9 +16,9 @@ import {
 } from "schedulant";
 import {
     type JsonValue,
+    type TaskAttributeConfig,
     TaskType,
     TaskTypeLabels,
-    type TaskAttributeConfig,
     useDeleteTask,
     useProjectById,
     useReorderTasks,
@@ -43,7 +43,11 @@ import {
     type ViewType,
     viewUnitMap
 } from "./components";
-import {normalizeColorMapToRows, normalizeOptionsToRows, normalizeUserOptionsToRows} from "./components/task-attribute-config-drawer/serializers.ts";
+import {
+    normalizeColorMapToRows,
+    normalizeOptionsToRows,
+    normalizeUserOptionsToRows
+} from "./components/task-attribute-config-drawer/serializers.ts";
 import "schedulant/dist/schedulant.css";
 import "./project-detail.scss";
 
@@ -294,14 +298,17 @@ export const ProjectDetail: React.FC = () => {
         return projectId ? `demeter:project:${projectId}:ganttVisibleColumns` : null;
     }, [projectId]);
 
-    const {project, loading: projectLoading, error} = useProjectById(projectId);
+    const {project, loading: projectLoading} = useProjectById(projectId);
 
     const {data: tasks, loading: tasksLoading, refetch: refetchTasks} = useTasks(projectId, Boolean(projectId));
     const {update: updateTask} = useUpdateTask();
     const {reorder: reorderTasks} = useReorderTasks();
     const {remove: deleteTask, loading: deleteTaskLoading} = useDeleteTask();
 
-    const {data: attributeConfigs, loading: attributeConfigsLoading} = useTaskAttributeConfigs(projectId, Boolean(projectId));
+    const {
+        data: attributeConfigs,
+        loading: attributeConfigsLoading
+    } = useTaskAttributeConfigs(projectId, Boolean(projectId));
 
     const [colorRenderAttributeName, setColorRenderAttributeName] = useState<string | null>(null);
 
@@ -502,20 +509,12 @@ export const ProjectDetail: React.FC = () => {
     });
 
     // 甘特图时间范围状态
-    const [ganttStartDate, setGanttStartDate] = useState<dayjs.Dayjs | null>(null);
-    const [ganttEndDate, setGanttEndDate] = useState<dayjs.Dayjs | null>(null);
+    const today = dayjs();
+    const [ganttStartDate, setGanttStartDate] = useState<dayjs.Dayjs>(today.subtract(1, "week"));
+    const [ganttEndDate, setGanttEndDate] = useState<dayjs.Dayjs>(today.add(3, "week"));
 
     // 视图类型状态
     const [viewType, setViewType] = useState<ViewType>("Day");
-
-    // 列配置状态
-    // 已废弃，改用 selectedColumnKeys
-    // const [visibleColumns, setVisibleColumns] = useState({
-    //     title: true,
-    //     order: false,
-    //     parentId: false
-    // });
-
 
     // lineHeight 配置
     const [lineHeightMode, setLineHeightMode] = useState<'small' | 'medium' | 'large' | 'custom'>('medium');
@@ -525,13 +524,14 @@ export const ProjectDetail: React.FC = () => {
     const [slotMinWidthMode, setSlotMinWidthMode] = useState<'small' | 'medium' | 'large' | 'custom'>('medium');
     const [customSlotMinWidth, setCustomSlotMinWidth] = useState(50);
 
-    // 预设尺寸映射
+    // 预设行高
     const lineHeightPresets = {
         small: 30,
         medium: 40,
         large: 50
     };
 
+    // 预设时间槽最小宽度
     const slotMinWidthPresets = {
         small: 40,
         medium: 50,
@@ -550,13 +550,6 @@ export const ProjectDetail: React.FC = () => {
     // 使用自定义 Hook 计算动态高度
     const {height: schedulantHeight, containerRef} = useSchedulantHeight(cardHeaderRef, legendRef);
 
-    // 当项目数据加载完成后，初始化甘特图时间范围
-    useEffect(() => {
-        if (!project) return;
-        setGanttStartDate(dayjs(project.startDateTime));
-        setGanttEndDate(project.endDateTime ? dayjs(project.endDateTime) : dayjs(project.startDateTime).add(3, "month"));
-    }, [project]);
-
     // 当 tasks 加载/刷新时，用真实数据驱动甘特图
     useEffect(() => {
         const {resources, events, milestones, checkpoints} = tasksToSchedulantModels(
@@ -568,7 +561,6 @@ export const ProjectDetail: React.FC = () => {
         setGanttData({resources, events, milestones, checkpoints});
     }, [tasks, colorRenderAttributeName, activeColorMap, attributeConfigs]);
 
-    // 注意：Hook 必须在任何 early-return 之前调用（lint: rules-of-hooks）
     // 根据配置生成显示的列
     const resourceAreaColumns = useMemo(() => {
         const selected = new Set(ensureTitleSelected(selectedColumnKeys));
@@ -617,10 +609,6 @@ export const ProjectDetail: React.FC = () => {
         });
     }, [selectedColumnKeys]);
 
-    const handleBack = () => {
-        navigate("/home/project-management");
-    };
-
     // 向前移动时间范围（向左）
     const handleShiftLeft = () => {
         if (!ganttStartDate || !ganttEndDate) return;
@@ -642,14 +630,6 @@ export const ProjectDetail: React.FC = () => {
     const handleEventResize = (eventResizeMountArg: EventResizeMountArg, field: "start" | "end") => {
         const {date, eventApi} = eventResizeMountArg;
         const targetId = eventApi.getId();
-        setGanttData(prev => {
-            const index = prev.events.findIndex(e => e.id === targetId);
-            if (index === -1) return prev;
-            const newEvents = [...prev.events];
-            newEvents[index] = {...prev.events[index], [field]: date};
-            return {...prev, events: newEvents};
-        });
-
         // persist to backend (best-effort)
         void (async () => {
             try {
@@ -664,356 +644,295 @@ export const ProjectDetail: React.FC = () => {
         })();
     };
 
-    // 加载状态（需要 project 和 tasks 都加载结束才结束）
-    const isLoading = Boolean(projectId) && (projectLoading || tasksLoading);
-    if (isLoading) {
-        return (
-            <div style={{display: "flex", justifyContent: "center", alignItems: "center", height: "100vh"}}>
-                <Spin size="large">
-                    <div style={{padding: "50px"}}/>
-                </Spin>
-            </div>
-        );
-    }
-
-    // 错误状态
-    if (error || !project) {
-        return (
-            <div style={{display: "flex", justifyContent: "center", alignItems: "center", height: "100vh"}}>
-                <Result
-                    status="404"
-                    title="项目不存在"
-                    subTitle="抱歉，您访问的项目不存在或已被删除。"
-                    extra={
-                        <Space>
-                            <Button type="primary" onClick={handleBack}>
-                                返回项目列表
-                            </Button>
-                        </Space>
-                    }
-                />
-            </div>
-        );
-    }
-
-    const startDate = dayjs(project.startDateTime);
-    const endDate = project.endDateTime ? dayjs(project.endDateTime) : startDate.add(3, "month");
-
-    // 使用甘特图自定义时间范围，如果未设置则使用项目默认时间
-    const displayStartDate = ganttStartDate || startDate;
-    const displayEndDate = ganttEndDate || endDate;
-
     return (
         <div ref={containerRef} className="project-detail">
-            <Card
-                className="gantt-chart-card"
-                title={
-                    <div ref={cardHeaderRef}>
-                        <GanttToolbar
-                            projectName={project.projectName}
-                            viewType={viewType}
-                            ganttStartDate={ganttStartDate}
-                            ganttEndDate={ganttEndDate}
-                            onViewTypeChange={setViewType}
-                            onStartDateChange={setGanttStartDate}
-                            onEndDateChange={setGanttEndDate}
-                            onShiftLeft={handleShiftLeft}
-                            onShiftRight={handleShiftRight}
-                            onJumpToToday={() => {
-                                const unit = viewUnitMap[viewType];
-                                const range = viewDefaultRangeMap[viewType];
-                                setGanttStartDate(dayjs());
-                                setGanttEndDate(dayjs().add(range, unit as any));
-                            }}
-                            onOpenTaskAttributeConfig={() => setTaskAttributeDrawerOpen(true)}
-                            onOpenCreateTask={() => {
-                                setCreateTaskDefaultParentId(undefined);
-                                setCreateTaskDrawerOpen(true);
-                            }}
-                            onBack={handleBack}
-                            lineHeightMode={lineHeightMode}
-                            customLineHeight={customLineHeight}
-                            slotMinWidthMode={slotMinWidthMode}
-                            customSlotMinWidth={customSlotMinWidth}
-                            actualLineHeight={actualLineHeight}
-                            actualSlotMinWidth={actualSlotMinWidth}
-                            availableColumns={availableColumns}
-                            selectedColumnKeys={selectedColumnKeys}
-                            onSelectedColumnKeysChange={setSelectedColumnKeysAndPersist}
-                            onLineHeightModeChange={setLineHeightMode}
-                            onCustomLineHeightChange={setCustomLineHeight}
-                            onSlotMinWidthModeChange={setSlotMinWidthMode}
-                            onCustomSlotMinWidthChange={setCustomSlotMinWidth}
-                            attributeConfigs={attributeConfigs}
-                            colorRenderAttributeName={colorRenderAttributeName}
-                            onColorRenderAttributeNameChange={setColorRenderAttributeNameAndPersist}
-                        />
-                    </div>
-                }>
-                <div className="schedulant-container">
-                    <div style={{position: "relative"}}>
-                        <Schedulant
-                            start={displayStartDate}
-                            end={displayEndDate}
-                            editable={true}
-                            selectable={true}
-                            lineHeight={actualLineHeight}
-                            slotMinWidth={actualSlotMinWidth}
-                            schedulantViewType={viewType}
-                            schedulantMaxHeight={schedulantHeight}
-                            resources={ganttData.resources}
-                            events={ganttData.events}
-                            checkpoints={ganttData.checkpoints}
-                            milestones={ganttData.milestones}
-                            dragHintColor="rgb(66, 133, 244, 0.08)"
-                            selectionColor="rgba(66, 133, 244, 0.08)"
-                            resourceAreaWidth={"20%"}
-                            resourceAreaColumns={resourceAreaColumns}
-                            milestoneMove={(milestoneMoveMountArg: MilestoneMoveMountArg) => {
-                                const {date, milestoneApi} = milestoneMoveMountArg;
-                                const targetId = milestoneApi.getId();
-                                setGanttData(prev => {
-                                    const index = prev.milestones.findIndex(m => m.id === targetId);
-                                    if (index === -1) return prev;
-                                    const newMilestones = [...prev.milestones];
-                                    newMilestones[index] = {...prev.milestones[index], time: date};
-                                    return {...prev, milestones: newMilestones};
-                                });
-
-                                void (async () => {
-                                    try {
-                                        // milestone uses startDateTime; keep end aligned too
-                                        const dt = toNaiveDateTimeString(date);
-                                        await updateTask(projectId, targetId, {
-                                            startDateTime: dt,
-                                            endDateTime: dt
-                                        });
-                                        await refetchTasks();
-                                    } catch {
-                                        await refetchTasks();
-                                    }
-                                })();
-                            }}
-                            checkpointMove={(checkpointMoveMountArg: CheckpointMoveMountArg) => {
-                                const {date, checkpointApi} = checkpointMoveMountArg;
-                                const targetId = checkpointApi.getId();
-                                setGanttData(prev => {
-                                    const index = prev.checkpoints.findIndex(c => c.id === targetId);
-                                    if (index === -1) return prev;
-                                    const newCheckpoints = [...prev.checkpoints];
-                                    newCheckpoints[index] = {...prev.checkpoints[index], time: date};
-                                    return {...prev, checkpoints: newCheckpoints};
-                                });
-
-                                void (async () => {
-                                    try {
-                                        const dt = toNaiveDateTimeString(date);
-                                        await updateTask(projectId, targetId, {
-                                            startDateTime: dt,
-                                            endDateTime: dt
-                                        });
-                                        await refetchTasks();
-                                    } catch {
-                                        await refetchTasks();
-                                    }
-                                })();
-                            }}
-                            eventMove={(eventMoveMountArg: EventMoveMountArg) => {
-                                const {startDate, endDate, eventApi} = eventMoveMountArg;
-                                const targetId = eventApi.getId();
-                                setGanttData(prev => {
-                                    const index = prev.events.findIndex(e => e.id === targetId);
-                                    if (index === -1) return prev;
-                                    const newEvents = [...prev.events];
-                                    newEvents[index] = {...prev.events[index], start: startDate, end: endDate};
-                                    return {...prev, events: newEvents};
-                                });
-
-                                void (async () => {
-                                    try {
-                                        await updateTask(projectId, targetId, {
-                                            startDateTime: toNaiveDateTimeString(startDate),
-                                            endDateTime: toNaiveDateTimeString(endDate)
-                                        });
-                                        await refetchTasks();
-                                    } catch {
-                                        await refetchTasks();
-                                    }
-                                })();
-                            }}
-                            eventResizeStart={(eventResizeMountArg: EventResizeMountArg) => handleEventResize(eventResizeMountArg, "start")}
-                            eventResizeEnd={(eventResizeMountArg: EventResizeMountArg) => handleEventResize(eventResizeMountArg, "end")}
-                            resourceLaneMove={(resourceLaneMoveArg: ResourceLaneMovePayload) => {
-                                const {draggedResourceApi, targetResourceApi, position} = resourceLaneMoveArg;
-                                const draggedId = draggedResourceApi.getId();
-                                const targetId = targetResourceApi.getId();
-
-                                // compute new parentId + a best-effort order (fractional order to allow inserts)
-                                const draggedTask = tasks.find((t) => t.id === draggedId);
-                                const targetTask = tasks.find((t) => t.id === targetId);
-                                if (!draggedTask || !targetTask) return;
-
-                                const oldParentId = draggedTask.parentId ?? null;
-                                const newParentId =
-                                    position === "child" ? targetTask.id : (targetTask.parentId ?? null);
-
-                                const siblings = tasks
-                                    .filter((t) => (t.parentId ?? null) === newParentId && t.id !== draggedId)
-                                    .slice()
-                                    .sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
-
-                                const targetIndex = siblings.findIndex((t) => t.id === targetId);
-
-                                let newOrder: number | null = draggedTask.order ?? null;
-                                if (position === "before") {
-                                    const next = targetIndex >= 0 ? siblings[targetIndex] : undefined;
-                                    const prev = targetIndex > 0 ? siblings[targetIndex - 1] : undefined;
-                                    newOrder = calcFractionalOrder(prev?.order ?? undefined, next?.order ?? undefined);
-                                } else if (position === "after") {
-                                    const prev = targetIndex >= 0 ? siblings[targetIndex] : siblings[siblings.length - 1];
-                                    const next =
-                                        targetIndex >= 0 && targetIndex + 1 < siblings.length
-                                            ? siblings[targetIndex + 1]
-                                            : undefined;
-                                    newOrder = calcFractionalOrder(prev?.order ?? undefined, next?.order ?? undefined);
-                                } else {
-                                    // child: append to end of new parent's children
-                                    const last = siblings[siblings.length - 1];
-                                    newOrder = (last?.order ?? 0) + 1;
-                                }
-
-                                // optimistic UI update
-                                setGanttData(prev => {
-                                    const newResources = [...prev.resources];
-                                    const draggedIndex = newResources.findIndex((r) => r.id === draggedId);
-                                    if (draggedIndex === -1) return prev;
-
-                                    newResources[draggedIndex] = {
-                                        ...newResources[draggedIndex],
-                                        parentId: newParentId ?? undefined,
-                                        extendedProps: {
-                                            ...(newResources[draggedIndex].extendedProps as Record<string, unknown>),
-                                            order: newOrder ?? undefined
+            <Spin spinning={Boolean(projectId) && (projectLoading || tasksLoading)}>
+                <Card
+                    className="gantt-chart-card"
+                    title={
+                        <div ref={cardHeaderRef}>
+                            <GanttToolbar
+                                projectName={project?.projectName || ""}
+                                viewType={viewType}
+                                ganttStartDate={ganttStartDate}
+                                ganttEndDate={ganttEndDate}
+                                onViewTypeChange={setViewType}
+                                onStartDateChange={setGanttStartDate}
+                                onEndDateChange={setGanttEndDate}
+                                onShiftLeft={handleShiftLeft}
+                                onShiftRight={handleShiftRight}
+                                onJumpToToday={() => {
+                                    const unit = viewUnitMap[viewType];
+                                    const range = viewDefaultRangeMap[viewType];
+                                    setGanttStartDate(dayjs());
+                                    setGanttEndDate(dayjs().add(range, unit as any));
+                                }}
+                                onOpenTaskAttributeConfig={() => setTaskAttributeDrawerOpen(true)}
+                                onOpenCreateTask={() => {
+                                    setCreateTaskDefaultParentId(undefined);
+                                    setCreateTaskDrawerOpen(true);
+                                }}
+                                onBack={() => navigate("/home/project-management")}
+                                lineHeightMode={lineHeightMode}
+                                customLineHeight={customLineHeight}
+                                slotMinWidthMode={slotMinWidthMode}
+                                customSlotMinWidth={customSlotMinWidth}
+                                actualLineHeight={actualLineHeight}
+                                actualSlotMinWidth={actualSlotMinWidth}
+                                availableColumns={availableColumns}
+                                selectedColumnKeys={selectedColumnKeys}
+                                onSelectedColumnKeysChange={setSelectedColumnKeysAndPersist}
+                                onLineHeightModeChange={setLineHeightMode}
+                                onCustomLineHeightChange={setCustomLineHeight}
+                                onSlotMinWidthModeChange={setSlotMinWidthMode}
+                                onCustomSlotMinWidthChange={setCustomSlotMinWidth}
+                                attributeConfigs={attributeConfigs}
+                                colorRenderAttributeName={colorRenderAttributeName}
+                                onColorRenderAttributeNameChange={setColorRenderAttributeNameAndPersist}
+                            />
+                        </div>
+                    }>
+                    <div className="schedulant-container">
+                        <div style={{position: "relative"}}>
+                            <Schedulant
+                                start={ganttStartDate}
+                                end={ganttEndDate}
+                                editable={true}
+                                selectable={true}
+                                lineHeight={actualLineHeight}
+                                slotMinWidth={actualSlotMinWidth}
+                                schedulantViewType={viewType}
+                                schedulantMaxHeight={schedulantHeight}
+                                resources={ganttData.resources}
+                                events={ganttData.events}
+                                checkpoints={ganttData.checkpoints}
+                                milestones={ganttData.milestones}
+                                dragHintColor="rgb(66, 133, 244, 0.08)"
+                                selectionColor="rgba(66, 133, 244, 0.08)"
+                                resourceAreaWidth={"20%"}
+                                resourceAreaColumns={resourceAreaColumns}
+                                milestoneMove={(milestoneMoveMountArg: MilestoneMoveMountArg) => {
+                                    const {date, milestoneApi} = milestoneMoveMountArg;
+                                    const targetId = milestoneApi.getId();
+                                    void (async () => {
+                                        try {
+                                            // milestone uses startDateTime; keep end aligned too
+                                            const dt = toNaiveDateTimeString(date);
+                                            await updateTask(projectId, targetId, {
+                                                startDateTime: dt,
+                                                endDateTime: dt
+                                            });
+                                            await refetchTasks();
+                                        } catch {
+                                            await refetchTasks();
                                         }
-                                    };
-
-                                    return {...prev, resources: newResources};
-                                });
-
-                                void (async () => {
-                                    try {
-                                        await updateTask(projectId, draggedId, {
-                                            parentId: newParentId,
-                                            order: newOrder
-                                        });
-
-                                        // integer normalize: reorder both source siblings and destination siblings
-                                        await reorderTasks(projectId, {parentId: oldParentId});
-                                        if (newParentId !== oldParentId) {
-                                            await reorderTasks(projectId, {parentId: newParentId});
+                                    })();
+                                }}
+                                checkpointMove={(checkpointMoveMountArg: CheckpointMoveMountArg) => {
+                                    const {date, checkpointApi} = checkpointMoveMountArg;
+                                    const targetId = checkpointApi.getId();
+                                    void (async () => {
+                                        try {
+                                            const dt = toNaiveDateTimeString(date);
+                                            await updateTask(projectId, targetId, {
+                                                startDateTime: dt,
+                                                endDateTime: dt
+                                            });
+                                            await refetchTasks();
+                                        } catch {
+                                            await refetchTasks();
                                         }
+                                    })();
+                                }}
+                                eventMove={(eventMoveMountArg: EventMoveMountArg) => {
+                                    const {startDate, endDate, eventApi} = eventMoveMountArg;
+                                    const targetId = eventApi.getId();
+                                    void (async () => {
+                                        try {
+                                            await updateTask(projectId, targetId, {
+                                                startDateTime: toNaiveDateTimeString(startDate),
+                                                endDateTime: toNaiveDateTimeString(endDate)
+                                            });
+                                            await refetchTasks();
+                                        } catch {
+                                            await refetchTasks();
+                                        }
+                                    })();
+                                }}
+                                eventResizeStart={(eventResizeMountArg: EventResizeMountArg) => handleEventResize(eventResizeMountArg, "start")}
+                                eventResizeEnd={(eventResizeMountArg: EventResizeMountArg) => handleEventResize(eventResizeMountArg, "end")}
+                                resourceLaneMove={(resourceLaneMoveArg: ResourceLaneMovePayload) => {
+                                    const {draggedResourceApi, targetResourceApi, position} = resourceLaneMoveArg;
+                                    const draggedId = draggedResourceApi.getId();
+                                    const targetId = targetResourceApi.getId();
 
-                                        await refetchTasks();
-                                    } catch {
-                                        await refetchTasks();
+                                    // compute new parentId + a best-effort order (fractional order to allow inserts)
+                                    const draggedTask = tasks.find((t) => t.id === draggedId);
+                                    const targetTask = tasks.find((t) => t.id === targetId);
+                                    if (!draggedTask || !targetTask) return;
+
+                                    const oldParentId = draggedTask.parentId ?? null;
+                                    const newParentId =
+                                        position === "child" ? targetTask.id : (targetTask.parentId ?? null);
+
+                                    const siblings = tasks
+                                        .filter((t) => (t.parentId ?? null) === newParentId && t.id !== draggedId)
+                                        .slice()
+                                        .sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+
+                                    const targetIndex = siblings.findIndex((t) => t.id === targetId);
+
+                                    let newOrder: number | null = draggedTask.order ?? null;
+                                    if (position === "before") {
+                                        const next = targetIndex >= 0 ? siblings[targetIndex] : undefined;
+                                        const prev = targetIndex > 0 ? siblings[targetIndex - 1] : undefined;
+                                        newOrder = calcFractionalOrder(prev?.order ?? undefined, next?.order ?? undefined);
+                                    } else if (position === "after") {
+                                        const prev = targetIndex >= 0 ? siblings[targetIndex] : siblings[siblings.length - 1];
+                                        const next =
+                                            targetIndex >= 0 && targetIndex + 1 < siblings.length
+                                                ? siblings[targetIndex + 1]
+                                                : undefined;
+                                        newOrder = calcFractionalOrder(prev?.order ?? undefined, next?.order ?? undefined);
+                                    } else {
+                                        // child: append to end of new parent's children
+                                        const last = siblings[siblings.length - 1];
+                                        newOrder = (last?.order ?? 0) + 1;
                                     }
-                                })();
-                            }}
-                            enableResourceLaneContextMenu={true}
-                            resourceLaneContextMenuItems={[
-                                {
-                                    key: "create-subtask",
-                                    label: "创建子任务",
-                                },
-                                {
-                                    key: "edit-task",
-                                    label: "编辑任务",
-                                },
-                                {
-                                    key: "delete-task",
-                                    label: "删除任务",
-                                }
-                            ]}
-                            resourceLaneContextMenuClick={(menuArg) => {
-                                const {key, resourceApi} = menuArg;
 
-                                const taskId = resourceApi.getId();
-                                const taskName = resourceApi.getTitle();
+                                    // optimistic UI update
+                                    setGanttData(prev => {
+                                        const newResources = [...prev.resources];
+                                        const draggedIndex = newResources.findIndex((r) => r.id === draggedId);
+                                        if (draggedIndex === -1) return prev;
 
-                                // schedulant getParentId() returns an Option-like object
-                                const parentIdOption = resourceApi.getParentId();
-                                const parentId = parentIdOption?.isDefined?.() ? parentIdOption.get() : null;
+                                        newResources[draggedIndex] = {
+                                            ...newResources[draggedIndex],
+                                            parentId: newParentId ?? undefined,
+                                            extendedProps: {
+                                                ...(newResources[draggedIndex].extendedProps as Record<string, unknown>),
+                                                order: newOrder ?? undefined
+                                            }
+                                        };
 
-                                switch (key) {
-                                    case "create-subtask": {
-                                        setCreateTaskDefaultParentId(taskId);
-                                        setCreateTaskDrawerOpen(true);
-                                        return;
+                                        return {...prev, resources: newResources};
+                                    });
+
+                                    void (async () => {
+                                        try {
+                                            await updateTask(projectId, draggedId, {
+                                                parentId: newParentId,
+                                                order: newOrder
+                                            });
+
+                                            // integer normalize: reorder both source siblings and destination siblings
+                                            await reorderTasks(projectId, {parentId: oldParentId});
+                                            if (newParentId !== oldParentId) {
+                                                await reorderTasks(projectId, {parentId: newParentId});
+                                            }
+
+                                            await refetchTasks();
+                                        } catch {
+                                            await refetchTasks();
+                                        }
+                                    })();
+                                }}
+                                enableResourceLaneContextMenu={true}
+                                resourceLaneContextMenuItems={[
+                                    {
+                                        key: "create-subtask",
+                                        label: "创建子任务",
+                                    },
+                                    {
+                                        key: "edit-task",
+                                        label: "编辑任务",
+                                    },
+                                    {
+                                        key: "delete-task",
+                                        label: "删除任务",
                                     }
-                                    case "edit-task": {
-                                        const fullTask = tasks.find((t) => t.id === taskId);
-                                        if (!fullTask) {
-                                            void refetchTasks();
+                                ]}
+                                resourceLaneContextMenuClick={(menuArg) => {
+                                    const {key, resourceApi} = menuArg;
+
+                                    const taskId = resourceApi.getId();
+                                    const taskName = resourceApi.getTitle();
+
+                                    // schedulant getParentId() returns an Option-like object
+                                    const parentIdOption = resourceApi.getParentId();
+                                    const parentId = parentIdOption?.isDefined?.() ? parentIdOption.get() : null;
+
+                                    switch (key) {
+                                        case "create-subtask": {
+                                            setCreateTaskDefaultParentId(taskId);
+                                            setCreateTaskDrawerOpen(true);
                                             return;
                                         }
-
-                                        setEditingTaskId(taskId);
-                                        setEditTaskDrawerOpen(true);
-                                        return;
-                                    }
-                                    case "delete-task": {
-                                        if (deleteTaskLoading) return;
-
-                                        modal.confirm({
-                                            title: "确认删除任务？",
-                                            content: `将删除「${taskName}」以及其所有子任务。`,
-                                            okText: "删除",
-                                            okButtonProps: {danger: true},
-                                            cancelText: "取消",
-                                            onOk: async () => {
-                                                try {
-                                                    await deleteTask(projectId, taskId);
-                                                    await reorderTasks(projectId, {parentId});
-                                                    await refetchTasks();
-                                                    message.success("删除成功");
-                                                } catch (e: unknown) {
-                                                    const err = e as { message?: string };
-                                                    message.error(err?.message ?? "删除失败");
-                                                    await refetchTasks();
-                                                    throw e;
-                                                }
+                                        case "edit-task": {
+                                            const fullTask = tasks.find((t) => t.id === taskId);
+                                            if (!fullTask) {
+                                                void refetchTasks();
+                                                return;
                                             }
-                                        });
 
-                                        return;
+                                            setEditingTaskId(taskId);
+                                            setEditTaskDrawerOpen(true);
+                                            return;
+                                        }
+                                        case "delete-task": {
+                                            if (deleteTaskLoading) return;
+
+                                            modal.confirm({
+                                                title: "确认删除任务？",
+                                                content: `将删除「${taskName}」以及其所有子任务。`,
+                                                okText: "删除",
+                                                okButtonProps: {danger: true},
+                                                cancelText: "取消",
+                                                onOk: async () => {
+                                                    try {
+                                                        await deleteTask(projectId, taskId);
+                                                        await reorderTasks(projectId, {parentId});
+                                                        await refetchTasks();
+                                                        message.success("删除成功");
+                                                    } catch (e: unknown) {
+                                                        const err = e as { message?: string };
+                                                        message.error(err?.message ?? "删除失败");
+                                                        await refetchTasks();
+                                                        throw e;
+                                                    }
+                                                }
+                                            });
+
+                                            return;
+                                        }
                                     }
-                                }
-                            }}
+                                }}
+                            />
+
+                        </div>
+
+                        {/* 图例 - 用真实的 valueColorMap 生成 */}
+                        <GanttLegend ref={legendRef} items={legendItems}/>
+
+                        {/* 项目信息 */}
+                        <ProjectInfo
+                            ref={projectInfoRef}
+                            startDateTime={project?.startDateTime || "加载中"}
+                            endDateTime={project?.endDateTime}
                         />
-
                     </div>
-
-                    {/* 图例 - 用真实的 valueColorMap 生成 */}
-                    <GanttLegend ref={legendRef} items={legendItems}/>
-
-                    {/* 项目信息 */}
-                    <ProjectInfo
-                        ref={projectInfoRef}
-                        startDateTime={project.startDateTime}
-                        endDateTime={project.endDateTime}
-                    />
-                </div>
-            </Card>
+                </Card>
+            </Spin>
 
             <TaskAttributeConfigDrawer
                 open={taskAttributeDrawerOpen}
-                projectId={project.id}
+                projectId={project?.id || ""}
                 onClose={() => setTaskAttributeDrawerOpen(false)}
             />
 
             <EditTaskDrawer
                 open={editTaskDrawerOpen}
-                projectId={project.id}
+                projectId={project?.id || ""}
                 task={editingTask}
                 parentOptions={parentTaskOptions}
                 onClose={() => {
@@ -1027,12 +946,12 @@ export const ProjectDetail: React.FC = () => {
 
             <CreateTaskDrawer
                 open={createTaskDrawerOpen}
-                projectId={project.id}
+                projectId={project?.id || ""}
                 parentOptions={parentTaskOptions}
                 defaultParentId={createTaskDefaultParentId}
                 defaultRange={{
-                    start: displayStartDate.startOf("day"),
-                    end: displayStartDate.startOf("day").add(7, "day")
+                    start: ganttStartDate.startOf("day"),
+                    end: ganttEndDate.startOf("day").add(7, "day")
                 }}
                 onClose={() => setCreateTaskDrawerOpen(false)}
                 onCreated={async () => {

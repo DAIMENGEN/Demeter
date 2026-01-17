@@ -28,8 +28,8 @@ export interface GanttToolbarProps {
     ganttStartDate: Dayjs | null;
     ganttEndDate: Dayjs | null;
     onViewTypeChange: (value: ViewType) => void;
-    onStartDateChange: (date: Dayjs | null) => void;
-    onEndDateChange: (date: Dayjs | null) => void;
+    onStartDateChange: (date: Dayjs) => void;
+    onEndDateChange: (date: Dayjs) => void;
     onShiftLeft: () => void;
     onShiftRight: () => void;
     onJumpToToday: () => void;
@@ -156,7 +156,7 @@ export const GanttToolbar: React.FC<GanttToolbarProps> = ({
                     </Tooltip>
                     <DatePicker
                         value={ganttStartDate}
-                        onChange={onStartDateChange}
+                        onChange={(date) => date && onStartDateChange(date)}
                         picker={viewPickerMap[viewType]}
                         placeholder="开始时间"
                         format={
@@ -171,7 +171,7 @@ export const GanttToolbar: React.FC<GanttToolbarProps> = ({
                     <span>-</span>
                     <DatePicker
                         value={ganttEndDate}
-                        onChange={onEndDateChange}
+                        onChange={(date) => date && onEndDateChange(date)}
                         picker={viewPickerMap[viewType]}
                         placeholder="结束时间"
                         format={
