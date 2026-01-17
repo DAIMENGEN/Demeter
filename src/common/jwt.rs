@@ -3,17 +3,17 @@ use crate::config::JwtConfig;
 use jsonwebtoken::{decode, encode, Algorithm, DecodingKey, EncodingKey, Header, Validation};
 use serde::{Deserialize, Serialize};
 
-/// JWT 令牌声明
+/// JWT 令牌声明体
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Claims {
-    pub sub: i64,        // 用户ID
+    pub sub: i64,           // 用户ID
     pub username: String,   // 用户名
     pub exp: u64,           // 过期时间
     pub iat: u64,           // 签发时间
-    pub token_type: String, // 令牌类型: "access" 或 "refresh"
+    pub token_type: String, // 令牌类型："access" 或 "refresh"
 }
 
-/// JWT 工具类
+/// JWT 工具函数
 pub struct JwtUtil;
 
 impl JwtUtil {
@@ -37,7 +37,7 @@ impl JwtUtil {
             &claims,
             &EncodingKey::from_secret(config.secret.as_ref()),
         )
-        .map_err(|e| AppError::InternalError(format!("生成访问令牌失败: {}", e)))
+        .map_err(|e| AppError::InternalError(format!("Failed to generate access token: {}", e)))
     }
 
     /// 生成刷新令牌
@@ -60,10 +60,10 @@ impl JwtUtil {
             &claims,
             &EncodingKey::from_secret(config.secret.as_ref()),
         )
-        .map_err(|e| AppError::InternalError(format!("生成刷新令牌失败: {}", e)))
+        .map_err(|e| AppError::InternalError(format!("Failed to generate refresh token: {}", e)))
     }
 
-    /// 验证并解析令牌
+    /// 验证并解码令牌
     pub fn verify_token(token: &str, config: &JwtConfig) -> AppResult<Claims> {
         let validation = Validation::new(Algorithm::HS256);
 
@@ -74,8 +74,8 @@ impl JwtUtil {
         )
         .map(|data| data.claims)
         .map_err(|e| {
-            tracing::warn!("令牌验证失败: {}", e);
-            AppError::Unauthorized("无效的令牌".to_string())
+            tracing::warn!("Token verification failed: {}", e);
+            AppError::Unauthorized("Invalid token".to_string())
         })
     }
 
@@ -84,7 +84,7 @@ impl JwtUtil {
         let claims = Self::verify_token(token, config)?;
 
         if claims.token_type != "access" {
-            return Err(AppError::Unauthorized("令牌类型错误".to_string()));
+            return Err(AppError::Unauthorized("Token type error".to_string()));
         }
 
         Ok(claims)
@@ -95,7 +95,7 @@ impl JwtUtil {
         let claims = Self::verify_token(token, config)?;
 
         if claims.token_type != "refresh" {
-            return Err(AppError::Unauthorized("令牌类型错误".to_string()));
+            return Err(AppError::Unauthorized("Token type error".to_string()));
         }
 
         Ok(claims)

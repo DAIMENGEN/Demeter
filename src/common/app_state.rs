@@ -5,7 +5,7 @@ use std::sync::Arc;
 
 /// 全局应用状态
 ///
-/// 包含所有共享资源，在应用启动时初始化一次，然后在整个应用中复用
+/// 包含所有共享资源，在应用启动时初始化一次，并在整个应用中复用
 #[derive(Clone)]
 pub struct AppState {
     /// 数据库连接池
@@ -18,11 +18,7 @@ pub struct AppState {
 
 impl AppState {
     /// 创建新的应用状态
-    pub fn new(
-        pool: PgPool,
-        jwt_config: JwtConfig,
-        id_generator: Arc<SnowflakeIdBucket>,
-    ) -> Self {
+    pub fn new(pool: PgPool, jwt_config: JwtConfig, id_generator: Arc<SnowflakeIdBucket>) -> Self {
         Self {
             pool,
             jwt_config,
@@ -40,4 +36,3 @@ impl AppState {
         self.id_generator.get_id()
     }
 }
-

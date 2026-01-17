@@ -2,7 +2,7 @@
  * 认证模块 API
  */
 
-import { post } from "@Webapp/http";
+import { get, post } from "@Webapp/http";
 import type { LoginParams, LoginResponse, RegisterParams } from "./types";
 
 /**
@@ -36,5 +36,12 @@ export const authApi = {
    */
   refreshToken: () => {
     return post<void>("/auth/refresh");
+  },
+
+  /**
+   * 获取当前会话用户信息（需要已登录 cookie）
+   */
+  getSession: () => {
+    return get<LoginResponse>("/auth/session");
   },
 };

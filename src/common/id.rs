@@ -3,11 +3,11 @@ use sqlx::postgres::{PgArgumentBuffer, PgTypeInfo, PgValueRef};
 use sqlx::{Decode, Encode, Postgres, Type};
 use std::fmt;
 
-/// API/业务层使用的通用 ID 类型。
+/// API/业务层通用ID类型。
 ///
-/// - 内部存储为 i64（与 Postgres BIGINT 对齐）
-/// - JSON 序列化时输出为字符串，避免 JS number 精度丢失
-/// - JSON 反序列化时同时接受 string / number（便于渐进迁移）
+/// - 内部以i64存储（与Postgres BIGINT对齐）
+/// - 序列化为JSON时以字符串输出，避免JS数字精度丢失
+/// - 反序列化时支持字符串和数字，便于平滑迁移
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Id(pub i64);
 
@@ -34,7 +34,7 @@ impl Serialize for Id {
     where
         S: Serializer,
     {
-        // 对 JSON 这类 human-readable 格式统一输出 string。
+        // 始终以字符串输出，适用于JSON等人类可读格式。
         serializer.serialize_str(&self.0.to_string())
     }
 }

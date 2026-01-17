@@ -294,7 +294,7 @@ export const ProjectDetail: React.FC = () => {
         return projectId ? `demeter:project:${projectId}:ganttVisibleColumns` : null;
     }, [projectId]);
 
-    const {data: project, loading: projectLoading, error} = useProjectById(projectId);
+    const {project, loading: projectLoading, error} = useProjectById(projectId);
 
     const {data: tasks, loading: tasksLoading, refetch: refetchTasks} = useTasks(projectId, Boolean(projectId));
     const {update: updateTask} = useUpdateTask();

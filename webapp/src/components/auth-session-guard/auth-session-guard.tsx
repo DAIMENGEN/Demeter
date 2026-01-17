@@ -1,7 +1,8 @@
 import type { ReactNode } from "react";
 import { useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { getAuthSession } from "@Webapp/api";
+import { App } from "antd";
+import { useSession } from "@Webapp/api";
 import { useAppDispatch } from "@Webapp/store/hooks";
 import { loginSuccess, logout as logoutAction } from "@Webapp/store/slices/user-slice";
 
@@ -16,12 +17,15 @@ interface AuthSessionGuardProps {
  * - 失效：清理 redux，跳转 /login
  */
 export const AuthSessionGuard = ({ children }: AuthSessionGuardProps) => {
+  const { message } = App.useApp();
   const location = useLocation();
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
+  const { getSession } = useSession();
 
   const [checked, setChecked] = useState(false);
   const checkingRef = useRef(false);
+  const notifiedRef = useRef(false);
 
   useEffect(() => {
     const shouldCheck = location.pathname.startsWith("/home");
@@ -35,8 +39,8 @@ export const AuthSessionGuard = ({ children }: AuthSessionGuardProps) => {
 
     (async () => {
       try {
-        const res = await getAuthSession();
-        const u = res.data.user;
+        const response = await getSession();
+        const u = response.data.user;
         dispatch(
           loginSuccess({
             id: u.id,
@@ -46,6 +50,10 @@ export const AuthSessionGuard = ({ children }: AuthSessionGuardProps) => {
           })
         );
       } catch {
+        if (!notifiedRef.current) {
+          notifiedRef.current = true;
+          message.info("登录状态已失效，请重新登录", 2);
+        }
         dispatch(logoutAction());
         navigate("/login", { replace: true });
       } finally {
@@ -53,7 +61,7 @@ export const AuthSessionGuard = ({ children }: AuthSessionGuardProps) => {
         checkingRef.current = false;
       }
     })();
-  }, [location.pathname, dispatch, navigate]);
+  }, [location.pathname, dispatch, navigate, getSession]);
 
   if (!checked) return null;
   return <>{children}</>;

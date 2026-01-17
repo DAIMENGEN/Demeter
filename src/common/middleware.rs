@@ -10,6 +10,7 @@ use cookie::Cookie;
 
 const ACCESS_COOKIE_NAME: &str = "access_token";
 
+/// 从请求头的 Cookie 中提取 access_token
 fn extract_access_token_from_cookie(headers: &axum::http::HeaderMap) -> Option<String> {
     let cookie_header = headers
         .get(axum::http::header::COOKIE)
@@ -28,14 +29,17 @@ fn extract_access_token_from_cookie(headers: &axum::http::HeaderMap) -> Option<S
     None
 }
 
-/// JWT 认证中间件
+/// JWT 鉴权中间件
+///
+/// 1）优先从 Cookie 读取 access token（HttpOnly，JS 不可见）
+/// 2）回退到 Authorization: Bearer ...（兼容/调试用途）
 pub async fn jwt_auth_middleware(
     State(jwt_config): State<JwtConfig>,
     mut request: Request,
     next: Next,
 ) -> Result<Response, AppError> {
-    // 1) 优先从 Cookie 读取 access token（HttpOnly，JS 不可见）
-    // 2) 回退到 Authorization: Bearer ...（兼容现有实现/调试）
+    // 1）优先从 Cookie 读取 access token（HttpOnly，JS 不可见）
+    // 2）回退到 Authorization: Bearer ...（兼容/调试用途）
     let token = if let Some(token) = extract_access_token_from_cookie(request.headers()) {
         token
     } else {
@@ -43,10 +47,10 @@ pub async fn jwt_auth_middleware(
             .headers()
             .get("Authorization")
             .and_then(|h| h.to_str().ok())
-            .ok_or_else(|| AppError::Unauthorized("缺少认证令牌".to_string()))?;
+            .ok_or_else(|| AppError::Unauthorized("Missing authentication token".to_string()))?;
 
         if !auth_header.starts_with("Bearer ") {
-            return Err(AppError::Unauthorized("无效的认证令牌格式".to_string()));
+            return Err(AppError::Unauthorized("Invalid authentication token format".to_string()));
         }
 
         auth_header[7..].to_string()
@@ -55,7 +59,7 @@ pub async fn jwt_auth_middleware(
     // 验证令牌
     let claims = JwtUtil::verify_access_token(&token, &jwt_config)?;
 
-    // 将用户信息存储到请求扩展中，以便后续处理器使用
+    // 将用户信息存入 request 扩展，供后续处理器使用
     request.extensions_mut().insert(claims);
 
     Ok(next.run(request).await)
@@ -67,5 +71,5 @@ pub fn get_current_user(request: &Request) -> Result<Claims, AppError> {
         .extensions()
         .get::<Claims>()
         .cloned()
-        .ok_or_else(|| AppError::Unauthorized("未认证".to_string()))
+        .ok_or_else(|| AppError::Unauthorized("Not authenticated".to_string()))
 }

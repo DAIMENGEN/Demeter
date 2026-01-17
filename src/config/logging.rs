@@ -1,8 +1,8 @@
 use std::fs;
 use std::path::Path;
 use std::time::{Duration, SystemTime};
-use tracing_appender::rolling::{RollingFileAppender, Rotation};
 use tracing_appender::non_blocking::WorkerGuard;
+use tracing_appender::rolling::{RollingFileAppender, Rotation};
 use tracing_subscriber::{fmt, layer::SubscriberExt, util::SubscriberInitExt, EnvFilter};
 
 /// 日志配置
@@ -12,7 +12,7 @@ pub struct LogConfig {
     pub log_dir: String,
     /// 日志文件前缀
     pub file_prefix: String,
-    /// 日志文件最大大小（字节）
+    /// 最大日志文件大小（字节）
     pub max_file_size: u64,
     /// 日志保留天数
     pub retention_days: u64,
@@ -34,16 +34,15 @@ impl LogConfig {
     pub fn from_env() -> Self {
         Self {
             log_dir: std::env::var("LOG_DIR").unwrap_or_else(|_| "logs".to_string()),
-            file_prefix: std::env::var("LOG_FILE_PREFIX")
-                .unwrap_or_else(|_| "demeter".to_string()),
+            file_prefix: std::env::var("LOG_FILE_PREFIX").unwrap_or_else(|_| "demeter".to_string()),
             max_file_size: std::env::var("LOG_MAX_FILE_SIZE")
                 .ok()
                 .and_then(|s| s.parse().ok())
-                .unwrap_or(10 * 1024 * 1024), // 默认 10MB
+                .unwrap_or(10 * 1024 * 1024), // 默认10MB
             retention_days: std::env::var("LOG_RETENTION_DAYS")
                 .ok()
                 .and_then(|s| s.parse().ok())
-                .unwrap_or(7), // 默认 7 天
+                .unwrap_or(7), // 默认7天
         }
     }
 
@@ -55,12 +54,12 @@ impl LogConfig {
         // 清理过期日志
         Self::cleanup_old_logs(&self.log_dir, self.retention_days)?;
 
-        // 记录绝对路径，便于排查工作目录变化导致“日志写到别处”
-        if let Ok(abs) = std::fs::canonicalize(&self.log_dir) {
-            tracing::info!("日志目录(absolute): {}", abs.display());
+        // 记录绝对路径，便于排查日志目录问题
+        if let Ok(abs) = fs::canonicalize(&self.log_dir) {
+            tracing::info!("Log directory (absolute): {}", abs.display());
         }
 
-        // 配置文件滚动策略 - 每天滚动
+        // 配置文件滚动策略 - 按天切割
         let file_appender = RollingFileAppender::builder()
             .rotation(Rotation::DAILY)
             .filename_prefix(&self.file_prefix)
@@ -68,12 +67,12 @@ impl LogConfig {
             .max_log_files(self.retention_days as usize)
             .build(&self.log_dir)?;
 
-        // non-blocking 写入，避免请求线程被文件 IO 拖慢；同时需要持有 guard 防止丢日志
+        // 非阻塞写入，避免请求线程被文件IO阻塞；必须持有guard防止日志丢失
         let (file_writer, guard) = tracing_appender::non_blocking(file_appender);
 
         // 配置环境过滤器
-        let env_filter = EnvFilter::try_from_default_env()
-            .unwrap_or_else(|_| EnvFilter::new("info"));
+        let env_filter =
+            EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("info"));
 
         // 创建文件日志层
         let file_layer = fmt::layer()
@@ -98,7 +97,7 @@ impl LogConfig {
             .init();
 
         tracing::info!(
-            "日志系统初始化完成 - 目录: {}, 最大文件大小: {}MB, 保留天数: {}",
+            "Logging system initialized - directory: {}, max file size: {}MB, retention days: {}",
             self.log_dir,
             self.max_file_size / (1024 * 1024),
             self.retention_days
@@ -107,8 +106,11 @@ impl LogConfig {
         Ok(guard)
     }
 
-    /// 清理过期的日志文件
-    fn cleanup_old_logs(log_dir: &str, retention_days: u64) -> Result<(), Box<dyn std::error::Error>> {
+    /// 清理过期日志文件
+    fn cleanup_old_logs(
+        log_dir: &str,
+        retention_days: u64,
+    ) -> Result<(), Box<dyn std::error::Error>> {
         let path = Path::new(log_dir);
         if !path.exists() {
             return Ok(());
@@ -128,12 +130,12 @@ impl LogConfig {
                             // 删除过期文件
                             if let Err(e) = fs::remove_file(entry.path()) {
                                 tracing::warn!(
-                                    "无法删除过期日志文件 {:?}: {}",
+                                    "Failed to delete expired log file {:?}: {}",
                                     entry.path(),
                                     e
                                 );
                             } else {
-                                tracing::info!("已删除过期日志文件: {:?}", entry.path());
+                                tracing::info!("Deleted expired log file: {:?}", entry.path());
                             }
                         }
                     }

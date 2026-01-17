@@ -8,11 +8,11 @@ use serde_json::json;
 /// 应用错误类型
 #[derive(Debug)]
 pub enum AppError {
-    NotFound(String),
-    BadRequest(String),
-    Unauthorized(String),
-    InternalError(String),
-    DatabaseError(sqlx::Error),
+    NotFound(String),      // 未找到
+    BadRequest(String),    // 错误请求
+    Unauthorized(String),  // 未授权
+    InternalError(String), // 内部错误
+    DatabaseError(sqlx::Error), // 数据库错误
 }
 
 /// 应用结果类型
@@ -41,7 +41,7 @@ impl IntoResponse for AppError {
                 tracing::error!("Database error: {:?}", err);
                 (
                     StatusCode::INTERNAL_SERVER_ERROR,
-                    "数据库操作失败".to_string(),
+                    "Database operation failed".to_string(),
                 )
             }
         };

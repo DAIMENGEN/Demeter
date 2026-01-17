@@ -5,29 +5,26 @@
 import {useCallback, useState} from "react";
 import {authApi} from "./api";
 import type {LoginParams, RegisterParams} from "./types";
+import {assertApiOk} from "@Webapp/api/common/response";
 
 /**
  * 登录 Hook
  */
 export const useLogin = () => {
     const [loading, setLoading] = useState(false);
-    const [error, setError] = useState<Error | null>(null);
 
     const login = useCallback(async (params: LoginParams) => {
         setLoading(true);
-        setError(null);
         try {
-            return await authApi.login(params);
-        } catch (err) {
-            const error = err instanceof Error ? err : new Error("Login failed");
-            setError(error);
-            throw error;
+            const response = await authApi.login(params);
+            assertApiOk(response);
+            return response;
         } finally {
             setLoading(false);
         }
     }, []);
 
-    return {login, loading, error};
+    return {login, loading};
 };
 
 /**
@@ -35,22 +32,39 @@ export const useLogin = () => {
  */
 export const useRegister = () => {
     const [loading, setLoading] = useState(false);
-    const [error, setError] = useState<Error | null>(null);
 
     const register = useCallback(async (params: RegisterParams) => {
         setLoading(true);
-        setError(null);
         try {
-            return await authApi.register(params);
-        } catch (err) {
-            const error = err instanceof Error ? err : new Error("Registration failed");
-            setError(error);
-            throw error;
+            const response = await authApi.register(params);
+            assertApiOk(response);
+            return response
         } finally {
             setLoading(false);
         }
     }, []);
 
-    return {register, loading, error};
+    return {register, loading};
 };
 
+/**
+ * 会话 Hook
+ *
+ * 获取当前 cookie 会话对应的用户信息。
+ */
+export const useSession = () => {
+    const [loading, setLoading] = useState(false);
+
+    const getSession = useCallback(async () => {
+        setLoading(true);
+        try {
+            const response = await authApi.getSession();
+            assertApiOk(response);
+            return response;
+        } finally {
+            setLoading(false);
+        }
+    }, []);
+
+    return {getSession, loading};
+};

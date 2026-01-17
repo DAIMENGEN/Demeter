@@ -8,6 +8,7 @@ import {log} from "@Webapp/logging.ts";
 import type { UserSelectOption } from "./helpers";
 import { toUserOptionSelectOption } from "./helpers";
 import type { UserOptionQueryParams } from "./types";
+import {assertApiOk} from "@Webapp/api/common/response.ts";
 
 /**
  * 用户列表 Hook
@@ -33,15 +34,14 @@ export const useUserList = () => {
                 ...params,
             });
 
-            if (response.code === 200) {
-                setUsers(response.data.list);
-                setPagination((prev) => ({
-                    ...prev,
-                    total: response.data.total,
-                    page: params?.page ?? prev.page,
-                    pageSize: params?.pageSize ?? prev.pageSize,
-                }));
-            }
+            const pageRes = assertApiOk(response);
+            setUsers(pageRes.list);
+            setPagination((prev) => ({
+                ...prev,
+                total: pageRes.total,
+                page: params?.page ?? prev.page,
+                pageSize: params?.pageSize ?? prev.pageSize,
+            }));
         } catch (err) {
             setError(err as Error);
             log.error("获取用户列表失败:", err);
@@ -73,9 +73,7 @@ export const useUserDetail = () => {
             setLoading(true);
             setError(null);
             const response = await userApi.getUserById(id);
-            if (response.code === 200) {
-                setUser(response.data);
-            }
+            setUser(assertApiOk(response));
         } catch (err) {
             setError(err as Error);
             log.error("获取用户详情失败:", err);
@@ -105,10 +103,7 @@ export const useUserActions = () => {
             setError(null);
 
             const response = await userApi.createUser(data);
-
-            if (response.code === 200) {
-                return response.data;
-            }
+            return assertApiOk(response);
         } catch (err) {
             setError(err as Error);
             log.error("创建用户失败:", err);
@@ -127,10 +122,7 @@ export const useUserActions = () => {
             setError(null);
 
             const response = await userApi.updateUser(id, data);
-
-            if (response.code === 200) {
-                return response.data;
-            }
+            return assertApiOk(response);
         } catch (err) {
             setError(err as Error);
             log.error("更新用户失败:", err);
@@ -145,7 +137,8 @@ export const useUserActions = () => {
             setLoading(true);
             setError(null);
 
-            await userApi.deleteUser(id);
+            const response = await userApi.deleteUser(id);
+            assertApiOk(response);
         } catch (err) {
             setError(err as Error);
             log.error("删除用户失败:", err);
@@ -161,10 +154,7 @@ export const useUserActions = () => {
             setError(null);
 
             const response = await userApi.toggleUserStatus(id, isActive);
-
-            if (response.code === 200) {
-                return response.data;
-            }
+            return assertApiOk(response);
         } catch (err) {
             setError(err as Error);
             log.error("更新用户状态失败:", err);
@@ -215,22 +205,22 @@ export const useUserSelectOptionsInfinite = (init?: { pageSize?: number; activeO
             };
 
             const response = await userApi.getUserOptions(params);
-            if (response.code === 200) {
-                const list = response.data.list ?? [];
-                setTotal(response.data.total ?? 0);
+            const pageRes = assertApiOk(response);
 
-                setOptions((prev) => {
-                    const incoming = list.map(toUserOptionSelectOption);
-                    if (reset) return incoming;
+            const list = pageRes.list ?? [];
+            setTotal(pageRes.total ?? 0);
 
-                    // 去重合并
-                    const map = new Map(prev.map((x) => [x.value, x] as const));
-                    for (const opt of incoming) map.set(opt.value, opt);
-                    return Array.from(map.values());
-                });
+            setOptions((prev) => {
+                const incoming = list.map(toUserOptionSelectOption);
+                if (reset) return incoming;
 
-                setPage(nextPage);
-            }
+                // 去重合并
+                const map = new Map(prev.map((x) => [x.value, x] as const));
+                for (const opt of incoming) map.set(opt.value, opt);
+                return Array.from(map.values());
+            });
+
+            setPage(nextPage);
         } catch (err) {
             setError(err as Error);
             log.error("获取用户选项（分页）失败:", err);

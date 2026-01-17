@@ -48,10 +48,10 @@ fn extract_refresh_token_from_cookie(headers: &axum::http::HeaderMap) -> AppResu
     let cookie_header = headers
         .get(axum::http::header::COOKIE)
         .and_then(|v| v.to_str().ok())
-        .ok_or_else(|| AppError::Unauthorized("缺少刷新令牌".to_string()))?;
+        .ok_or_else(|| AppError::Unauthorized("Missing refresh token".to_string()))?;
 
     for c in Cookie::split_parse(cookie_header) {
-        let c = c.map_err(|_| AppError::Unauthorized("无效的 Cookie".to_string()))?;
+        let c = c.map_err(|_| AppError::Unauthorized("Invalid Cookie".to_string()))?;
         if c.name() == REFRESH_COOKIE_NAME {
             let value = c.value().to_string();
             if !value.is_empty() {
@@ -60,7 +60,7 @@ fn extract_refresh_token_from_cookie(headers: &axum::http::HeaderMap) -> AppResu
         }
     }
 
-    Err(AppError::Unauthorized("缺少刷新令牌".to_string()))
+    Err(AppError::Unauthorized("Missing refresh token".to_string()))
 }
 
 fn auth_set_cookie_headers(
@@ -95,7 +95,7 @@ async fn persist_refresh_token(
         + chrono::Duration::seconds(state.jwt_config.refresh_token_expires_in);
     let refresh_token_id = state
         .generate_id()
-        .map_err(|e| AppError::InternalError(format!("生成刷新令牌ID失败: {}", e)))?;
+        .map_err(|e| AppError::InternalError(format!("Failed to generate refresh token ID: {}", e)))?;
 
     AuthRepository::save_refresh_token(
         &state.pool,
@@ -116,31 +116,31 @@ pub async fn register(
 ) -> AppResult<impl IntoResponse> {
     // 验证输入
     if request.username.is_empty() || request.password.is_empty() {
-        return Err(AppError::BadRequest("用户名和密码不能为空".to_string()));
+        return Err(AppError::BadRequest("Username and password cannot be empty".to_string()));
     }
 
     if request.password.len() < 6 {
-        return Err(AppError::BadRequest("密码长度至少为6位".to_string()));
+        return Err(AppError::BadRequest("Password must be at least 6 characters".to_string()));
     }
 
     // 检查用户名是否已存在
     if AuthRepository::check_username_exists(&state.pool, &request.username).await? {
-        return Err(AppError::BadRequest("用户名已存在".to_string()));
+        return Err(AppError::BadRequest("Username already exists".to_string()));
     }
 
     // 检查邮箱是否已存在
     if AuthRepository::check_email_exists(&state.pool, &request.email).await? {
-        return Err(AppError::BadRequest("邮箱已被注册".to_string()));
+        return Err(AppError::BadRequest("Email is already registered".to_string()));
     }
 
     // 加密密码
     let password_hash = bcrypt::hash(&request.password, bcrypt::DEFAULT_COST)
-        .map_err(|e| AppError::InternalError(format!("密码加密失败: {}", e)))?;
+        .map_err(|e| AppError::InternalError(format!("Failed to hash password: {}", e)))?;
 
     // 创建用户
     let user_id = state
         .generate_id()
-        .map_err(|e| AppError::InternalError(format!("生成用户ID失败: {}", e)))?;
+        .map_err(|e| AppError::InternalError(format!("Failed to generate user ID: {}", e)))?;
     let user = AuthRepository::create_user(
         &state.pool,
         user_id,
@@ -177,30 +177,30 @@ pub async fn login(
 ) -> AppResult<impl IntoResponse> {
     // 验证输入
     if request.username.is_empty() || request.password.is_empty() {
-        return Err(AppError::BadRequest("用户名和密码不能为空".to_string()));
+        return Err(AppError::BadRequest("Username and password cannot be empty".to_string()));
     }
 
     // 获取用户
     let user = AuthRepository::get_user_by_username_for_auth(&state.pool, &request.username)
         .await?
-        .ok_or_else(|| AppError::Unauthorized("用户名或密码错误".to_string()))?;
+        .ok_or_else(|| AppError::Unauthorized("Incorrect username or password".to_string()))?;
 
     // 检查用户是否激活
     if !user.is_active {
-        return Err(AppError::Unauthorized("用户已被禁用".to_string()));
+        return Err(AppError::Unauthorized("User has been disabled".to_string()));
     }
 
     // 验证密码
     let password_hash = user
         .password
         .as_ref()
-        .ok_or_else(|| AppError::InternalError("用户密码数据异常".to_string()))?;
+        .ok_or_else(|| AppError::InternalError("User password data error".to_string()))?;
 
     let is_valid = bcrypt::verify(&request.password, password_hash)
-        .map_err(|e| AppError::InternalError(format!("密码验证失败: {}", e)))?;
+        .map_err(|e| AppError::InternalError(format!("Password verification failed: {}", e)))?;
 
     if !is_valid {
-        return Err(AppError::Unauthorized("用户名或密码错误".to_string()));
+        return Err(AppError::Unauthorized("Incorrect username or password".to_string()));
     }
 
     // 生成令牌 + 保存刷新令牌 + Set-Cookie
@@ -230,16 +230,16 @@ pub async fn refresh_token(
     // 验证刷新令牌是否在数据库中
     let db_token = AuthRepository::verify_refresh_token(&state.pool, &refresh_token)
         .await?
-        .ok_or_else(|| AppError::Unauthorized("刷新令牌无效或已过期".to_string()))?;
+        .ok_or_else(|| AppError::Unauthorized("Invalid or expired refresh token".to_string()))?;
 
     // 获取用户信息
     let user = AuthRepository::get_user_info_by_id(&state.pool, db_token.user_id)
         .await?
-        .ok_or_else(|| AppError::NotFound("用户不存在".to_string()))?;
+        .ok_or_else(|| AppError::NotFound("User does not exist".to_string()))?;
 
     // 检查用户是否激活
     if !user.is_active {
-        return Err(AppError::Unauthorized("用户已被禁用".to_string()));
+        return Err(AppError::Unauthorized("User has been disabled".to_string()));
     }
 
     // 生成新的令牌
@@ -307,10 +307,10 @@ pub async fn session(
 
     let user = AuthRepository::get_user_info_by_id(&state.pool, claims.sub)
         .await?
-        .ok_or_else(|| AppError::NotFound("用户不存在".to_string()))?;
+        .ok_or_else(|| AppError::NotFound("User does not exist".to_string()))?;
 
     if !user.is_active {
-        return Err(AppError::Unauthorized("用户已被禁用".to_string()));
+        return Err(AppError::Unauthorized("User has been disabled".to_string()));
     }
 
     Ok(Json(ApiResponse::success(AuthResponse { user })))
