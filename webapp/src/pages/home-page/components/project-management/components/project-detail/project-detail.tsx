@@ -11,7 +11,8 @@ import {
     type Milestone,
     type MilestoneMoveMountArg,
     type Resource,
-    type ResourceAreaColumn, type ResourceLaneMoveMountArg,
+    type ResourceAreaColumn,
+    type ResourceLaneMoveMountArg,
     Schedulant
 } from "schedulant";
 import {
@@ -419,9 +420,14 @@ export const ProjectDetail: React.FC = () => {
         // persist to backend (best-effort)
         void (async () => {
             try {
-                await updateTask(projectId, targetId, {
+                const parentId = eventApi.getResourceApi().getParentId();
+                const payload: Record<string, any> = {
                     [field === "start" ? "startDateTime" : "endDateTime"]: date.format("YYYY-MM-DDTHH:mm:ss")
-                });
+                };
+                if (parentId.isDefined()) {
+                    payload["parentId"] = parentId.get();
+                }
+                await updateTask(projectId, targetId, payload);
                 await refetchTasks();
             } catch {
                 // rollback by re-fetching canonical server state
