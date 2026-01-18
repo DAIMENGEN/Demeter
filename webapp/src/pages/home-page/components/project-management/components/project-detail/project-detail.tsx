@@ -55,6 +55,7 @@ import {
     RESOURCE_COLUMN_TITLE_KEY,
     tasksToSchedulantModels
 } from "./utils.ts";
+import {shiftRangeByViewStep} from "./components/gantt-date-navigation.ts";
 
 dayjs.extend(isSameOrBefore);
 dayjs.extend(quarterOfYear);
@@ -413,19 +414,17 @@ export const ProjectDetail: React.FC = () => {
     // 向前移动时间范围（向左）
     const handleShiftLeft = () => {
         if (!ganttStartDate || !ganttEndDate) return;
-        const unit = viewUnitMap[viewType];
-        const duration = ganttEndDate.diff(ganttStartDate, unit as any);
-        setGanttStartDate(ganttStartDate.subtract(duration, unit as any));
-        setGanttEndDate(ganttEndDate.subtract(duration, unit as any));
+        const next = shiftRangeByViewStep(ganttStartDate, ganttEndDate, viewType, -1);
+        setGanttStartDate(next.start);
+        setGanttEndDate(next.end);
     };
 
     // 向后移动时间范围（向右）
     const handleShiftRight = () => {
         if (!ganttStartDate || !ganttEndDate) return;
-        const unit = viewUnitMap[viewType];
-        const duration = ganttEndDate.diff(ganttStartDate, unit as any);
-        setGanttStartDate(ganttStartDate.add(duration, unit as any));
-        setGanttEndDate(ganttEndDate.add(duration, unit as any));
+        const next = shiftRangeByViewStep(ganttStartDate, ganttEndDate, viewType, 1);
+        setGanttStartDate(next.start);
+        setGanttEndDate(next.end);
     };
 
     const handleEventResize = (eventResizeMountArg: EventResizeMountArg, field: "start" | "end") => {
