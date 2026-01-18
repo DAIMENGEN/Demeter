@@ -36,6 +36,7 @@ import {
     type LegendItem,
     ProjectInfo,
     TaskAttributeConfigDrawer,
+    TaskPreviewDrawer,
     viewDefaultRangeMap,
     type ViewType,
     viewUnitMap
@@ -276,6 +277,19 @@ export const ProjectDetail: React.FC = () => {
 
     const [editTaskDrawerOpen, setEditTaskDrawerOpen] = useState(false);
     const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
+
+    const [previewTaskDrawerOpen, setPreviewTaskDrawerOpen] = useState(false);
+    const [previewingTaskId, setPreviewingTaskId] = useState<string | null>(null);
+
+    const previewingTask = useMemo(() => {
+        if (!previewingTaskId) return null;
+        return tasks.find((t) => t.id === previewingTaskId) ?? null;
+    }, [previewingTaskId, tasks]);
+
+    const parentLabelMap = useMemo(() => {
+        const pairs = tasks.map((t) => [t.id, t.taskName] as const);
+        return new Map(pairs);
+    }, [tasks]);
 
     const editingTask = useMemo(() => {
         if (!editingTaskId) return null;
@@ -636,6 +650,10 @@ export const ProjectDetail: React.FC = () => {
                                         label: "创建子任务",
                                     },
                                     {
+                                        key: "preview-task",
+                                        label: "预览任务",
+                                    },
+                                    {
                                         key: "edit-task",
                                         label: "编辑任务",
                                     },
@@ -658,6 +676,16 @@ export const ProjectDetail: React.FC = () => {
                                         case "create-subtask": {
                                             setCreateTaskDefaultParentId(taskId);
                                             setCreateTaskDrawerOpen(true);
+                                            return;
+                                        }
+                                        case "preview-task": {
+                                            const fullTask = tasks.find((t) => t.id === taskId);
+                                            if (!fullTask) {
+                                                void refetchTasks();
+                                                return;
+                                            }
+                                            setPreviewingTaskId(taskId);
+                                            setPreviewTaskDrawerOpen(true);
                                             return;
                                         }
                                         case "edit-task": {
@@ -700,6 +728,7 @@ export const ProjectDetail: React.FC = () => {
                                     }
                                 }}
                             />
+
                         </div>
 
                         {/* 图例 - 用真实的 valueColorMap 生成 */}
@@ -719,6 +748,23 @@ export const ProjectDetail: React.FC = () => {
                 open={taskAttributeDrawerOpen}
                 projectId={project?.id || ""}
                 onClose={() => setTaskAttributeDrawerOpen(false)}
+            />
+
+            <TaskPreviewDrawer
+                open={previewTaskDrawerOpen}
+                task={previewingTask}
+                attributeConfigs={attributeConfigs}
+                attributeConfigsLoading={attributeConfigsLoading}
+                parentLabelMap={parentLabelMap}
+                onEdit={() => {
+                    if (!previewingTaskId) return;
+                    setEditingTaskId(previewingTaskId);
+                    setEditTaskDrawerOpen(true);
+                }}
+                onClose={() => {
+                    setPreviewTaskDrawerOpen(false);
+                    setPreviewingTaskId(null);
+                }}
             />
 
             <EditTaskDrawer

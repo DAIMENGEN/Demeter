@@ -6,3 +6,4 @@ export {ProjectInfo, type ProjectInfoProps} from "./project-info.tsx";
 export {TaskAttributeConfigDrawer, type TaskAttributeConfigDrawerProps} from "./task-attribute-config-drawer";
 export { CreateTaskDrawer, type CreateTaskDrawerProps } from "./task-drawers/create-task-drawer";
 export { EditTaskDrawer, type EditTaskDrawerProps } from "./task-drawers/edit-task-drawer";
+export { TaskPreviewDrawer, type TaskPreviewDrawerProps } from "./task-drawers/task-preview-drawer";
