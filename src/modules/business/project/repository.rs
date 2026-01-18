@@ -180,82 +180,37 @@ impl ProjectRepository {
         params: UpdateProjectParams,
         updater_id: i64,
     ) -> AppResult<Option<Project>> {
-        // 先检查项目是否存在
-        let existing = Self::get_project_by_id(pool, project_id).await?;
-        if existing.is_none() {
-            return Ok(None);
-        }
+        let project = sqlx::query_as::<_, Project>(
+            r#"
+            UPDATE projects
+            SET project_name = COALESCE($1, project_name),
+                description = COALESCE($2, description),
+                start_date_time = COALESCE($3, start_date_time),
+                end_date_time = $4,
+                project_status = COALESCE($5, project_status),
+                version = COALESCE($6, version),
+                "order" = COALESCE($7, "order"),
+                updater_id = $8,
+                update_date_time = CURRENT_TIMESTAMP
+            WHERE id = $9
+            RETURNING id, project_name, description, start_date_time, end_date_time,
+                      project_status, version, "order", creator_id, updater_id,
+                      create_date_time, update_date_time
+            "#,
+        )
+        .bind(&params.project_name)
+        .bind(&params.description)
+        .bind(params.start_date_time)
+        .bind(params.end_date_time)
+        .bind(params.project_status)
+        .bind(params.version)
+        .bind(params.order)
+        .bind(updater_id)
+        .bind(project_id)
+        .fetch_optional(pool)
+        .await?;
 
-        let mut query =
-            String::from("UPDATE projects SET updater_id = $1, update_date_time = NOW()");
-        let mut param_count = 1;
-
-        if params.project_name.is_some() {
-            param_count += 1;
-            query.push_str(&format!(", project_name = ${}", param_count));
-        }
-        if params.description.is_some() {
-            param_count += 1;
-            query.push_str(&format!(", description = ${}", param_count));
-        }
-        if params.start_date_time.is_some() {
-            param_count += 1;
-            query.push_str(&format!(", start_date_time = ${}", param_count));
-        }
-        if params.end_date_time.is_some() {
-            param_count += 1;
-            query.push_str(&format!(", end_date_time = ${}", param_count));
-        }
-        if params.project_status.is_some() {
-            param_count += 1;
-            query.push_str(&format!(", project_status = ${}", param_count));
-        }
-        if params.version.is_some() {
-            param_count += 1;
-            query.push_str(&format!(", version = ${}", param_count));
-        }
-        if params.order.is_some() {
-            param_count += 1;
-            query.push_str(&format!(r#", "order" = ${}"#, param_count));
-        }
-
-        param_count += 1;
-        query.push_str(&format!(" WHERE id = ${}", param_count));
-        query.push_str(
-            r#" RETURNING id, project_name, description, start_date_time, end_date_time,
-                         project_status, version, "order", creator_id, updater_id,
-                         create_date_time, update_date_time"#,
-        );
-
-        let mut query_builder = sqlx::query_as::<_, Project>(&query).bind(updater_id);
-
-        if let Some(project_name) = params.project_name {
-            query_builder = query_builder.bind(project_name);
-        }
-        if let Some(description) = params.description {
-            query_builder = query_builder.bind(description);
-        }
-        if let Some(start_date_time) = params.start_date_time {
-            query_builder = query_builder.bind(start_date_time);
-        }
-        if let Some(end_date_time) = params.end_date_time {
-            query_builder = query_builder.bind(end_date_time);
-        }
-        if let Some(project_status) = params.project_status {
-            query_builder = query_builder.bind(project_status);
-        }
-        if let Some(version) = params.version {
-            query_builder = query_builder.bind(version);
-        }
-        if let Some(order) = params.order {
-            query_builder = query_builder.bind(order);
-        }
-
-        query_builder = query_builder.bind(project_id);
-
-        let project = query_builder.fetch_one(pool).await?;
-
-        Ok(Some(project))
+        Ok(project)
     }
 
     /// 删除项目（级联删除所有任务和任务属性配置）

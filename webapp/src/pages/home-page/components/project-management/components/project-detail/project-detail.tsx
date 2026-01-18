@@ -11,7 +11,7 @@ import {
     type Milestone,
     type MilestoneMoveMountArg,
     type Resource,
-    type ResourceAreaColumn,
+    type ResourceAreaColumn, type ResourceLaneMoveMountArg,
     Schedulant
 } from "schedulant";
 import {
@@ -58,13 +58,6 @@ dayjs.extend(isSameOrBefore);
 dayjs.extend(quarterOfYear);
 dayjs.extend(weekOfYear);
 dayjs.extend(weekYear);
-
-type ResourceLaneMovePayload = {
-    // matches schedulant ResourceLaneMoveMountArg shape used by resourceLaneMove callback
-    draggedResourceApi: { getId: () => string };
-    targetResourceApi: { getId: () => string };
-    position: "child" | "before" | "after";
-};
 
 type AvailableColumn = {
     key: string;
@@ -554,7 +547,7 @@ export const ProjectDetail: React.FC = () => {
                                 }}
                                 eventResizeStart={(eventResizeMountArg: EventResizeMountArg) => handleEventResize(eventResizeMountArg, "start")}
                                 eventResizeEnd={(eventResizeMountArg: EventResizeMountArg) => handleEventResize(eventResizeMountArg, "end")}
-                                resourceLaneMove={(resourceLaneMoveArg: ResourceLaneMovePayload) => {
+                                resourceLaneMove={(resourceLaneMoveArg: ResourceLaneMoveMountArg) => {
                                     const {draggedResourceApi, targetResourceApi, position} = resourceLaneMoveArg;
                                     const draggedId = draggedResourceApi.getId();
                                     const targetId = targetResourceApi.getId();

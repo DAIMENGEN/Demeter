@@ -335,7 +335,7 @@ impl TaskRepository {
         let task = sqlx::query_as::<_, Task>(
             r#"UPDATE project_tasks
                SET task_name = COALESCE($1, task_name),
-                   parent_id = COALESCE($2, parent_id),
+                   parent_id = $2,
                    "order" = COALESCE($3, "order"),
                    start_date_time = COALESCE($4, start_date_time),
                    end_date_time = COALESCE($5, end_date_time),
