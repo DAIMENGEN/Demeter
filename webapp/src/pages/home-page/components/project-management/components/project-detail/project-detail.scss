@@ -75,5 +75,150 @@
       }
     }
   }
+
+  .schedulant {
+    .schedulant-today-body {
+      position: relative;
+    }
+
+    .schedulant-today-body:after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border: 1px solid #91003c;
+      border-top: none;
+      pointer-events: none;
+    }
+
+    .schedulant-today-head-DD {
+      position: relative;
+    }
+
+    .schedulant-today-head-DD::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border: 1px solid #91003c;
+      border-block: none;
+      pointer-events: none;
+    }
+
+    .schedulant-today-head-ddd {
+      position: relative;
+    }
+
+    .schedulant-today-head-ddd:after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border: 1px solid #91003c;
+      border-bottom: none;
+      pointer-events: none;
+    }
+
+    .schedulant-this-week-head {
+      position: relative;
+    }
+
+    .schedulant-this-week-head:after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border: 1px solid #91003c;
+      border-bottom: none;
+      pointer-events: none;
+    }
+
+    .schedulant-this-week-body {
+      position: relative;
+    }
+
+    .schedulant-this-week-body:after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border: 1px solid #91003c;
+      border-top: none;
+      pointer-events: none;
+    }
+
+    .schedulant-this-month-head {
+      position: relative;
+    }
+
+    .schedulant-this-month-head:after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border: 1px solid #91003c;
+      border-bottom: none;
+      pointer-events: none;
+    }
+
+    .schedulant-this-month-body {
+      position: relative;
+    }
+
+    .schedulant-this-month-body:after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border: 1px solid #91003c;
+      border-top: none;
+      pointer-events: none;
+    }
+
+    .schedulant-this-quarter-head {
+      position: relative;
+    }
+
+    .schedulant-this-quarter-head:after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border: 1px solid #91003c;
+      border-bottom: none;
+      pointer-events: none;
+    }
+
+    .schedulant-this-quarter-body {
+      position: relative;
+    }
+
+    .schedulant-this-quarter-body:after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border: 1px solid #91003c;
+      border-top: none;
+      pointer-events: none;
+    }
+
+    .schedulant-this-year-head {
+      position: relative;
+    }
+
+    .schedulant-this-year-head:after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border: 1px solid #91003c;
+      border-bottom: none;
+      pointer-events: none;
+    }
+
+    .schedulant-this-year-body {
+      position: relative;
+    }
+
+    .schedulant-this-year-body:after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border: 1px solid #91003c;
+      border-top: none;
+      pointer-events: none;
+    }
+  }
 }
 
