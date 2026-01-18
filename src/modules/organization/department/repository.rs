@@ -17,34 +17,33 @@ impl DepartmentRepository {
         let page_size = params.page_size.unwrap_or(10);
         let offset = (page - 1) * page_size;
 
-        // 构建查询条件
-        let mut query = String::from(
-            "SELECT id, department_name, description, creator_id, updater_id, create_date_time, update_date_time
-             FROM departments WHERE 1=1",
-        );
-        let mut count_query = String::from("SELECT COUNT(*) FROM departments WHERE 1=1");
+        let department_name_pattern = params.department_name.as_ref().map(|d| format!("%{}%", d));
 
-        if let Some(department_name) = &params.department_name {
-            query.push_str(&format!(
-                " AND department_name ILIKE '%{}%'",
-                department_name
-            ));
-            count_query.push_str(&format!(
-                " AND department_name ILIKE '%{}%'",
-                department_name
-            ));
-        }
+        let departments = sqlx::query_as::<_, Department>(
+            r#"
+            SELECT id, department_name, description, creator_id, updater_id, create_date_time, update_date_time
+            FROM departments
+            WHERE ($1::TEXT IS NULL OR department_name ILIKE $1)
+            ORDER BY create_date_time DESC
+            LIMIT $2 OFFSET $3
+            "#,
+        )
+        .bind(&department_name_pattern)
+        .bind(page_size)
+        .bind(offset)
+        .fetch_all(pool)
+        .await?;
 
-        query.push_str(&format!(
-            " ORDER BY create_date_time DESC LIMIT {} OFFSET {}",
-            page_size, offset
-        ));
-
-        let departments = sqlx::query_as::<_, Department>(&query)
-            .fetch_all(pool)
-            .await?;
-
-        let total: (i64,) = sqlx::query_as(&count_query).fetch_one(pool).await?;
+        let total: (i64,) = sqlx::query_as(
+            r#"
+            SELECT COUNT(*)
+            FROM departments
+            WHERE ($1::TEXT IS NULL OR department_name ILIKE $1)
+            "#,
+        )
+        .bind(&department_name_pattern)
+        .fetch_one(pool)
+        .await?;
 
         Ok((departments, total.0))
     }
@@ -54,23 +53,19 @@ impl DepartmentRepository {
         pool: &PgPool,
         params: DepartmentQueryParams,
     ) -> AppResult<Vec<Department>> {
-        let mut query = String::from(
-            "SELECT id, department_name, description, creator_id, updater_id, create_date_time, update_date_time
-             FROM departments WHERE 1=1",
-        );
+        let department_name_pattern = params.department_name.as_ref().map(|d| format!("%{}%", d));
 
-        if let Some(department_name) = &params.department_name {
-            query.push_str(&format!(
-                " AND department_name ILIKE '%{}%'",
-                department_name
-            ));
-        }
-
-        query.push_str(" ORDER BY create_date_time DESC");
-
-        let departments = sqlx::query_as::<_, Department>(&query)
-            .fetch_all(pool)
-            .await?;
+        let departments = sqlx::query_as::<_, Department>(
+            r#"
+            SELECT id, department_name, description, creator_id, updater_id, create_date_time, update_date_time
+            FROM departments
+            WHERE ($1::TEXT IS NULL OR department_name ILIKE $1)
+            ORDER BY create_date_time DESC
+            "#,
+        )
+        .bind(&department_name_pattern)
+        .fetch_all(pool)
+        .await?;
 
         Ok(departments)
     }

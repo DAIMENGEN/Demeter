@@ -15,78 +15,81 @@ impl UserRepository {
         let page_size = params.page_size.unwrap_or(10);
         let offset = (page - 1) * page_size;
 
-        // 构建查询条件
-        let mut query = String::from(
-            "SELECT id, username, password, full_name, email, phone, is_active,
-             creator_id, updater_id, create_date_time, update_date_time
-             FROM users WHERE 1=1",
-        );
-        let mut count_query = String::from("SELECT COUNT(*) FROM users WHERE 1=1");
+        let username_pattern = params.username.as_ref().map(|u| format!("%{}%", u));
+        let full_name_pattern = params.full_name.as_ref().map(|f| format!("%{}%", f));
+        let email_pattern = params.email.as_ref().map(|e| format!("%{}%", e));
+        let phone_pattern = params.phone.as_ref().map(|p| format!("%{}%", p));
 
-        if let Some(username) = &params.username {
-            query.push_str(&format!(" AND username ILIKE '%{}%'", username));
-            count_query.push_str(&format!(" AND username ILIKE '%{}%'", username));
-        }
+        let users = sqlx::query_as::<_, User>(
+            r#"
+            SELECT id, username, password, full_name, email, phone, is_active,
+                   creator_id, updater_id, create_date_time, update_date_time
+            FROM users
+            WHERE ($1::TEXT IS NULL OR username ILIKE $1)
+              AND ($2::TEXT IS NULL OR full_name ILIKE $2)
+              AND ($3::TEXT IS NULL OR email ILIKE $3)
+              AND ($4::TEXT IS NULL OR phone ILIKE $4)
+              AND ($5::BOOLEAN IS NULL OR is_active = $5)
+            ORDER BY create_date_time DESC
+            LIMIT $6 OFFSET $7
+            "#,
+        )
+        .bind(&username_pattern)
+        .bind(&full_name_pattern)
+        .bind(&email_pattern)
+        .bind(&phone_pattern)
+        .bind(params.is_active)
+        .bind(page_size)
+        .bind(offset)
+        .fetch_all(pool)
+        .await?;
 
-        if let Some(full_name) = &params.full_name {
-            query.push_str(&format!(" AND full_name ILIKE '%{}%'", full_name));
-            count_query.push_str(&format!(" AND full_name ILIKE '%{}%'", full_name));
-        }
-
-        if let Some(email) = &params.email {
-            query.push_str(&format!(" AND email ILIKE '%{}%'", email));
-            count_query.push_str(&format!(" AND email ILIKE '%{}%'", email));
-        }
-
-        if let Some(phone) = &params.phone {
-            query.push_str(&format!(" AND phone ILIKE '%{}%'", phone));
-            count_query.push_str(&format!(" AND phone ILIKE '%{}%'", phone));
-        }
-
-        if let Some(is_active) = params.is_active {
-            query.push_str(&format!(" AND is_active = {}", is_active));
-            count_query.push_str(&format!(" AND is_active = {}", is_active));
-        }
-
-        query.push_str(&format!(
-            " ORDER BY create_date_time DESC LIMIT {} OFFSET {}",
-            page_size, offset
-        ));
-
-        let users = sqlx::query_as::<_, User>(&query).fetch_all(pool).await?;
-
-        let total: (i64,) = sqlx::query_as(&count_query).fetch_one(pool).await?;
+        let total: (i64,) = sqlx::query_as(
+            r#"
+            SELECT COUNT(*)
+            FROM users
+            WHERE ($1::TEXT IS NULL OR username ILIKE $1)
+              AND ($2::TEXT IS NULL OR full_name ILIKE $2)
+              AND ($3::TEXT IS NULL OR email ILIKE $3)
+              AND ($4::TEXT IS NULL OR phone ILIKE $4)
+              AND ($5::BOOLEAN IS NULL OR is_active = $5)
+            "#,
+        )
+        .bind(&username_pattern)
+        .bind(&full_name_pattern)
+        .bind(&email_pattern)
+        .bind(&phone_pattern)
+        .bind(params.is_active)
+        .fetch_one(pool)
+        .await?;
 
         Ok((users, total.0))
     }
 
     /// 获取所有用户（不分页）
     pub async fn get_all_users(pool: &PgPool, params: UserQueryParams) -> AppResult<Vec<User>> {
-        let mut query = String::from(
-            "SELECT id, username, password, full_name, email, phone, is_active,
-             creator_id, updater_id, create_date_time, update_date_time
-             FROM users WHERE 1=1",
-        );
+        let username_pattern = params.username.as_ref().map(|u| format!("%{}%", u));
+        let full_name_pattern = params.full_name.as_ref().map(|f| format!("%{}%", f));
+        let email_pattern = params.email.as_ref().map(|e| format!("%{}%", e));
 
-        if let Some(username) = &params.username {
-            query.push_str(&format!(" AND username ILIKE '%{}%'", username));
-        }
-
-        if let Some(full_name) = &params.full_name {
-            query.push_str(&format!(" AND full_name ILIKE '%{}%'", full_name));
-        }
-
-        if let Some(email) = &params.email {
-            query.push_str(&format!(" AND email ILIKE '%{}%'", email));
-        }
-
-        if let Some(is_active) = params.is_active {
-            query.push_str(&format!(" AND is_active = {}", is_active));
-        }
-
-        query.push_str(" ORDER BY create_date_time DESC");
-
-        let users = sqlx::query_as::<_, User>(&query).fetch_all(pool).await?;
+        let users = sqlx::query_as::<_, User>(
+            r#"
+            SELECT id, username, password, full_name, email, phone, is_active,
+                   creator_id, updater_id, create_date_time, update_date_time
+            FROM users
+            WHERE ($1::TEXT IS NULL OR username ILIKE $1)
+              AND ($2::TEXT IS NULL OR full_name ILIKE $2)
+              AND ($3::TEXT IS NULL OR email ILIKE $3)
+              AND ($4::BOOLEAN IS NULL OR is_active = $4)
+            ORDER BY create_date_time DESC
+            "#,
+        )
+        .bind(&username_pattern)
+        .bind(&full_name_pattern)
+        .bind(&email_pattern)
+        .bind(params.is_active)
+        .fetch_all(pool)
+        .await?;
 
         Ok(users)
     }
@@ -266,35 +269,38 @@ impl UserRepository {
         let page_size = if page_size < 1 { 10 } else { page_size };
         let offset = (page - 1) * page_size;
 
-        let mut query = String::from(
-            "SELECT id, username, full_name, is_active FROM users WHERE 1=1",
-        );
-        let mut count_query = String::from("SELECT COUNT(*) FROM users WHERE 1=1");
+        let keyword_pattern = keyword.as_ref().map(|k| format!("%{}%", k));
 
-        if let Some(is_active) = is_active {
-            query.push_str(&format!(" AND is_active = {}", is_active));
-            count_query.push_str(&format!(" AND is_active = {}", is_active));
-        }
+        let list = sqlx::query_as::<_, UserOption>(
+            r#"
+            SELECT id, username, full_name, is_active
+            FROM users
+            WHERE ($1::BOOLEAN IS NULL OR is_active = $1)
+              AND ($2::TEXT IS NULL OR username ILIKE $2 OR full_name ILIKE $2)
+            ORDER BY create_date_time DESC
+            LIMIT $3 OFFSET $4
+            "#,
+        )
+        .bind(is_active)
+        .bind(&keyword_pattern)
+        .bind(page_size)
+        .bind(offset)
+        .fetch_all(pool)
+        .await?;
 
-        if let Some(keyword) = keyword {
-            // 注意：当前 repo 里其他查询也使用 format 拼接 ILIKE，保持一致；后续建议改为 bind 防 SQL 注入
-            query.push_str(&format!(
-                " AND (username ILIKE '%{0}%' OR full_name ILIKE '%{0}%')",
-                keyword
-            ));
-            count_query.push_str(&format!(
-                " AND (username ILIKE '%{0}%' OR full_name ILIKE '%{0}%')",
-                keyword
-            ));
-        }
+        let total: (i64,) = sqlx::query_as(
+            r#"
+            SELECT COUNT(*)
+            FROM users
+            WHERE ($1::BOOLEAN IS NULL OR is_active = $1)
+              AND ($2::TEXT IS NULL OR username ILIKE $2 OR full_name ILIKE $2)
+            "#,
+        )
+        .bind(is_active)
+        .bind(&keyword_pattern)
+        .fetch_one(pool)
+        .await?;
 
-        query.push_str(&format!(
-            " ORDER BY create_date_time DESC LIMIT {} OFFSET {}",
-            page_size, offset
-        ));
-
-        let list = sqlx::query_as::<_, UserOption>(&query).fetch_all(pool).await?;
-        let total: (i64,) = sqlx::query_as(&count_query).fetch_one(pool).await?;
         Ok((list, total.0))
     }
 }

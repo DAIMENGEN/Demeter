@@ -163,59 +163,42 @@ impl TaskRepository {
         let page_size = params.page_size.unwrap_or(10);
         let offset = (page - 1) * page_size;
 
-        let mut conditions = vec!["project_id = $1".to_string()];
-        let mut param_count = 1;
+        let task_name_pattern = params.task_name.as_ref().map(|t| format!("%{}%", t));
 
-        if params.task_name.is_some() {
-            param_count += 1;
-            conditions.push(format!("task_name ILIKE '%' || ${} || '%'", param_count));
-        }
-
-        if params.parent_id.is_some() {
-            param_count += 1;
-            conditions.push(format!("parent_id = ${}", param_count));
-        }
-
-        let where_clause = if conditions.is_empty() {
-            String::new()
-        } else {
-            format!("WHERE {}", conditions.join(" AND "))
-        };
-
-        let query = format!(
+        let tasks = sqlx::query_as::<_, Task>(
             r#"SELECT id, task_name, parent_id, project_id, "order",
                       custom_attributes,
                       start_date_time, end_date_time, task_type,
                       creator_id, updater_id, create_date_time, update_date_time
                FROM project_tasks
-               {}
+               WHERE project_id = $1
+                 AND ($2::TEXT IS NULL OR task_name ILIKE $2)
+                 AND ($3::BIGINT IS NULL OR parent_id = $3)
                ORDER BY "order" ASC NULLS LAST, create_date_time DESC
-               LIMIT {} OFFSET {}"#,
-            where_clause, page_size, offset
-        );
+               LIMIT $4 OFFSET $5"#,
+        )
+        .bind(project_id)
+        .bind(&task_name_pattern)
+        .bind(params.parent_id)
+        .bind(page_size)
+        .bind(offset)
+        .fetch_all(pool)
+        .await?;
 
-        let count_query = format!(
-            "SELECT COUNT(*) as count FROM project_tasks {}",
-            where_clause
-        );
+        let total: (i64,) = sqlx::query_as(
+            r#"SELECT COUNT(*)
+               FROM project_tasks
+               WHERE project_id = $1
+                 AND ($2::TEXT IS NULL OR task_name ILIKE $2)
+                 AND ($3::BIGINT IS NULL OR parent_id = $3)"#,
+        )
+        .bind(project_id)
+        .bind(&task_name_pattern)
+        .bind(params.parent_id)
+        .fetch_one(pool)
+        .await?;
 
-        let mut query_builder = sqlx::query_as::<_, Task>(&query).bind(project_id);
-        let mut count_query_builder = sqlx::query_scalar::<_, i64>(&count_query).bind(project_id);
-
-        if let Some(task_name) = &params.task_name {
-            query_builder = query_builder.bind(task_name);
-            count_query_builder = count_query_builder.bind(task_name);
-        }
-
-        if let Some(parent_id) = params.parent_id {
-            query_builder = query_builder.bind(parent_id);
-            count_query_builder = count_query_builder.bind(parent_id);
-        }
-
-        let tasks = query_builder.fetch_all(pool).await?;
-        let total = count_query_builder.fetch_one(pool).await?;
-
-        Ok((tasks, total))
+        Ok((tasks, total.0))
     }
 
     /// 获取所有任务（不分页）
@@ -224,47 +207,24 @@ impl TaskRepository {
         project_id: i64,
         params: TaskQueryParams,
     ) -> AppResult<Vec<Task>> {
-        let mut conditions = vec!["project_id = $1".to_string()];
-        let mut param_count = 1;
+        let task_name_pattern = params.task_name.as_ref().map(|t| format!("%{}%", t));
 
-        if params.task_name.is_some() {
-            param_count += 1;
-            conditions.push(format!("task_name ILIKE '%' || ${} || '%'", param_count));
-        }
-
-        if params.parent_id.is_some() {
-            param_count += 1;
-            conditions.push(format!("parent_id = ${}", param_count));
-        }
-
-        let where_clause = if conditions.is_empty() {
-            String::new()
-        } else {
-            format!("WHERE {}", conditions.join(" AND "))
-        };
-
-        let query = format!(
+        let tasks = sqlx::query_as::<_, Task>(
             r#"SELECT id, task_name, parent_id, project_id, "order",
                       custom_attributes,
                       start_date_time, end_date_time, task_type,
                       creator_id, updater_id, create_date_time, update_date_time
                FROM project_tasks
-               {}
+               WHERE project_id = $1
+                 AND ($2::TEXT IS NULL OR task_name ILIKE $2)
+                 AND ($3::BIGINT IS NULL OR parent_id = $3)
                ORDER BY "order" ASC NULLS LAST, create_date_time DESC"#,
-            where_clause
-        );
-
-        let mut query_builder = sqlx::query_as::<_, Task>(&query).bind(project_id);
-
-        if let Some(task_name) = &params.task_name {
-            query_builder = query_builder.bind(task_name);
-        }
-
-        if let Some(parent_id) = params.parent_id {
-            query_builder = query_builder.bind(parent_id);
-        }
-
-        let tasks = query_builder.fetch_all(pool).await?;
+        )
+        .bind(project_id)
+        .bind(&task_name_pattern)
+        .bind(params.parent_id)
+        .fetch_all(pool)
+        .await?;
 
         Ok(tasks)
     }

@@ -17,48 +17,52 @@ impl ProjectRepository {
         let page_size = params.page_size.unwrap_or(10);
         let offset = (page - 1) * page_size;
 
-        // 构建查询条件
-        let mut query = String::from(
-            r#"SELECT id, project_name, description, start_date_time, end_date_time,
-             project_status, version, "order", creator_id, updater_id,
-             create_date_time, update_date_time
-             FROM projects WHERE 1=1"#,
-        );
-        let mut count_query = String::from("SELECT COUNT(*) FROM projects WHERE 1=1");
+        let project_name_pattern = params.project_name.as_ref().map(|p| format!("%{}%", p));
+        let creator_id_value = params.creator_id.map(|id| id.0);
 
-        if let Some(project_name) = &params.project_name {
-            query.push_str(&format!(" AND project_name ILIKE '%{}%'", project_name));
-            count_query.push_str(&format!(" AND project_name ILIKE '%{}%'", project_name));
-        }
+        let projects = sqlx::query_as::<_, Project>(
+            r#"
+            SELECT id, project_name, description, start_date_time, end_date_time,
+                   project_status, version, "order", creator_id, updater_id,
+                   create_date_time, update_date_time
+            FROM projects
+            WHERE ($1::TEXT IS NULL OR project_name ILIKE $1)
+              AND ($2::SMALLINT IS NULL OR project_status = $2)
+              AND ($3::TIMESTAMP IS NULL OR start_date_time >= $3)
+              AND ($4::TIMESTAMP IS NULL OR end_date_time <= $4)
+              AND ($5::BIGINT IS NULL OR creator_id = $5)
+            ORDER BY "order" ASC NULLS LAST, create_date_time DESC
+            LIMIT $6 OFFSET $7
+            "#,
+        )
+        .bind(&project_name_pattern)
+        .bind(params.project_status)
+        .bind(params.start_date_time)
+        .bind(params.end_date_time)
+        .bind(creator_id_value)
+        .bind(page_size)
+        .bind(offset)
+        .fetch_all(pool)
+        .await?;
 
-        if let Some(project_status) = params.project_status {
-            query.push_str(&format!(" AND project_status = {}", project_status));
-            count_query.push_str(&format!(" AND project_status = {}", project_status));
-        }
-
-        if let Some(start_date_time) = &params.start_date_time {
-            query.push_str(&format!(" AND start_date_time >= '{}'", start_date_time.format("%Y-%m-%d %H:%M:%S")));
-            count_query.push_str(&format!(" AND start_date_time >= '{}'", start_date_time.format("%Y-%m-%d %H:%M:%S")));
-        }
-
-        if let Some(end_date_time) = &params.end_date_time {
-            query.push_str(&format!(" AND end_date_time <= '{}'", end_date_time.format("%Y-%m-%d %H:%M:%S")));
-            count_query.push_str(&format!(" AND end_date_time <= '{}'", end_date_time.format("%Y-%m-%d %H:%M:%S")));
-        }
-
-        if let Some(creator_id) = params.creator_id {
-            query.push_str(&format!(" AND creator_id = {}", creator_id.0));
-            count_query.push_str(&format!(" AND creator_id = {}", creator_id.0));
-        }
-
-        query.push_str(&format!(
-            r#" ORDER BY "order" ASC NULLS LAST, create_date_time DESC LIMIT {} OFFSET {}"#,
-            page_size, offset
-        ));
-
-        let projects = sqlx::query_as::<_, Project>(&query).fetch_all(pool).await?;
-
-        let total: (i64,) = sqlx::query_as(&count_query).fetch_one(pool).await?;
+        let total: (i64,) = sqlx::query_as(
+            r#"
+            SELECT COUNT(*)
+            FROM projects
+            WHERE ($1::TEXT IS NULL OR project_name ILIKE $1)
+              AND ($2::SMALLINT IS NULL OR project_status = $2)
+              AND ($3::TIMESTAMP IS NULL OR start_date_time >= $3)
+              AND ($4::TIMESTAMP IS NULL OR end_date_time <= $4)
+              AND ($5::BIGINT IS NULL OR creator_id = $5)
+            "#,
+        )
+        .bind(&project_name_pattern)
+        .bind(params.project_status)
+        .bind(params.start_date_time)
+        .bind(params.end_date_time)
+        .bind(creator_id_value)
+        .fetch_one(pool)
+        .await?;
 
         Ok((projects, total.0))
     }
@@ -68,36 +72,30 @@ impl ProjectRepository {
         pool: &PgPool,
         params: ProjectQueryParams,
     ) -> AppResult<Vec<Project>> {
-        let mut query = String::from(
-            r#"SELECT id, project_name, description, start_date_time, end_date_time,
-             project_status, version, "order", creator_id, updater_id,
-             create_date_time, update_date_time
-             FROM projects WHERE 1=1"#,
-        );
+        let project_name_pattern = params.project_name.as_ref().map(|p| format!("%{}%", p));
+        let creator_id_value = params.creator_id.map(|id| id.0);
 
-        if let Some(project_name) = &params.project_name {
-            query.push_str(&format!(" AND project_name ILIKE '%{}%'", project_name));
-        }
-
-        if let Some(project_status) = params.project_status {
-            query.push_str(&format!(" AND project_status = {}", project_status));
-        }
-
-        if let Some(start_date_time) = &params.start_date_time {
-            query.push_str(&format!(" AND start_date_time >= '{}'", start_date_time.format("%Y-%m-%d %H:%M:%S")));
-        }
-
-        if let Some(end_date_time) = &params.end_date_time {
-            query.push_str(&format!(" AND end_date_time <= '{}'", end_date_time.format("%Y-%m-%d %H:%M:%S")));
-        }
-
-        if let Some(creator_id) = params.creator_id {
-            query.push_str(&format!(" AND creator_id = {}", creator_id.0));
-        }
-
-        query.push_str(r#" ORDER BY "order" ASC NULLS LAST, create_date_time DESC"#);
-
-        let projects = sqlx::query_as::<_, Project>(&query).fetch_all(pool).await?;
+        let projects = sqlx::query_as::<_, Project>(
+            r#"
+            SELECT id, project_name, description, start_date_time, end_date_time,
+                   project_status, version, "order", creator_id, updater_id,
+                   create_date_time, update_date_time
+            FROM projects
+            WHERE ($1::TEXT IS NULL OR project_name ILIKE $1)
+              AND ($2::SMALLINT IS NULL OR project_status = $2)
+              AND ($3::TIMESTAMP IS NULL OR start_date_time >= $3)
+              AND ($4::TIMESTAMP IS NULL OR end_date_time <= $4)
+              AND ($5::BIGINT IS NULL OR creator_id = $5)
+            ORDER BY "order" ASC NULLS LAST, create_date_time DESC
+            "#,
+        )
+        .bind(&project_name_pattern)
+        .bind(params.project_status)
+        .bind(params.start_date_time)
+        .bind(params.end_date_time)
+        .bind(creator_id_value)
+        .fetch_all(pool)
+        .await?;
 
         Ok(projects)
     }
@@ -263,18 +261,10 @@ impl ProjectRepository {
             .await?;
 
         // 3. 删除项目本身
-        let placeholders: Vec<String> = (1..=project_ids.len()).map(|i| format!("${}", i)).collect();
-        let query_str = format!(
-            "DELETE FROM projects WHERE id IN ({})",
-            placeholders.join(", ")
-        );
-
-        let mut query = sqlx::query(&query_str);
-        for project_id in project_ids {
-            query = query.bind(project_id);
-        }
-
-        let result = query.execute(&mut *tx).await?;
+        let result = sqlx::query("DELETE FROM projects WHERE id = ANY($1)")
+            .bind(&project_ids)
+            .execute(&mut *tx)
+            .await?;
 
         tx.commit().await?;
 

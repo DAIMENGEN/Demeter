@@ -98,7 +98,7 @@ pub async fn delete_holiday(
 pub async fn batch_delete_holidays(
     State(state): State<AppState>,
     Json(params): Json<BatchDeleteHolidaysParams>,
-) -> AppResult<Json<ApiResponse<i64>>> {
+) -> AppResult<Json<ApiResponse<u64>>> {
     let holiday_ids: Vec<i64> = params.ids.into_iter().map(|id| id.0).collect();
     let deleted_count = HolidayRepository::batch_delete_holidays(&state.pool, holiday_ids).await?;
 

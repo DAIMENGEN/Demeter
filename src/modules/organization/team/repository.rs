@@ -14,30 +14,35 @@ impl TeamRepository {
         let page = params.page.unwrap_or(1);
         let page_size = params.page_size.unwrap_or(10);
         let offset = (page - 1) * page_size;
-        // 构建查询条件
-        let mut query = String::from(
-            "SELECT id, team_name, description, creator_id, updater_id, create_date_time, update_date_time
-             FROM teams WHERE 1=1",
-        );
-        let mut count_query = String::from("SELECT COUNT(*) FROM teams WHERE 1=1");
-        if let Some(team_name) = &params.team_name {
-            query.push_str(&format!(
-                " AND team_name ILIKE '%{}%'",
-                team_name
-            ));
-            count_query.push_str(&format!(
-                " AND team_name ILIKE '%{}%'",
-                team_name
-            ));
-        }
-        query.push_str(&format!(
-            " ORDER BY create_date_time DESC LIMIT {} OFFSET {}",
-            page_size, offset
-        ));
-        let teams = sqlx::query_as::<_, Team>(&query)
-            .fetch_all(pool)
-            .await?;
-        let total: (i64,) = sqlx::query_as(&count_query).fetch_one(pool).await?;
+
+        let team_name_pattern = params.team_name.as_ref().map(|t| format!("%{}%", t));
+
+        let teams = sqlx::query_as::<_, Team>(
+            r#"
+            SELECT id, team_name, description, creator_id, updater_id, create_date_time, update_date_time
+            FROM teams
+            WHERE ($1::TEXT IS NULL OR team_name ILIKE $1)
+            ORDER BY create_date_time DESC
+            LIMIT $2 OFFSET $3
+            "#,
+        )
+        .bind(&team_name_pattern)
+        .bind(page_size)
+        .bind(offset)
+        .fetch_all(pool)
+        .await?;
+
+        let total: (i64,) = sqlx::query_as(
+            r#"
+            SELECT COUNT(*)
+            FROM teams
+            WHERE ($1::TEXT IS NULL OR team_name ILIKE $1)
+            "#,
+        )
+        .bind(&team_name_pattern)
+        .fetch_one(pool)
+        .await?;
+
         Ok((teams, total.0))
     }
     /// 获取所有团队（不分页）
@@ -45,20 +50,20 @@ impl TeamRepository {
         pool: &PgPool,
         params: TeamQueryParams,
     ) -> AppResult<Vec<Team>> {
-        let mut query = String::from(
-            "SELECT id, team_name, description, creator_id, updater_id, create_date_time, update_date_time
-             FROM teams WHERE 1=1",
-        );
-        if let Some(team_name) = &params.team_name {
-            query.push_str(&format!(
-                " AND team_name ILIKE '%{}%'",
-                team_name
-            ));
-        }
-        query.push_str(" ORDER BY create_date_time DESC");
-        let teams = sqlx::query_as::<_, Team>(&query)
-            .fetch_all(pool)
-            .await?;
+        let team_name_pattern = params.team_name.as_ref().map(|t| format!("%{}%", t));
+
+        let teams = sqlx::query_as::<_, Team>(
+            r#"
+            SELECT id, team_name, description, creator_id, updater_id, create_date_time, update_date_time
+            FROM teams
+            WHERE ($1::TEXT IS NULL OR team_name ILIKE $1)
+            ORDER BY create_date_time DESC
+            "#,
+        )
+        .bind(&team_name_pattern)
+        .fetch_all(pool)
+        .await?;
+
         Ok(teams)
     }
     /// 根据 ID 获取团队

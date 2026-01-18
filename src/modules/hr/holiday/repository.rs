@@ -17,54 +17,54 @@ impl HolidayRepository {
         let page_size = params.page_size.unwrap_or(10);
         let offset = (page - 1) * page_size;
 
-        // 构建查询条件
-        let mut query = String::from(
-            "SELECT id, holiday_name, description, holiday_date, holiday_type, is_recurring,
-             country_code, creator_id, updater_id, create_date_time, update_date_time
-             FROM holidays WHERE 1=1",
-        );
-        let mut count_query = String::from("SELECT COUNT(*) FROM holidays WHERE 1=1");
+        let holiday_name_pattern = params.holiday_name.as_ref().map(|h| format!("%{}%", h));
 
-        if let Some(holiday_name) = &params.holiday_name {
-            query.push_str(&format!(" AND holiday_name ILIKE '%{}%'", holiday_name));
-            count_query.push_str(&format!(" AND holiday_name ILIKE '%{}%'", holiday_name));
-        }
+        let holidays = sqlx::query_as::<_, Holiday>(
+            r#"
+            SELECT id, holiday_name, description, holiday_date, holiday_type, is_recurring,
+                   country_code, creator_id, updater_id, create_date_time, update_date_time
+            FROM holidays
+            WHERE ($1::TEXT IS NULL OR holiday_name ILIKE $1)
+              AND ($2::SMALLINT IS NULL OR holiday_type = $2)
+              AND ($3::SMALLINT IS NULL OR country_code = $3)
+              AND ($4::BOOLEAN IS NULL OR is_recurring = $4)
+              AND ($5::DATE IS NULL OR holiday_date >= $5)
+              AND ($6::DATE IS NULL OR holiday_date <= $6)
+            ORDER BY holiday_date DESC
+            LIMIT $7 OFFSET $8
+            "#,
+        )
+        .bind(&holiday_name_pattern)
+        .bind(params.holiday_type)
+        .bind(params.country_code)
+        .bind(params.is_recurring)
+        .bind(params.start_date)
+        .bind(params.end_date)
+        .bind(page_size)
+        .bind(offset)
+        .fetch_all(pool)
+        .await?;
 
-        if let Some(holiday_type) = params.holiday_type {
-            query.push_str(&format!(" AND holiday_type = {}", holiday_type));
-            count_query.push_str(&format!(" AND holiday_type = {}", holiday_type));
-        }
-
-        if let Some(country_code) = params.country_code {
-            query.push_str(&format!(" AND country_code = {}", country_code));
-            count_query.push_str(&format!(" AND country_code = {}", country_code));
-        }
-
-        if let Some(is_recurring) = params.is_recurring {
-            query.push_str(&format!(" AND is_recurring = {}", is_recurring));
-            count_query.push_str(&format!(" AND is_recurring = {}", is_recurring));
-        }
-
-        if let Some(start_date) = params.start_date {
-            query.push_str(&format!(" AND holiday_date >= '{}'", start_date));
-            count_query.push_str(&format!(" AND holiday_date >= '{}'", start_date));
-        }
-
-        if let Some(end_date) = params.end_date {
-            query.push_str(&format!(" AND holiday_date <= '{}'", end_date));
-            count_query.push_str(&format!(" AND holiday_date <= '{}'", end_date));
-        }
-
-        query.push_str(&format!(
-            " ORDER BY holiday_date DESC LIMIT {} OFFSET {}",
-            page_size, offset
-        ));
-
-        let holidays = sqlx::query_as::<_, Holiday>(&query)
-            .fetch_all(pool)
-            .await?;
-
-        let total: (i64,) = sqlx::query_as(&count_query).fetch_one(pool).await?;
+        let total: (i64,) = sqlx::query_as(
+            r#"
+            SELECT COUNT(*)
+            FROM holidays
+            WHERE ($1::TEXT IS NULL OR holiday_name ILIKE $1)
+              AND ($2::SMALLINT IS NULL OR holiday_type = $2)
+              AND ($3::SMALLINT IS NULL OR country_code = $3)
+              AND ($4::BOOLEAN IS NULL OR is_recurring = $4)
+              AND ($5::DATE IS NULL OR holiday_date >= $5)
+              AND ($6::DATE IS NULL OR holiday_date <= $6)
+            "#,
+        )
+        .bind(&holiday_name_pattern)
+        .bind(params.holiday_type)
+        .bind(params.country_code)
+        .bind(params.is_recurring)
+        .bind(params.start_date)
+        .bind(params.end_date)
+        .fetch_one(pool)
+        .await?;
 
         Ok((holidays, total.0))
     }
@@ -74,41 +74,30 @@ impl HolidayRepository {
         pool: &PgPool,
         params: HolidayQueryParams,
     ) -> AppResult<Vec<Holiday>> {
-        let mut query = String::from(
-            "SELECT id, holiday_name, description, holiday_date, holiday_type, is_recurring,
-             country_code, creator_id, updater_id, create_date_time, update_date_time
-             FROM holidays WHERE 1=1",
-        );
+        let holiday_name_pattern = params.holiday_name.as_ref().map(|h| format!("%{}%", h));
 
-        if let Some(holiday_name) = &params.holiday_name {
-            query.push_str(&format!(" AND holiday_name ILIKE '%{}%'", holiday_name));
-        }
-
-        if let Some(holiday_type) = params.holiday_type {
-            query.push_str(&format!(" AND holiday_type = {}", holiday_type));
-        }
-
-        if let Some(country_code) = params.country_code {
-            query.push_str(&format!(" AND country_code = {}", country_code));
-        }
-
-        if let Some(is_recurring) = params.is_recurring {
-            query.push_str(&format!(" AND is_recurring = {}", is_recurring));
-        }
-
-        if let Some(start_date) = params.start_date {
-            query.push_str(&format!(" AND holiday_date >= '{}'", start_date));
-        }
-
-        if let Some(end_date) = params.end_date {
-            query.push_str(&format!(" AND holiday_date <= '{}'", end_date));
-        }
-
-        query.push_str(" ORDER BY holiday_date DESC");
-
-        let holidays = sqlx::query_as::<_, Holiday>(&query)
-            .fetch_all(pool)
-            .await?;
+        let holidays = sqlx::query_as::<_, Holiday>(
+            r#"
+            SELECT id, holiday_name, description, holiday_date, holiday_type, is_recurring,
+                   country_code, creator_id, updater_id, create_date_time, update_date_time
+            FROM holidays
+            WHERE ($1::TEXT IS NULL OR holiday_name ILIKE $1)
+              AND ($2::SMALLINT IS NULL OR holiday_type = $2)
+              AND ($3::SMALLINT IS NULL OR country_code = $3)
+              AND ($4::BOOLEAN IS NULL OR is_recurring = $4)
+              AND ($5::DATE IS NULL OR holiday_date >= $5)
+              AND ($6::DATE IS NULL OR holiday_date <= $6)
+            ORDER BY holiday_date DESC
+            "#,
+        )
+        .bind(&holiday_name_pattern)
+        .bind(params.holiday_type)
+        .bind(params.country_code)
+        .bind(params.is_recurring)
+        .bind(params.start_date)
+        .bind(params.end_date)
+        .fetch_all(pool)
+        .await?;
 
         Ok(holidays)
     }
@@ -178,77 +167,32 @@ impl HolidayRepository {
             return Ok(None);
         }
 
-        let mut updates = Vec::new();
-        let mut bind_count = 1;
-
-        if params.holiday_name.is_some() {
-            updates.push(format!("holiday_name = ${}", bind_count));
-            bind_count += 1;
-        }
-        if params.description.is_some() {
-            updates.push(format!("description = ${}", bind_count));
-            bind_count += 1;
-        }
-        if params.holiday_date.is_some() {
-            updates.push(format!("holiday_date = ${}", bind_count));
-            bind_count += 1;
-        }
-        if params.holiday_type.is_some() {
-            updates.push(format!("holiday_type = ${}", bind_count));
-            bind_count += 1;
-        }
-        if params.is_recurring.is_some() {
-            updates.push(format!("is_recurring = ${}", bind_count));
-            bind_count += 1;
-        }
-        if params.country_code.is_some() {
-            updates.push(format!("country_code = ${}", bind_count));
-            bind_count += 1;
-        }
-
-        updates.push(format!("updater_id = ${}", bind_count));
-        bind_count += 1;
-        updates.push(format!("update_date_time = ${}", bind_count));
-        bind_count += 1;
-
-        let update_clause = updates.join(", ");
-        let query_str = format!(
+        let holiday = sqlx::query_as::<_, Holiday>(
             r#"
             UPDATE holidays
-            SET {}
-            WHERE id = ${}
+            SET holiday_name = COALESCE($2, holiday_name),
+                description = COALESCE($3, description),
+                holiday_date = COALESCE($4, holiday_date),
+                holiday_type = COALESCE($5, holiday_type),
+                is_recurring = COALESCE($6, is_recurring),
+                country_code = COALESCE($7, country_code),
+                updater_id = $8,
+                update_date_time = NOW()
+            WHERE id = $1
             RETURNING id, holiday_name, description, holiday_date, holiday_type, is_recurring,
                       country_code, creator_id, updater_id, create_date_time, update_date_time
             "#,
-            update_clause, bind_count
-        );
-
-        let mut query = sqlx::query_as::<_, Holiday>(&query_str);
-
-        if let Some(holiday_name) = params.holiday_name {
-            query = query.bind(holiday_name);
-        }
-        if let Some(description) = params.description {
-            query = query.bind(description);
-        }
-        if let Some(holiday_date) = params.holiday_date {
-            query = query.bind(holiday_date);
-        }
-        if let Some(holiday_type) = params.holiday_type {
-            query = query.bind(holiday_type);
-        }
-        if let Some(is_recurring) = params.is_recurring {
-            query = query.bind(is_recurring);
-        }
-        if let Some(country_code) = params.country_code {
-            query = query.bind(country_code);
-        }
-
-        query = query.bind(updater_id);
-        query = query.bind(chrono::Utc::now().naive_utc());
-        query = query.bind(holiday_id);
-
-        let holiday = query.fetch_one(pool).await?;
+        )
+        .bind(holiday_id)
+        .bind(&params.holiday_name)
+        .bind(&params.description)
+        .bind(params.holiday_date)
+        .bind(params.holiday_type)
+        .bind(params.is_recurring)
+        .bind(params.country_code)
+        .bind(updater_id)
+        .fetch_one(pool)
+        .await?;
 
         Ok(Some(holiday))
     }
@@ -267,22 +211,17 @@ impl HolidayRepository {
     pub async fn batch_delete_holidays(
         pool: &PgPool,
         holiday_ids: Vec<i64>,
-    ) -> AppResult<i64> {
-        if holiday_ids.is_empty() {
-            return Ok(0);
-        }
+    ) -> AppResult<u64> {
+        let result = sqlx::query(
+            r#"
+            DELETE FROM holidays
+            WHERE id = ANY($1)
+            "#,
+        )
+        .bind(&holiday_ids)
+        .execute(pool)
+        .await?;
 
-        let placeholders: Vec<String> = (1..=holiday_ids.len()).map(|i| format!("${}", i)).collect();
-        let query_str = format!("DELETE FROM holidays WHERE id IN ({})", placeholders.join(", "));
-
-        let mut query = sqlx::query(&query_str);
-        for holiday_id in holiday_ids {
-            query = query.bind(holiday_id);
-        }
-
-        let result = query.execute(pool).await?;
-
-        Ok(result.rows_affected() as i64)
+        Ok(result.rows_affected())
     }
 }
-
