@@ -16,6 +16,7 @@ pub struct AppConfig {
 pub struct ServerConfig {
     pub host: String,
     pub port: u16,
+    pub cors_origin: String,
 }
 
 /// 数据库配置
@@ -58,6 +59,7 @@ impl AppConfig {
             .add_source(config::Environment::default().separator("__"))
             .set_default("snowflake.datacenter_id", 1)?
             .set_default("snowflake.machine_id", 1)?
+            .set_default("server.cors_origin", "http://localhost:3000")?
             .build()?;
 
         config.try_deserialize()

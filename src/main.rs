@@ -68,7 +68,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Configure CORS
     let cors = CorsLayer::new()
-        .allow_origin("http://127.0.0.1:3000".parse::<HeaderValue>()?)
+        .allow_origin(config.server.cors_origin.parse::<HeaderValue>()?)
         .allow_methods([
             Method::GET,
             Method::POST,
@@ -77,7 +77,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             Method::OPTIONS,
         ])
         .allow_headers([header::CONTENT_TYPE, header::AUTHORIZATION, header::ACCEPT])
-        .allow_credentials(true);
+        .allow_credentials(true)
+        .max_age(Duration::from_secs(3600));
 
     // Mount all routes under /api
     let api_routes = Router::new()
