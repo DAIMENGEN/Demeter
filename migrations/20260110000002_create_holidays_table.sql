@@ -5,7 +5,6 @@ CREATE TABLE IF NOT EXISTS holidays (
     description TEXT,
     holiday_date DATE NOT NULL,
     holiday_type INTEGER NOT NULL,
-    is_recurring BOOLEAN NOT NULL DEFAULT FALSE,
     country_code INTEGER NOT NULL,
     creator_id BIGINT NOT NULL,
     updater_id BIGINT,
@@ -17,5 +16,4 @@ CREATE TABLE IF NOT EXISTS holidays (
 CREATE INDEX idx_holidays_holiday_date ON holidays(holiday_date);
 CREATE INDEX idx_holidays_holiday_type ON holidays(holiday_type);
 CREATE INDEX idx_holidays_country_code ON holidays(country_code);
-CREATE INDEX idx_holidays_is_recurring ON holidays(is_recurring);
 CREATE INDEX idx_holidays_create_date_time ON holidays(create_date_time DESC);

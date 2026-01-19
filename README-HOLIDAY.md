@@ -14,7 +14,6 @@
 - `description` (TEXT): 假期描述，可为空
 - `holiday_date` (DATE): 假期日期，不可为空
 - `holiday_type` (INTEGER): 假期类型，不可为空
-- `is_recurring` (BOOLEAN): 是否循环假期，默认 `false`
 - `country_code` (INTEGER): 国家代码，不可为空
 - `creator_id` (BIGINT): 创建者ID，不可为空
 - `updater_id` (BIGINT): 更新者ID，可为空
@@ -25,7 +24,6 @@
 - `idx_holidays_holiday_date`
 - `idx_holidays_holiday_type`
 - `idx_holidays_country_code`
-- `idx_holidays_is_recurring`
 - `idx_holidays_create_date_time`
 
 ## API 端点
@@ -43,7 +41,6 @@
   - `holidayName` (可选)
   - `holidayType` (可选)
   - `countryCode` (可选)
-  - `isRecurring` (可选)
   - `startDate` (可选)
   - `endDate` (可选)
 
@@ -58,14 +55,13 @@
 ### 4. 创建假期
 - **方法**: POST
 - **路径**: `/api/holidays`
-- **请求体**（`CreateHolidayParams`，其中 `isRecurring` 可选，默认 false）:
+- **请求体**（`CreateHolidayParams`）:
 ```json
 {
   "holidayName": "春节",
   "description": "中国传统新年",
   "holidayDate": "2026-01-29",
   "holidayType": 1,
-  "isRecurring": true,
   "countryCode": 86
 }
 ```
@@ -80,7 +76,6 @@
   "description": "更新后的描述",
   "holidayDate": "2026-01-29",
   "holidayType": 1,
-  "isRecurring": true,
   "countryCode": 86
 }
 ```
@@ -96,6 +91,31 @@
 ```json
 {
   "ids": [1, 2, 3]
+}
+```
+
+### 8. 批量创建假期
+- **方法**: POST
+- **路径**: `/api/holidays/batch-create`
+- **请求体**:
+```json
+{
+  "holidays": [
+    {
+      "holidayName": "春节",
+      "description": "中国传统新年",
+      "holidayDate": "2026-01-29",
+      "holidayType": 1,
+      "countryCode": 86
+    },
+    {
+      "holidayName": "劳动节",
+      "description": "国际劳动节",
+      "holidayDate": "2026-05-01",
+      "holidayType": 1,
+      "countryCode": 86
+    }
+  ]
 }
 ```
 
@@ -129,3 +149,4 @@ cargo run
 ```
 
 应用程序启动时会自动运行所有待执行的迁移。
+
