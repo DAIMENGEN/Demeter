@@ -29,3 +29,6 @@ yarn-error.log*
 pnpm-debug.log*
 .npm
 .yarn
+
+# GitHub
+.github/
