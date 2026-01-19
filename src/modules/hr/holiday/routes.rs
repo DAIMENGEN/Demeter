@@ -20,6 +20,10 @@ pub fn holiday_routes(state: AppState) -> Router {
             "/holidays/batch-delete",
             post(handlers::batch_delete_holidays),
         )
+        .route(
+            "/holidays/batch-create",
+            post(handlers::batch_create_holidays),
+        )
         .layer(middleware::from_fn_with_state(
             state.jwt_config.clone(),
             jwt_auth_middleware,

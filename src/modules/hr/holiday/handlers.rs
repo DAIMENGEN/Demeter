@@ -4,8 +4,8 @@ use crate::common::id::Id;
 use crate::common::jwt::Claims;
 use crate::common::response::{ApiResponse, PageResponse};
 use crate::modules::hr::holiday::models::{
-    BatchDeleteHolidaysParams, CreateHolidayParams, Holiday, HolidayQueryParams,
-    UpdateHolidayParams,
+    BatchCreateHolidaysParams, BatchDeleteHolidaysParams, CreateHolidayParams, Holiday,
+    HolidayQueryParams, UpdateHolidayParams,
 };
 use crate::modules::hr::holiday::repository::HolidayRepository;
 use axum::{
@@ -104,3 +104,31 @@ pub async fn batch_delete_holidays(
 
     Ok(Json(ApiResponse::success(deleted_count)))
 }
+
+/// 批量创建假期
+pub async fn batch_create_holidays(
+    State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
+    Json(params): Json<BatchCreateHolidaysParams>,
+) -> AppResult<(StatusCode, Json<ApiResponse<Vec<Holiday>>>)> {
+    let creator_id = claims.sub;
+
+    let mut holiday_ids = Vec::new();
+    for _ in 0..params.holidays.len() {
+        let id = state
+            .generate_id()
+            .map_err(|e| AppError::InternalError(format!("生成假期ID失败: {}", e)))?;
+        holiday_ids.push(id);
+    }
+
+    let holidays = HolidayRepository::batch_create_holidays(
+        &state.pool,
+        holiday_ids,
+        params.holidays,
+        creator_id,
+    )
+    .await?;
+
+    Ok((StatusCode::CREATED, Json(ApiResponse::success(holidays))))
+}
+

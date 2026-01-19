@@ -63,3 +63,10 @@ pub struct HolidayQueryParams {
 pub struct BatchDeleteHolidaysParams {
     pub ids: Vec<Id>,
 }
+
+/// 批量创建假期请求参数
+#[derive(Debug, Deserialize)]
+pub struct BatchCreateHolidaysParams {
+    pub holidays: Vec<CreateHolidayParams>,
+}
+

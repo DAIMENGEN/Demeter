@@ -224,4 +224,43 @@ impl HolidayRepository {
 
         Ok(result.rows_affected())
     }
+
+    /// 批量创建假期
+    pub async fn batch_create_holidays(
+        pool: &PgPool,
+        holiday_ids: Vec<i64>,
+        params: Vec<CreateHolidayParams>,
+        creator_id: i64,
+    ) -> AppResult<Vec<Holiday>> {
+        let mut holidays = Vec::new();
+
+        for (idx, param) in params.into_iter().enumerate() {
+            let is_recurring = param.is_recurring.unwrap_or(false);
+            let holiday_id = holiday_ids[idx];
+
+            let holiday = sqlx::query_as::<_, Holiday>(
+                r#"
+                INSERT INTO holidays (id, holiday_name, description, holiday_date, holiday_type, is_recurring,
+                                    country_code, creator_id, create_date_time)
+                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW())
+                RETURNING id, holiday_name, description, holiday_date, holiday_type, is_recurring,
+                          country_code, creator_id, updater_id, create_date_time, update_date_time
+                "#,
+            )
+            .bind(holiday_id)
+            .bind(&param.holiday_name)
+            .bind(&param.description)
+            .bind(param.holiday_date)
+            .bind(param.holiday_type)
+            .bind(is_recurring)
+            .bind(param.country_code)
+            .bind(creator_id)
+            .fetch_one(pool)
+            .await?;
+
+            holidays.push(holiday);
+        }
+
+        Ok(holidays)
+    }
 }
