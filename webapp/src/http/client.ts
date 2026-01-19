@@ -11,7 +11,7 @@ import {log} from "@Webapp/logging.ts";
  * 创建 axios 实例
  */
 const httpClient: AxiosInstance = axios.create({
-  baseURL: "http://127.0.0.1:9000/api",
+  baseURL: "http://localhost:9000/api",
   timeout: 30000,
   withCredentials: true,
   headers: {

@@ -2,151 +2,147 @@
 
 ## 概述
 
-假期模块已成功实现，遵循现有的模块架构模式。
+Holiday 模块是 HR 子模块，为组织提供假期管理功能。该模块支持自定义假期类型、假期批量导入、假期查询等，满足不同组织的假期管理需求。
 
-## 数据库表结构
+## 核心特性
 
-数据库表名: `holidays`
+### 1. 假期类型自定义
+- 支持为组织定义多种假期类型（如法定节假日、调休、公司福利假等）
+- 假期类型可配置名称、颜色、描述等属性
 
-字段说明（以 `migrations/20260110000002_create_holidays_table.sql` 为准）:
+### 2. 假期管理
+- 支持单个假期的增删改查
+- 支持批量导入假期（如每年法定节假日）
+- 支持按年份、类型、名称等条件查询假期
+
+### 3. 假期固有字段
+每个假期包含以下固定字段（API 返回为 camelCase）：
+- `id`: 假期ID（Snowflake ID）
+- `holidayName`: 假期名称
+- `holidayType`: 假期类型（如节假日、调休等）
+- `startDate`: 开始日期
+- `endDate`: 结束日期
+- `description`: 假期描述
+- `color`: 类型颜色（可选）
+- `creatorId`: 创建者ID
+- `updaterId`: 更新者ID
+- `createDateTime`: 创建时间
+- `updateDateTime`: 更新时间
+
+## 数据库结构
+
+### 假期类型表 (holiday_types)
 - `id` (BIGINT): 主键（Snowflake ID）
-- `holiday_name` (VARCHAR(255)): 假期名称，不可为空
-- `description` (TEXT): 假期描述，可为空
-- `holiday_date` (DATE): 假期日期，不可为空
-- `holiday_type` (INTEGER): 假期类型，不可为空
-- `country_code` (INTEGER): 国家代码，不可为空
-- `creator_id` (BIGINT): 创建者ID，不可为空
-- `updater_id` (BIGINT): 更新者ID，可为空
-- `create_date_time` (TIMESTAMP): 创建时间
-- `update_date_time` (TIMESTAMP): 更新时间，可为空
+- `type_name` (VARCHAR): 类型名称（如“法定节假日”）
+- `color` (VARCHAR): 类型颜色（如“#FF0000”）
+- `description` (TEXT): 类型描述
+- `creator_id`, `updater_id`, `create_date_time`, `update_date_time`
 
-索引:
-- `idx_holidays_holiday_date`
-- `idx_holidays_holiday_type`
-- `idx_holidays_country_code`
-- `idx_holidays_create_date_time`
+### 假期表 (holidays)
+- `id` (BIGINT): 主键（Snowflake ID）
+- `holiday_name` (VARCHAR): 假期名称
+- `holiday_type_id` (BIGINT): 外键关联 `holiday_types(id)`
+- `start_date` (DATE): 开始日期
+- `end_date` (DATE): 结束日期
+- `description` (TEXT): 假期描述
+- `creator_id`, `updater_id`, `create_date_time`, `update_date_time`
 
 ## API 端点
 
 说明：后端在 `main.rs` 中将所有路由统一挂载在 `/api` 下，因此本文档中的路径均以 `/api` 开头。
 
-> 假期模块的所有接口均受 JWT 中间件保护，需要在请求头中携带：`Authorization: Bearer <accessToken>`。
+> Holiday 模块的所有接口均受 JWT 中间件保护，需要在请求头中携带：`Authorization: Bearer <accessToken>`。
 
-### 1. 获取假期列表（分页）
-- **方法**: GET
-- **路径**: `/api/holidays`
-- **查询参数**（`HolidayQueryParams`，camelCase）:
-  - `page` (可选)
-  - `pageSize` (可选)
-  - `holidayName` (可选)
-  - `holidayType` (可选)
-  - `countryCode` (可选)
-  - `startDate` (可选)
-  - `endDate` (可选)
+### 假期类型管理
 
-### 2. 获取所有假期（不分页）
-- **方法**: GET
-- **路径**: `/api/holidays/all`
+| 方法 | 路径 | 说明 |
+|------|------|------|
+| GET | `/api/holiday-types` | 获取所有假期类型 |
+| POST | `/api/holiday-types` | 创建假期类型 |
+| GET | `/api/holiday-types/{typeId}` | 获取指定假期类型 |
+| PUT | `/api/holiday-types/{typeId}` | 更新假期类型 |
+| DELETE | `/api/holiday-types/{typeId}` | 删除假期类型 |
 
-### 3. 根据ID获取假期
-- **方法**: GET
-- **路径**: `/api/holidays/{id}`
+### 假期管理
 
-### 4. 创建假期
-- **方法**: POST
-- **路径**: `/api/holidays`
-- **请求体**（`CreateHolidayParams`）:
-```json
+| 方法 | 路径 | 说明 |
+|------|------|------|
+| GET | `/api/holidays` | 获取假期列表（支持分页、筛选） |
+| POST | `/api/holidays` | 创建假期 |
+| GET | `/api/holidays/{holidayId}` | 获取指定假期 |
+| PUT | `/api/holidays/{holidayId}` | 更新假期 |
+| DELETE | `/api/holidays/{holidayId}` | 删除假期 |
+| POST | `/api/holidays/batch-import` | 批量导入假期 |
+
+## 使用示例
+
+### 1. 创建假期类型
+```http
+POST /api/holiday-types
+Content-Type: application/json
+
+{
+  "typeName": "法定节假日",
+  "color": "#FF0000",
+  "description": "国家法定节假日"
+}
+```
+
+### 2. 创建假期
+```http
+POST /api/holidays
+Content-Type: application/json
+
 {
   "holidayName": "春节",
-  "description": "中国传统新年",
-  "holidayDate": "2026-01-29",
-  "holidayType": 1,
-  "countryCode": 86
+  "holidayTypeId": 1,
+  "startDate": "2026-02-17",
+  "endDate": "2026-02-23",
+  "description": "农历新年假期"
 }
 ```
 
-### 5. 更新假期
-- **方法**: PUT
-- **路径**: `/api/holidays/{id}`
-- **请求体**（`UpdateHolidayParams`，所有字段可选）:
-```json
-{
-  "holidayName": "春节",
-  "description": "更新后的描述",
-  "holidayDate": "2026-01-29",
-  "holidayType": 1,
-  "countryCode": 86
-}
+### 3. 批量导入假期
+```http
+POST /api/holidays/batch-import
+Content-Type: application/json
+
+[
+  {
+    "holidayName": "清明节",
+    "holidayTypeId": 1,
+    "startDate": "2026-04-04",
+    "endDate": "2026-04-06",
+    "description": "清明节假期"
+  },
+  {
+    "holidayName": "劳动节",
+    "holidayTypeId": 1,
+    "startDate": "2026-05-01",
+    "endDate": "2026-05-03",
+    "description": "五一劳动节"
+  }
+]
 ```
 
-### 6. 删除假期
-- **方法**: DELETE
-- **路径**: `/api/holidays/{id}`
-
-### 7. 批量删除假期
-- **方法**: POST
-- **路径**: `/api/holidays/batch-delete`
-- **请求体**:
-```json
-{
-  "ids": [1, 2, 3]
-}
+### 4. 查询假期
+```
+GET /api/holidays?page=1&pageSize=10&holidayName=春节&year=2026
 ```
 
-### 8. 批量创建假期
-- **方法**: POST
-- **路径**: `/api/holidays/batch-create`
-- **请求体**:
-```json
-{
-  "holidays": [
-    {
-      "holidayName": "春节",
-      "description": "中国传统新年",
-      "holidayDate": "2026-01-29",
-      "holidayType": 1,
-      "countryCode": 86
-    },
-    {
-      "holidayName": "劳动节",
-      "description": "国际劳动节",
-      "holidayDate": "2026-05-01",
-      "holidayType": 1,
-      "countryCode": 86
-    }
-  ]
-}
-```
+## 技术实现
 
-## 模块结构
+- **Web 框架**: Axum
+- **数据库**: PostgreSQL
+- **ORM**: SQLx
+- **JSON 处理**: serde_json
+- **认证**: JWT（通过中间件保护所有路由）
 
-```
-src/modules/hr/holiday/
-├── mod.rs          # 模块导出
-├── models.rs       # 数据模型定义
-├── repository.rs   # 数据库访问层
-├── handlers.rs     # 请求处理器
-└── routes.rs       # 路由配置
-```
+## 注意事项
 
-## 技术要点
-
-1. **异步数据库操作**: 使用 `sqlx` 进行异步 PostgreSQL 查询
-2. **类型安全**: 使用 `sqlx::query_as` 进行类型安全的查询
-3. **错误处理**: 统一的错误处理机制
-4. **响应格式**: 统一的 API 响应格式
-5. **分页支持**: 支持分页和非分页查询
-6. **灵活查询**: 支持多条件组合查询
-
-## 数据库迁移
-
-迁移文件位置: `migrations/20260110000002_create_holidays_table.sql`
-
-运行迁移:
-```bash
-cargo run
-```
-
-应用程序启动时会自动运行所有待执行的迁移。
+1. 所有 API 端点都需要 JWT 认证
+2. 批量导入假期时，需保证数据格式正确，避免重复导入
+3. 删除假期类型不会影响已创建假期的数据，但建议谨慎操作
+4. 假期查询支持多条件筛选，如年份、类型、名称等
+5. 删除假期类型时，建议先确认无假期引用该类型
 

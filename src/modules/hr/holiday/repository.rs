@@ -22,20 +22,18 @@ impl HolidayRepository {
         let holidays = sqlx::query_as::<_, Holiday>(
             r#"
             SELECT id, holiday_name, description, holiday_date, holiday_type,
-                   country_code, creator_id, updater_id, create_date_time, update_date_time
+                   creator_id, updater_id, create_date_time, update_date_time
             FROM holidays
             WHERE ($1::TEXT IS NULL OR holiday_name ILIKE $1)
               AND ($2::SMALLINT IS NULL OR holiday_type = $2)
-              AND ($3::SMALLINT IS NULL OR country_code = $3)
-              AND ($4::DATE IS NULL OR holiday_date >= $4)
-              AND ($5::DATE IS NULL OR holiday_date <= $5)
+              AND ($3::DATE IS NULL OR holiday_date >= $3)
+              AND ($4::DATE IS NULL OR holiday_date <= $4)
             ORDER BY holiday_date DESC
-            LIMIT $6 OFFSET $7
+            LIMIT $5 OFFSET $6
             "#,
         )
         .bind(&holiday_name_pattern)
         .bind(params.holiday_type)
-        .bind(params.country_code)
         .bind(params.start_date)
         .bind(params.end_date)
         .bind(page_size)
@@ -49,14 +47,12 @@ impl HolidayRepository {
             FROM holidays
             WHERE ($1::TEXT IS NULL OR holiday_name ILIKE $1)
               AND ($2::SMALLINT IS NULL OR holiday_type = $2)
-              AND ($3::SMALLINT IS NULL OR country_code = $3)
-              AND ($4::DATE IS NULL OR holiday_date >= $4)
-              AND ($5::DATE IS NULL OR holiday_date <= $5)
+              AND ($3::DATE IS NULL OR holiday_date >= $3)
+              AND ($4::DATE IS NULL OR holiday_date <= $4)
             "#,
         )
         .bind(&holiday_name_pattern)
         .bind(params.holiday_type)
-        .bind(params.country_code)
         .bind(params.start_date)
         .bind(params.end_date)
         .fetch_one(pool)
@@ -75,19 +71,17 @@ impl HolidayRepository {
         let holidays = sqlx::query_as::<_, Holiday>(
             r#"
             SELECT id, holiday_name, description, holiday_date, holiday_type,
-                   country_code, creator_id, updater_id, create_date_time, update_date_time
+                   creator_id, updater_id, create_date_time, update_date_time
             FROM holidays
             WHERE ($1::TEXT IS NULL OR holiday_name ILIKE $1)
               AND ($2::SMALLINT IS NULL OR holiday_type = $2)
-              AND ($3::SMALLINT IS NULL OR country_code = $3)
-              AND ($4::DATE IS NULL OR holiday_date >= $4)
-              AND ($5::DATE IS NULL OR holiday_date <= $5)
+              AND ($3::DATE IS NULL OR holiday_date >= $3)
+              AND ($4::DATE IS NULL OR holiday_date <= $4)
             ORDER BY holiday_date DESC
             "#,
         )
         .bind(&holiday_name_pattern)
         .bind(params.holiday_type)
-        .bind(params.country_code)
         .bind(params.start_date)
         .bind(params.end_date)
         .fetch_all(pool)
@@ -104,7 +98,7 @@ impl HolidayRepository {
         let holiday = sqlx::query_as::<_, Holiday>(
             r#"
             SELECT id, holiday_name, description, holiday_date, holiday_type,
-                   country_code, creator_id, updater_id, create_date_time, update_date_time
+                   creator_id, updater_id, create_date_time, update_date_time
             FROM holidays
             WHERE id = $1
             "#,
@@ -126,10 +120,10 @@ impl HolidayRepository {
         let holiday = sqlx::query_as::<_, Holiday>(
             r#"
             INSERT INTO holidays (id, holiday_name, description, holiday_date, holiday_type,
-                                country_code, creator_id, create_date_time)
-            VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())
+                                creator_id, create_date_time)
+            VALUES ($1, $2, $3, $4, $5, $6, NOW())
             RETURNING id, holiday_name, description, holiday_date, holiday_type,
-                      country_code, creator_id, updater_id, create_date_time, update_date_time
+                      creator_id, updater_id, create_date_time, update_date_time
             "#,
         )
         .bind(holiday_id)
@@ -137,7 +131,6 @@ impl HolidayRepository {
         .bind(&params.description)
         .bind(params.holiday_date)
         .bind(params.holiday_type)
-        .bind(params.country_code)
         .bind(creator_id)
         .fetch_one(pool)
         .await?;
@@ -165,12 +158,11 @@ impl HolidayRepository {
                 description = COALESCE($3, description),
                 holiday_date = COALESCE($4, holiday_date),
                 holiday_type = COALESCE($5, holiday_type),
-                country_code = COALESCE($6, country_code),
-                updater_id = $7,
+                updater_id = $6,
                 update_date_time = NOW()
             WHERE id = $1
             RETURNING id, holiday_name, description, holiday_date, holiday_type,
-                      country_code, creator_id, updater_id, create_date_time, update_date_time
+                      creator_id, updater_id, create_date_time, update_date_time
             "#,
         )
         .bind(holiday_id)
@@ -178,7 +170,6 @@ impl HolidayRepository {
         .bind(&params.description)
         .bind(params.holiday_date)
         .bind(params.holiday_type)
-        .bind(params.country_code)
         .bind(updater_id)
         .fetch_one(pool)
         .await?;
@@ -229,10 +220,10 @@ impl HolidayRepository {
             let holiday = sqlx::query_as::<_, Holiday>(
                 r#"
                 INSERT INTO holidays (id, holiday_name, description, holiday_date, holiday_type,
-                                    country_code, creator_id, create_date_time)
-                VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())
+                                    creator_id, create_date_time)
+                VALUES ($1, $2, $3, $4, $5, $6, NOW())
                 RETURNING id, holiday_name, description, holiday_date, holiday_type,
-                          country_code, creator_id, updater_id, create_date_time, update_date_time
+                          creator_id, updater_id, create_date_time, update_date_time
                 "#,
             )
             .bind(holiday_id)
@@ -240,7 +231,6 @@ impl HolidayRepository {
             .bind(&param.description)
             .bind(param.holiday_date)
             .bind(param.holiday_type)
-            .bind(param.country_code)
             .bind(creator_id)
             .fetch_one(pool)
             .await?;

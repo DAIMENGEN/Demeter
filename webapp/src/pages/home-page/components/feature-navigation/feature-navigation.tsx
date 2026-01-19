@@ -28,6 +28,13 @@ const features: FeatureItem[] = [
         description: "例如：查看公司假期和国家法定假期。",
         path: "/home/calendar",
         image: calendarImage,
+    },
+    {
+        key: "holiday",
+        title: "假期管理",
+        description: "例如：管理法定假期和调休工作日，支持批量操作。",
+        path: "/home/holiday",
+        image: calendarImage,
     }
 ];
 

@@ -5,7 +5,6 @@ CREATE TABLE IF NOT EXISTS holidays (
     description TEXT,
     holiday_date DATE NOT NULL,
     holiday_type INTEGER NOT NULL,
-    country_code INTEGER NOT NULL,
     creator_id BIGINT NOT NULL,
     updater_id BIGINT,
     create_date_time TIMESTAMP NOT NULL DEFAULT '2022-10-08 00:00:00',
@@ -15,5 +14,4 @@ CREATE TABLE IF NOT EXISTS holidays (
 -- 创建索引
 CREATE INDEX idx_holidays_holiday_date ON holidays(holiday_date);
 CREATE INDEX idx_holidays_holiday_type ON holidays(holiday_type);
-CREATE INDEX idx_holidays_country_code ON holidays(country_code);
 CREATE INDEX idx_holidays_create_date_time ON holidays(create_date_time DESC);

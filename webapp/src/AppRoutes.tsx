@@ -6,7 +6,7 @@ import {HomeContent} from "@Webapp/pages/home-page/components/home-content/home-
 import {AuthSessionGuard} from "@Webapp/components";
 import {ProjectDetail, ProjectManagement} from "@Webapp/pages/home-page/components/project-management";
 import {Calendar} from "@Webapp/pages/home-page/components/calendar";
-
+import {HolidayPage} from "@Webapp/pages/holiday-page/holiday-page.tsx";
 export const AppRoutes = () => {
     return (
         <AuthSessionGuard>
@@ -19,6 +19,7 @@ export const AppRoutes = () => {
                     <Route path="project-management" element={<ProjectManagement/>}/>
                     <Route path="project/:id" element={<ProjectDetail/>}/>
                     <Route path="calendar" element={<Calendar/>}/>
+                    <Route path="holiday" element={<HolidayPage/>}/>
                 </Route>
             </Routes>
         </AuthSessionGuard>
