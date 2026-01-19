@@ -32,3 +32,6 @@ pnpm-debug.log*
 
 # GitHub
 .github/
+
+# uipro-cli
+.shared/
