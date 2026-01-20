@@ -1,6 +1,7 @@
 import React from "react";
 import {DatePicker, Form, Input, InputNumber, Select} from "antd";
 import type {Dayjs} from "dayjs";
+import {TaskType} from "@Webapp/api/modules/project";
 
 export interface TaskDrawerFormFieldsProps {
     parentOptions: Array<{ value: string; label: string }>;
@@ -11,6 +12,11 @@ export const TaskDrawerFormFields: React.FC<TaskDrawerFormFieldsProps> = ({
     parentOptions,
     taskTypeOptions
 }) => {
+    const form = Form.useFormInstance();
+    const taskType = Form.useWatch("taskType", form);
+
+    const isSingleDateType = taskType === TaskType.CHECKPOINT || taskType === TaskType.MILESTONE;
+
     return (
         <>
             <Form.Item
@@ -37,32 +43,73 @@ export const TaskDrawerFormFields: React.FC<TaskDrawerFormFieldsProps> = ({
                 name="taskType"
                 rules={[{required: true, message: "请选择任务类型"}]}
             >
-                <Select options={taskTypeOptions}/>
-            </Form.Item>
+                <Select
+                    options={taskTypeOptions}
+                    onChange={(value) => {
+                        const isSingle = value === TaskType.CHECKPOINT || value === TaskType.MILESTONE;
+                        const currentRange = form.getFieldValue("dateRange") as [Dayjs, Dayjs] | undefined;
 
-            <Form.Item
-                label="时间范围"
-                name="dateRange"
-                rules={[
-                    {
-                        validator: async (_rule, value: [Dayjs | null, Dayjs | null] | null | undefined) => {
-                            const start = value?.[0] ?? null;
-                            const end = value?.[1] ?? null;
-                            if (!start || !end) {
-                                throw new Error("请选择开始时间和结束时间");
-                            }
-                            if (end.isBefore(start)) {
-                                throw new Error("结束时间不能早于开始时间");
-                            }
+                        if (isSingle && currentRange?.[0]) {
+                            // 切换到单日期类型时，将结束日期设置为开始日期
+                            form.setFieldValue("dateRange", [currentRange[0], currentRange[0]]);
                         }
-                    }
-                ]}
-            >
-                <DatePicker.RangePicker
-                    style={{width: "100%"}}
-                    placeholder={["开始时间", "结束时间"]}
+                    }}
                 />
             </Form.Item>
+
+            {isSingleDateType ? (
+                <Form.Item
+                    label="日期"
+                    name="dateRange"
+                    rules={[
+                        {
+                            validator: async (_rule, value: [Dayjs | null, Dayjs | null] | null | undefined) => {
+                                const date = value?.[0] ?? null;
+                                if (!date) {
+                                    throw new Error("请选择日期");
+                                }
+                            }
+                        }
+                    ]}
+                    getValueFromEvent={(date: Dayjs | null) => {
+                        // 单日期选择器返回 Dayjs 对象，转换为 [Dayjs, Dayjs] 格式
+                        return date ? [date, date] : undefined;
+                    }}
+                    getValueProps={(value: [Dayjs, Dayjs] | undefined) => {
+                        // 从 [Dayjs, Dayjs] 格式提取第一个日期用于显示
+                        return {value: value?.[0] ?? null};
+                    }}
+                >
+                    <DatePicker
+                        style={{width: "100%"}}
+                        placeholder="请选择日期"
+                    />
+                </Form.Item>
+            ) : (
+                <Form.Item
+                    label="时间范围"
+                    name="dateRange"
+                    rules={[
+                        {
+                            validator: async (_rule, value: [Dayjs | null, Dayjs | null] | null | undefined) => {
+                                const start = value?.[0] ?? null;
+                                const end = value?.[1] ?? null;
+                                if (!start || !end) {
+                                    throw new Error("请选择开始时间和结束时间");
+                                }
+                                if (end.isBefore(start)) {
+                                    throw new Error("结束时间不能早于开始时间");
+                                }
+                            }
+                        }
+                    ]}
+                >
+                    <DatePicker.RangePicker
+                        style={{width: "100%"}}
+                        placeholder={["开始时间", "结束时间"]}
+                    />
+                </Form.Item>
+            )}
 
             <Form.Item label="排序" name="order">
                 <InputNumber
