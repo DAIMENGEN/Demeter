@@ -18,7 +18,7 @@ export type CustomAttributeFormValue = JsonValue | Dayjs;
 export interface TaskDrawerFormValues {
     taskName: string;
     parentId?: string;
-    order?: number;
+    order: number;
     dateRange?: [Dayjs, Dayjs];
     taskType: number;
     customAttributes?: Record<string, CustomAttributeFormValue>;

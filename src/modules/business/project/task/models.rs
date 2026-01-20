@@ -95,7 +95,7 @@ pub struct Task {
     pub task_name: String,
     pub parent_id: Option<Id>,
     pub project_id: Id,
-    pub order: Option<f64>,
+    pub order: f64,
     #[sqlx(json)]
     pub custom_attributes: serde_json::Value,
     pub start_date_time: chrono::NaiveDateTime,
@@ -139,7 +139,7 @@ pub struct UpdateTaskAttributeConfigParams {
 pub struct CreateTaskParams {
     pub task_name: String,
     pub parent_id: Option<Id>,
-    pub order: Option<f64>,
+    pub order: f64,
     pub start_date_time: chrono::NaiveDateTime,
     pub end_date_time: chrono::NaiveDateTime,
     pub task_type: i32,

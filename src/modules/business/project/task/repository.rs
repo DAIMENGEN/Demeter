@@ -295,7 +295,7 @@ impl TaskRepository {
         let task = sqlx::query_as::<_, Task>(
             r#"UPDATE project_tasks
                SET task_name = COALESCE($1, task_name),
-                   parent_id = $2,
+                   parent_id = COALESCE($2, parent_id),
                    "order" = COALESCE($3, "order"),
                    start_date_time = COALESCE($4, start_date_time),
                    end_date_time = COALESCE($5, end_date_time),
@@ -401,7 +401,7 @@ impl TaskRepository {
 
         // 按当前 order + create_date_time 的稳定顺序取出同级 tasks
         let task_ids: Vec<i64> = if let Some(pid) = parent_id {
-            sqlx::query_scalar(
+            sqlx::query_as::<_, (i64,)>(
                 r#"SELECT id
                    FROM project_tasks
                    WHERE project_id = $1 AND parent_id = $2
@@ -411,8 +411,11 @@ impl TaskRepository {
             .bind(pid)
             .fetch_all(&mut *tx)
             .await?
+            .into_iter()
+            .map(|(id,)| id)
+            .collect()
         } else {
-            sqlx::query_scalar(
+            sqlx::query_as::<_, (i64,)>(
                 r#"SELECT id
                    FROM project_tasks
                    WHERE project_id = $1 AND parent_id IS NULL
@@ -421,6 +424,9 @@ impl TaskRepository {
             .bind(project_id)
             .fetch_all(&mut *tx)
             .await?
+            .into_iter()
+            .map(|(id,)| id)
+            .collect()
         };
 
         for (idx, task_id) in task_ids.into_iter().enumerate() {

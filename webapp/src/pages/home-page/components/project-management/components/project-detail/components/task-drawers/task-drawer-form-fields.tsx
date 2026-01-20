@@ -5,12 +5,12 @@ import {TaskType} from "@Webapp/api/modules/project";
 
 export interface TaskDrawerFormFieldsProps {
     parentOptions: Array<{ value: string; label: string }>;
-    taskTypeOptions: Array<{ value: number; label: string }>;
+    hideTaskType?: boolean;
 }
 
 export const TaskDrawerFormFields: React.FC<TaskDrawerFormFieldsProps> = ({
     parentOptions,
-    taskTypeOptions
+    hideTaskType = false
 }) => {
     const form = Form.useFormInstance();
     const taskType = Form.useWatch("taskType", form);
@@ -41,10 +41,16 @@ export const TaskDrawerFormFields: React.FC<TaskDrawerFormFieldsProps> = ({
             <Form.Item
                 label="任务类型"
                 name="taskType"
+                hidden={hideTaskType}
                 rules={[{required: true, message: "请选择任务类型"}]}
             >
                 <Select
-                    options={taskTypeOptions}
+                    options={[
+                        {value: TaskType.UNKNOWN, label: "未知"},
+                        {value: TaskType.DEFAULT, label: "普通任务"},
+                        {value: TaskType.MILESTONE, label: "里程碑"},
+                        {value: TaskType.CHECKPOINT, label: "检查点"}
+                    ]}
                     onChange={(value) => {
                         const isSingle = value === TaskType.CHECKPOINT || value === TaskType.MILESTONE;
                         const currentRange = form.getFieldValue("dateRange") as [Dayjs, Dayjs] | undefined;
@@ -61,8 +67,10 @@ export const TaskDrawerFormFields: React.FC<TaskDrawerFormFieldsProps> = ({
                 <Form.Item
                     label="日期"
                     name="dateRange"
+                    required
                     rules={[
                         {
+                            required: true,
                             validator: async (_rule, value: [Dayjs | null, Dayjs | null] | null | undefined) => {
                                 const date = value?.[0] ?? null;
                                 if (!date) {
@@ -89,8 +97,10 @@ export const TaskDrawerFormFields: React.FC<TaskDrawerFormFieldsProps> = ({
                 <Form.Item
                     label="时间范围"
                     name="dateRange"
+                    required
                     rules={[
                         {
+                            required: true,
                             validator: async (_rule, value: [Dayjs | null, Dayjs | null] | null | undefined) => {
                                 const start = value?.[0] ?? null;
                                 const end = value?.[1] ?? null;
@@ -111,9 +121,13 @@ export const TaskDrawerFormFields: React.FC<TaskDrawerFormFieldsProps> = ({
                 </Form.Item>
             )}
 
-            <Form.Item label="排序" name="order">
+            <Form.Item
+                label="排序"
+                name="order"
+                rules={[{required: true, message: "请输入排序值"}]}
+            >
                 <InputNumber
-                    placeholder="可选"
+                    placeholder="请输入排序值"
                     style={{width: "100%"}}
                     step={0.1}
                     precision={2}

@@ -15,13 +15,13 @@ Task 模块是 Project 模块的子模块，为项目提供任务管理功能。
 ### 2. 任务固有字段
 每个任务包含以下固定字段（API 返回为 camelCase）：
 - `id`: 任务ID（Snowflake ID）
-- `taskName`: 任务名称
+- `taskName`: 任务名称（必填）
 - `parentId`: 父任务ID（支持任务层级结构）
 - `projectId`: 所属项目ID
-- `order`: 排序字段
-- `startDateTime`: 开始时间
-- `endDateTime`: 结束时间
-- `taskType`: 任务类型（整型枚举）
+- `order`: 排序字段（必填）
+- `startDateTime`: 开始时间（必填）
+- `endDateTime`: 结束时间（必填）
+- `taskType`: 任务类型（整型枚举，必填）
 - `creatorId`: 创建者ID
 - `updaterId`: 更新者ID
 - `createDateTime`: 创建时间
@@ -53,10 +53,13 @@ Task 模块是 Project 模块的子模块，为项目提供任务管理功能。
 ### 任务表 (project_tasks)
 
 - `id` (BIGINT): 主键（Snowflake ID）
-- `task_name` (VARCHAR)
+- `task_name` (VARCHAR): 任务名称（必填）
 - `parent_id` (BIGINT): 自引用外键，关联 `project_tasks(id)`
 - `project_id` (BIGINT): 外键关联 `projects(id)`
-- `order` (DOUBLE PRECISION)
+- `order` (DOUBLE PRECISION): 排序字段（必填）
+- `start_date_time` (TIMESTAMP): 开始时间（必填）
+- `end_date_time` (TIMESTAMP): 结束时间（必填）
+- `task_type` (INT): 任务类型（必填）
 - `custom_attributes` (JSONB): 自定义属性（默认 `{}`）
 - `creator_id`, `updater_id`, `create_date_time`, `update_date_time`
 

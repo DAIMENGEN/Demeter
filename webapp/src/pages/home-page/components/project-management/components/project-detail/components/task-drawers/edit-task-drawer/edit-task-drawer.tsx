@@ -9,7 +9,6 @@ import {
 } from "@Webapp/api/modules/project";
 import {
     buildAttributeTypeMap,
-    buildTaskTypeOptions,
     mapServerCustomAttrsToForm,
     normalizeCustomAttributesToStrings,
     renderCustomAttributeItems,
@@ -46,7 +45,6 @@ export const EditTaskDrawer: React.FC<EditTaskDrawerProps> = ({
 
     const attributeTypeMap = useMemo(() => buildAttributeTypeMap(attributeConfigs), [attributeConfigs]);
 
-    const taskTypeOptions = useMemo(() => buildTaskTypeOptions(), []);
 
     useEffect(() => {
         if (!open) {
@@ -67,7 +65,7 @@ export const EditTaskDrawer: React.FC<EditTaskDrawerProps> = ({
         form.setFieldsValue({
             taskName: task.taskName,
             parentId: task.parentId ?? undefined,
-            order: task.order ?? undefined,
+            order: task.order,
             dateRange: [start, end],
             taskType: task.taskType,
             customAttributes: formCustom
@@ -136,7 +134,7 @@ export const EditTaskDrawer: React.FC<EditTaskDrawerProps> = ({
                 <Form layout="vertical" form={form} disabled={loading}>
                     <TaskDrawerFormFields
                         parentOptions={parentOptions}
-                        taskTypeOptions={taskTypeOptions}
+                        hideTaskType={true}
                     />
 
                     <div style={{marginTop: 8, marginBottom: 8}}>

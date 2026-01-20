@@ -275,6 +275,8 @@ export const ProjectDetail: React.FC = () => {
     const [taskAttributeDrawerOpen, setTaskAttributeDrawerOpen] = useState(false);
     const [createTaskDrawerOpen, setCreateTaskDrawerOpen] = useState(false);
     const [createTaskDefaultParentId, setCreateTaskDefaultParentId] = useState<string | undefined>(undefined);
+    const [createTaskDefaultOrder, setCreateTaskDefaultOrder] = useState<number>(1.0);
+    const [createTaskDefaultType, setCreateTaskDefaultType] = useState<number>(1); // 1 = TaskType.DEFAULT
 
     const [editTaskDrawerOpen, setEditTaskDrawerOpen] = useState(false);
     const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
@@ -475,6 +477,12 @@ export const ProjectDetail: React.FC = () => {
                                 onOpenTaskAttributeConfig={() => setTaskAttributeDrawerOpen(true)}
                                 onOpenCreateTask={() => {
                                     setCreateTaskDefaultParentId(undefined);
+                                    setCreateTaskDefaultType(1); // TaskType.DEFAULT
+                                    // Calculate default order: max order + 1
+                                    const maxOrder = tasks.length > 0
+                                        ? Math.max(...tasks.map(t => t.order))
+                                        : 0;
+                                    setCreateTaskDefaultOrder(maxOrder + 1);
                                     setCreateTaskDrawerOpen(true);
                                 }}
                                 onBack={() => navigate("/home/project-management")}
@@ -519,13 +527,15 @@ export const ProjectDetail: React.FC = () => {
                                 milestoneMove={(milestoneMoveMountArg: MilestoneMoveMountArg) => {
                                     const {date, milestoneApi} = milestoneMoveMountArg;
                                     const targetId = milestoneApi.getId();
+                                    const parentId = milestoneApi.getResourceId();
                                     void (async () => {
                                         try {
                                             // milestone uses startDateTime; keep end aligned too
                                             const dt = date.format("YYYY-MM-DDTHH:mm:ss");
                                             await updateTask(projectId, targetId, {
                                                 startDateTime: dt,
-                                                endDateTime: dt
+                                                endDateTime: dt,
+                                                parentId: parentId
                                             });
                                             await refetchTasks();
                                         } catch {
@@ -536,12 +546,14 @@ export const ProjectDetail: React.FC = () => {
                                 checkpointMove={(checkpointMoveMountArg: CheckpointMoveMountArg) => {
                                     const {date, checkpointApi} = checkpointMoveMountArg;
                                     const targetId = checkpointApi.getId();
+                                    const parentId = checkpointApi.getResourceId();
                                     void (async () => {
                                         try {
                                             const dt = date.format("YYYY-MM-DDTHH:mm:ss");
                                             await updateTask(projectId, targetId, {
                                                 startDateTime: dt,
-                                                endDateTime: dt
+                                                endDateTime: dt,
+                                                parentId: parentId
                                             });
                                             await refetchTasks();
                                         } catch {
@@ -552,11 +564,13 @@ export const ProjectDetail: React.FC = () => {
                                 eventMove={(eventMoveMountArg: EventMoveMountArg) => {
                                     const {startDate, endDate, eventApi} = eventMoveMountArg;
                                     const targetId = eventApi.getId();
+                                    const parentId = eventApi.getResourceId();
                                     void (async () => {
                                         try {
                                             await updateTask(projectId, targetId, {
                                                 startDateTime: startDate.format("YYYY-MM-DDTHH:mm:ss"),
-                                                endDateTime: endDate.format("YYYY-MM-DDTHH:mm:ss")
+                                                endDateTime: endDate.format("YYYY-MM-DDTHH:mm:ss"),
+                                                parentId: parentId
                                             });
                                             await refetchTasks();
                                         } catch {
@@ -649,6 +663,14 @@ export const ProjectDetail: React.FC = () => {
                                         label: "创建子任务",
                                     },
                                     {
+                                        key: "create-checkpoint",
+                                        label: "创建检查点 (Checkpoint)",
+                                    },
+                                    {
+                                        key: "create-milestone",
+                                        label: "创建里程碑 (Milestone)",
+                                    },
+                                    {
                                         key: "preview-task",
                                         label: "预览任务",
                                     },
@@ -674,6 +696,37 @@ export const ProjectDetail: React.FC = () => {
                                     switch (key) {
                                         case "create-subtask": {
                                             setCreateTaskDefaultParentId(taskId);
+                                            setCreateTaskDefaultType(1); // TaskType.DEFAULT
+                                            // Calculate default order for subtask: max order of siblings + 1
+                                            const siblings = tasks.filter(t => t.parentId === taskId);
+                                            const maxOrder = siblings.length > 0
+                                                ? Math.max(...siblings.map(t => t.order))
+                                                : 0;
+                                            setCreateTaskDefaultOrder(maxOrder + 1);
+                                            setCreateTaskDrawerOpen(true);
+                                            return;
+                                        }
+                                        case "create-checkpoint": {
+                                            setCreateTaskDefaultParentId(taskId);
+                                            setCreateTaskDefaultType(3); // TaskType.CHECKPOINT
+                                            // Calculate default order for checkpoint: max order of siblings + 1
+                                            const siblings = tasks.filter(t => t.parentId === taskId);
+                                            const maxOrder = siblings.length > 0
+                                                ? Math.max(...siblings.map(t => t.order))
+                                                : 0;
+                                            setCreateTaskDefaultOrder(maxOrder + 1);
+                                            setCreateTaskDrawerOpen(true);
+                                            return;
+                                        }
+                                        case "create-milestone": {
+                                            setCreateTaskDefaultParentId(taskId);
+                                            setCreateTaskDefaultType(2); // TaskType.MILESTONE
+                                            // Calculate default order for milestone: max order of siblings + 1
+                                            const siblings = tasks.filter(t => t.parentId === taskId);
+                                            const maxOrder = siblings.length > 0
+                                                ? Math.max(...siblings.map(t => t.order))
+                                                : 0;
+                                            setCreateTaskDefaultOrder(maxOrder + 1);
                                             setCreateTaskDrawerOpen(true);
                                             return;
                                         }
@@ -785,10 +838,12 @@ export const ProjectDetail: React.FC = () => {
                 projectId={project?.id || ""}
                 parentOptions={parentTaskOptions}
                 defaultParentId={createTaskDefaultParentId}
+                defaultOrder={createTaskDefaultOrder}
                 defaultRange={{
                     start: ganttStartDate.startOf("day"),
                     end: ganttEndDate.startOf("day").add(7, "day")
                 }}
+                defaultTaskType={createTaskDefaultType}
                 onClose={() => setCreateTaskDrawerOpen(false)}
                 onCreated={async () => {
                     await refetchTasks();

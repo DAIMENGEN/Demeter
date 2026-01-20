@@ -186,7 +186,7 @@ export interface Task {
   taskName: string;
   parentId: string | null;
   projectId: string;
-  order: number | null;
+  order: number;
   customAttributes: JsonValue;
   startDateTime: string;
   endDateTime: string;
@@ -200,7 +200,7 @@ export interface Task {
 export interface CreateTaskParams {
   taskName: string;
   parentId?: string | null;
-  order?: number | null;
+  order: number;
   startDateTime: string;
   endDateTime: string;
   taskType: number;

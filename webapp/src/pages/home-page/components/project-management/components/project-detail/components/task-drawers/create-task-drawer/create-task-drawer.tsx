@@ -10,7 +10,6 @@ import {
 import {
     buildAttributeTypeMap,
     buildDefaultCustomAttrsFromConfigs,
-    buildTaskTypeOptions,
     normalizeCustomAttributesToStrings,
     renderCustomAttributeItems,
     type TaskDrawerFormValues
@@ -26,10 +25,14 @@ export interface CreateTaskDrawerProps {
     parentOptions: Array<{ value: string; label: string }>;
     /** preset parentId when opening (e.g., create subtask) */
     defaultParentId?: string;
+    /** default order value */
+    defaultOrder?: number;
     defaultRange?: {
         start: Dayjs;
         end: Dayjs;
     };
+    /** default task type */
+    defaultTaskType?: number;
     onCreated?: () => void;
     onClose: () => void;
 }
@@ -39,7 +42,9 @@ export const CreateTaskDrawer: React.FC<CreateTaskDrawerProps> = ({
                                                                        projectId,
                                                                        parentOptions,
                                                                        defaultParentId,
+                                                                       defaultOrder = 1.0,
                                                                        defaultRange,
+                                                                       defaultTaskType = TaskType.DEFAULT,
                                                                        onCreated,
                                                                        onClose
                                                                    }) => {
@@ -54,13 +59,20 @@ export const CreateTaskDrawer: React.FC<CreateTaskDrawerProps> = ({
     useEffect(() => {
         if (open) {
             const start = defaultRange?.start ?? dayjs();
-            const end = defaultRange?.end ?? start.add(7, "day");
+            let end = defaultRange?.end ?? start.add(7, "day");
+
+            // For checkpoint and milestone, set end date to match start date
+            const isSingleDateType = defaultTaskType === TaskType.CHECKPOINT || defaultTaskType === TaskType.MILESTONE;
+            if (isSingleDateType) {
+                end = start;
+            }
 
             const defaults = buildDefaultCustomAttrsFromConfigs(attributeConfigs);
 
             form.setFieldsValue({
-                taskType: TaskType.DEFAULT,
+                taskType: defaultTaskType,
                 parentId: defaultParentId,
+                order: defaultOrder,
                 dateRange: [start, end],
                 customAttributes: defaults
             } satisfies Partial<TaskDrawerFormValues>);
@@ -68,9 +80,7 @@ export const CreateTaskDrawer: React.FC<CreateTaskDrawerProps> = ({
             form.resetFields();
         }
         // only re-init when opening or configs changed while open
-    }, [open, form, defaultRange, attributeConfigs, defaultParentId]);
-
-    const taskTypeOptions = useMemo(() => buildTaskTypeOptions(), []);
+    }, [open, form, defaultRange, attributeConfigs, defaultParentId, defaultOrder, defaultTaskType]);
 
     const submit = async () => {
         try {
@@ -84,7 +94,7 @@ export const CreateTaskDrawer: React.FC<CreateTaskDrawerProps> = ({
             const payload: CreateTaskParams = {
                 taskName: values.taskName,
                 parentId: values.parentId ?? null,
-                order: values.order ?? null,
+                order: values.order,
                 startDateTime: startDateTime.format("YYYY-MM-DDTHH:mm:ss"),
                 endDateTime: endDateTime.format("YYYY-MM-DDTHH:mm:ss"),
                 taskType: values.taskType,
@@ -134,7 +144,7 @@ export const CreateTaskDrawer: React.FC<CreateTaskDrawerProps> = ({
                 <Form layout="vertical" form={form} disabled={loading}>
                     <TaskDrawerFormFields
                         parentOptions={parentOptions}
-                        taskTypeOptions={taskTypeOptions}
+                        hideTaskType={true}
                     />
 
                     <div style={{marginTop: 8, marginBottom: 8}}>

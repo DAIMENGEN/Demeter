@@ -23,7 +23,7 @@ CREATE TABLE IF NOT EXISTS project_tasks (
     task_name VARCHAR(255) NOT NULL,
     parent_id BIGINT REFERENCES project_tasks(id) ON DELETE CASCADE,
     project_id BIGINT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
-    "order" DOUBLE PRECISION,
+    "order" DOUBLE PRECISION NOT NULL,
     start_date_time TIMESTAMP NOT NULL,
     end_date_time TIMESTAMP NOT NULL,
     task_type INT NOT NULL,

@@ -96,12 +96,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 .make_span_with(
                     DefaultMakeSpan::new()
                         .include_headers(false)
-                        .level(tracing::Level::INFO),
+                        .level(tracing::Level::DEBUG),
                 )
-                .on_request(DefaultOnRequest::new().level(tracing::Level::INFO))
+                .on_request(DefaultOnRequest::new().level(tracing::Level::DEBUG))
                 .on_response(
                     DefaultOnResponse::new()
-                        .level(tracing::Level::INFO)
+                        .level(tracing::Level::DEBUG)
                         .latency_unit(tower_http::LatencyUnit::Millis),
                 )
                 .on_failure(
