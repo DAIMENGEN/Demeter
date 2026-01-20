@@ -7,11 +7,13 @@ import type { AxiosInstance, InternalAxiosRequestConfig } from "axios";
 import type { ApiResponse, HttpError } from "./types";
 import {log} from "@Webapp/logging.ts";
 
+const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || "http://localhost:9000/api";
+
 /**
  * 创建 axios 实例
  */
 const httpClient: AxiosInstance = axios.create({
-  baseURL: "http://localhost:9000/api",
+  baseURL: apiBaseUrl,
   timeout: 30000,
   withCredentials: true,
   headers: {
@@ -48,7 +50,7 @@ const refreshToken = async (): Promise<string> => {
     // access_token/refresh_token 由 HttpOnly Cookie 承载，浏览器会在 withCredentials=true 时自动携带
     // 刷新成功后，后端会通过 Set-Cookie 更新 access_token
     await axios.post<ApiResponse<unknown>>(
-      "http://127.0.0.1:9000/api/auth/refresh",
+      `${apiBaseUrl}/auth/refresh`,
       null,
       {
         withCredentials: true,
