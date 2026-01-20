@@ -172,7 +172,7 @@ export const tasksToSchedulantModels = (
                 title: t.taskName,
                 time: start,
                 status: "Success",
-                resourceId: t.id,
+                resourceId: t.parentId || "",
                 ...(color ? {color} : {})
             });
             continue;
@@ -183,7 +183,7 @@ export const tasksToSchedulantModels = (
                 id: t.id,
                 title: t.taskName,
                 time: start,
-                resourceId: t.id,
+                resourceId: t.parentId || "",
                 ...(color ? {color} : {color: "green"})
             });
             continue;
