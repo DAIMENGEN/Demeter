@@ -100,50 +100,52 @@ export const tasksToSchedulantModels = (
         }
     }
 
-    const resources: Resource[] = tasks.map((t) => {
-        const baseExtendedProps: Record<string, unknown> = {
-            order: t.order ?? undefined,
-            taskType: t.taskType,
-            taskTypeLabel: TaskTypeLabels[(t.taskType as TaskType) ?? TaskType.UNKNOWN] ?? String(t.taskType),
-            startDateTime: dayjs(t.startDateTime).format("YYYY-MM-DD"),
-            endDateTime: dayjs(t.endDateTime).format("YYYY-MM-DD"),
-            parentId: t.parentId ?? null,
-        };
+    const resources: Resource[] = tasks
+        .filter((t) => t.taskType !== TaskType.MILESTONE && t.taskType !== TaskType.CHECKPOINT)
+        .map((t) => {
+            const baseExtendedProps: Record<string, unknown> = {
+                order: t.order ?? undefined,
+                taskType: t.taskType,
+                taskTypeLabel: TaskTypeLabels[(t.taskType as TaskType) ?? TaskType.UNKNOWN] ?? String(t.taskType),
+                startDateTime: dayjs(t.startDateTime).format("YYYY-MM-DD"),
+                endDateTime: dayjs(t.endDateTime).format("YYYY-MM-DD"),
+                parentId: t.parentId ?? null,
+            };
 
-        const ca = t.customAttributes;
-        if (ca && typeof ca === "object" && !Array.isArray(ca)) {
-            const caObj = ca as Record<string, JsonValue>;
-            for (const [k, v] of Object.entries(caObj)) {
-                const storedKey = `${CUSTOM_ATTRIBUTE_PREFIX}${k}`;
-                baseExtendedProps[storedKey] = v;
+            const ca = t.customAttributes;
+            if (ca && typeof ca === "object" && !Array.isArray(ca)) {
+                const caObj = ca as Record<string, JsonValue>;
+                for (const [k, v] of Object.entries(caObj)) {
+                    const storedKey = `${CUSTOM_ATTRIBUTE_PREFIX}${k}`;
+                    baseExtendedProps[storedKey] = v;
 
-                const cfg = configByName.get(k);
-                if (cfg?.attributeType === "select") {
-                    const raw = toScalarString(v);
-                    const label = raw ? selectLabelMaps.get(k)?.get(raw) : null;
-                    baseExtendedProps[`${storedKey}Label`] = label ?? raw;
-                    continue;
+                    const cfg = configByName.get(k);
+                    if (cfg?.attributeType === "select") {
+                        const raw = toScalarString(v);
+                        const label = raw ? selectLabelMaps.get(k)?.get(raw) : null;
+                        baseExtendedProps[`${storedKey}Label`] = label ?? raw;
+                        continue;
+                    }
+
+                    if (cfg?.attributeType === "user") {
+                        const userId = toUserIdFromJson(v);
+                        const label = userId ? userLabelMaps.get(k)?.get(userId) : null;
+                        baseExtendedProps[`${storedKey}Label`] = label ?? userId;
+                        continue;
+                    }
+
+                    // 其它类型：尽量转为可读字符串
+                    baseExtendedProps[`${storedKey}Label`] = toScalarString(v);
                 }
-
-                if (cfg?.attributeType === "user") {
-                    const userId = toUserIdFromJson(v);
-                    const label = userId ? userLabelMaps.get(k)?.get(userId) : null;
-                    baseExtendedProps[`${storedKey}Label`] = label ?? userId;
-                    continue;
-                }
-
-                // 其它类型：尽量转为可读字符串
-                baseExtendedProps[`${storedKey}Label`] = toScalarString(v);
             }
-        }
 
-        return {
-            id: t.id,
-            title: t.taskName,
-            parentId: t.parentId ?? undefined,
-            extendedProps: baseExtendedProps,
-        };
-    });
+            return {
+                id: t.id,
+                title: t.taskName,
+                parentId: t.parentId ?? undefined,
+                extendedProps: baseExtendedProps,
+            };
+        });
 
     const getColorForTask = (t: import("@Webapp/api/modules/project").Task): string | undefined => {
         if (!colorRenderAttributeName || !colorMap) return undefined;
