@@ -1,0 +1,210 @@
+// Result Page Styles - Following UI/UX Pro Max Guidelines
+// Design principles: Clean, minimal, professional, accessible
+
+.result-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  padding: 2rem 1rem;
+
+  .result-container {
+    max-width: 600px;
+    width: 100%;
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 16px;
+    padding: 3rem 2rem;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+
+    &:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 12px 48px rgba(0, 0, 0, 0.12);
+    }
+  }
+
+  // Ant Design Result component customization
+  .ant-result {
+    padding: 1rem 0;
+
+    // Icon styles
+    .ant-result-icon {
+      margin-bottom: 1.5rem;
+
+      .anticon {
+        transition: transform 0.3s ease;
+      }
+
+      &:hover .anticon {
+        transform: scale(1.1);
+      }
+    }
+
+    // Status-specific colors
+    &.ant-result-error .anticon {
+      color: #ff4d4f;
+    }
+
+    &.ant-result-warning .anticon {
+      color: #faad14;
+    }
+
+    &.ant-result-info .anticon {
+      color: #1890ff;
+    }
+
+    // Title styles
+    .ant-result-title {
+      .result-title {
+        color: #0f172a; // slate-900 for high contrast
+        font-size: 1.5rem;
+        font-weight: 600;
+        line-height: 1.4;
+      }
+    }
+
+    // Subtitle styles
+    .ant-result-subtitle {
+      .result-subtitle {
+        color: #475569; // slate-600 for readable muted text
+        font-size: 1rem;
+        line-height: 1.6;
+        margin-top: 0.5rem;
+      }
+    }
+
+    // Actions container
+    .ant-result-extra {
+      margin-top: 2rem;
+    }
+  }
+
+  // Action buttons
+  .result-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    justify-content: center;
+
+    .action-button {
+      min-width: 140px;
+      font-weight: 500;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+
+      &:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      }
+
+      &:active {
+        transform: translateY(0);
+      }
+    }
+  }
+
+  // Responsive design
+  @media (max-width: 768px) {
+    padding: 1rem 0.5rem;
+
+    .result-container {
+      padding: 2rem 1.5rem;
+      border-radius: 12px;
+    }
+
+    .ant-result {
+      .ant-result-title .result-title {
+        font-size: 1.25rem;
+      }
+
+      .ant-result-subtitle .result-subtitle {
+        font-size: 0.9375rem;
+      }
+
+      .ant-result-icon .anticon {
+        font-size: 56px !important;
+      }
+    }
+
+    .result-actions {
+      flex-direction: column;
+      width: 100%;
+
+      .action-button {
+        width: 100%;
+      }
+    }
+  }
+
+  @media (max-width: 375px) {
+    .result-container {
+      padding: 1.5rem 1rem;
+    }
+
+    .ant-result {
+      .ant-result-title .result-title {
+        font-size: 1.125rem;
+      }
+
+      .ant-result-icon .anticon {
+        font-size: 48px !important;
+      }
+    }
+  }
+}
+
+// Dark mode support (following UI/UX Pro Max contrast rules)
+@media (prefers-color-scheme: dark) {
+  .result-page {
+    background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+
+    .result-container {
+      background: rgba(30, 41, 59, 0.95); // slate-800 with opacity
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .ant-result {
+      .ant-result-title .result-title {
+        color: #f1f5f9; // slate-100 for dark mode
+      }
+
+      .ant-result-subtitle .result-subtitle {
+        color: #cbd5e1; // slate-300 for muted text in dark mode
+      }
+    }
+  }
+}
+
+// Reduced motion support (accessibility)
+@media (prefers-reduced-motion: reduce) {
+  .result-page {
+    .result-container {
+      transition: none;
+
+      &:hover {
+        transform: none;
+      }
+    }
+
+    .ant-result .ant-result-icon .anticon {
+      transition: none;
+
+      &:hover {
+        transform: none;
+      }
+    }
+
+    .action-button {
+      transition: none;
+
+      &:hover {
+        transform: none;
+      }
+    }
+  }
+}
+
