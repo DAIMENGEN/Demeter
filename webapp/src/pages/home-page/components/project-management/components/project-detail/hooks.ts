@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
+import { useDomRef } from "@Webapp/hooks";
 
 export const useSchedulantHeight = (
     cardHeaderRef: React.RefObject<HTMLDivElement | null>,
@@ -6,7 +7,7 @@ export const useSchedulantHeight = (
 ) => {
     const rafRef = useRef<number>(0);
     const [height, setHeight] = useState(800);
-    const containerRef = useRef<HTMLDivElement | null>(null);
+    const containerRef = useDomRef<HTMLDivElement>();
     const calculateHeight = useCallback(() => {
         if (rafRef.current) {
             cancelAnimationFrame(rafRef.current);

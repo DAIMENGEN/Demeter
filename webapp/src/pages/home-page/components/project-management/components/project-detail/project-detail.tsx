@@ -1,4 +1,5 @@
-import React, { useMemo, useRef, useState } from "react";
+import React, { useMemo, useState } from "react";
+import { useDomRef } from "@Webapp/hooks";
 import { Navigate, useNavigate, useParams } from "react-router-dom";
 import { App, Card, Spin } from "antd";
 import { Schedulant } from "schedulant";
@@ -138,9 +139,9 @@ export const ProjectDetail: React.FC = () => {
     });
 
     // DOM refs
-    const cardHeaderRef = useRef<HTMLDivElement>(null);
-    const legendRef = useRef<HTMLDivElement>(null);
-    const projectInfoRef = useRef<HTMLDivElement>(null);
+    const cardHeaderRef = useDomRef<HTMLDivElement>();
+    const legendRef = useDomRef<HTMLDivElement>();
+    const projectInfoRef = useDomRef<HTMLDivElement>();
     const { height: schedulantHeight, containerRef } = useSchedulantHeight(cardHeaderRef, legendRef);
 
     // 打开创建任务 Drawer
