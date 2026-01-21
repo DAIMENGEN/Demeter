@@ -1,9 +1,10 @@
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useDomRef } from "@Webapp/hooks";
+import type { DomRef } from "@Webapp/types";
 
 export const useSchedulantHeight = (
-    cardHeaderRef: React.RefObject<HTMLDivElement | null>,
-    legendRef: React.RefObject<HTMLDivElement | null>
+    cardHeaderRef: DomRef<HTMLDivElement>,
+    legendRef: DomRef<HTMLDivElement>
 ) => {
     const rafRef = useRef<number>(0);
     const [height, setHeight] = useState(800);

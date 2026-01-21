@@ -16,13 +16,3 @@ import { useRef } from "react";
 export function useDomRef<T extends HTMLElement>() {
     return useRef<T | null>(null);
 }
-
-/**
- * Type alias for DOM element RefObject, useful for function parameters.
- *
- * @example
- * function MyComponent({ containerRef }: { containerRef: DomRef<HTMLDivElement> }) {
- *     // ...
- * }
- */
-export type DomRef<T extends HTMLElement> = React.RefObject<T | null>;

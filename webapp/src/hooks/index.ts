@@ -1,1 +1,1 @@
-export { useDomRef, type DomRef } from "./useDomRef";
+export { useDomRef } from "./useDomRef";
