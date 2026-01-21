@@ -1,7 +1,6 @@
 import React, { useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { App, Card, Spin } from "antd";
-import dayjs from "dayjs";
 import { Schedulant } from "schedulant";
 import {
     useProjectById,
