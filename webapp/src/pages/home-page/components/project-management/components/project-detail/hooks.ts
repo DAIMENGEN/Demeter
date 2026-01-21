@@ -1,14 +1,11 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 
-const MIN_HEIGHT = 400;
-const DEFAULT_HEIGHT = 800;
-
 export const useSchedulantHeight = (
     cardHeaderRef: React.RefObject<HTMLDivElement | null>,
     legendRef: React.RefObject<HTMLDivElement | null>
 ) => {
-    const rafRef = useRef<number | null>(null);
-    const [height, setHeight] = useState(DEFAULT_HEIGHT);
+    const rafRef = useRef<number>(0);
+    const [height, setHeight] = useState(800);
     const containerRef = useRef<HTMLDivElement | null>(null);
     const calculateHeight = useCallback(() => {
         if (rafRef.current) {
@@ -27,7 +24,7 @@ export const useSchedulantHeight = (
             const totalOverhead = overhead.bottomMargin + overhead.cardOverhead + overhead.cardBodyPadding;
             const availableHeight = windowHeight - containerTop - headerHeight - legendHeight - totalOverhead;
             setHeight(prev => {
-                const newHeight = Math.max(MIN_HEIGHT, availableHeight);
+                const newHeight = Math.max(400, availableHeight);
                 return prev === newHeight ? prev : newHeight;
             });
         });
