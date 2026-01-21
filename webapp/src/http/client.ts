@@ -46,27 +46,22 @@ function processQueue(error: unknown, token: string | null) {
  * 刷新 token
  */
 const refreshToken = async (): Promise<string> => {
-  try {
-    // access_token/refresh_token 由 HttpOnly Cookie 承载，浏览器会在 withCredentials=true 时自动携带
-    // 刷新成功后，后端会通过 Set-Cookie 更新 access_token
-    await axios.post<ApiResponse<unknown>>(
-      `${apiBaseUrl}/auth/refresh`,
-      null,
-      {
-        withCredentials: true,
-        headers: {
-          "Content-Type": "application/json",
-        },
-      }
-    );
+  // access_token/refresh_token 由 HttpOnly Cookie 承载，浏览器会在 withCredentials=true 时自动携带
+  // 刷新成功后，后端会通过 Set-Cookie 更新 access_token
+  await axios.post<ApiResponse<unknown>>(
+    `${apiBaseUrl}/auth/refresh`,
+    null,
+    {
+      withCredentials: true,
+      headers: {
+        "Content-Type": "application/json",
+      },
+    }
+  );
 
-    // 我们不再从响应体取 token，也不写入 storage；
-    // 只返回占位值给队列继续重试（实际鉴权由 cookie 完成）
-    return "cookie";
-  } catch (error) {
-    // 刷新失败：不在 HTTP 层强制跳转，由调用方（路由/页面）决定如何处理
-    throw error;
-  }
+  // 我们不再从响应体取 token，也不写入 storage；
+  // 只返回占位值给队列继续重试（实际鉴权由 cookie 完成）
+  return "cookie";
 };
 
 // 显式登出状态（避免登出过程中 401 触发刷新/重试）
@@ -129,7 +124,7 @@ httpClient.interceptors.response.use(
       if (isRefreshing) {
         return new Promise((resolve, reject) => {
           failedRequestsQueue.push({
-            resolve: (_token: string) => {
+            resolve: () => {
               // access_token 由 cookie 承载，不需要更新 Authorization
               resolve(httpClient(originalRequest));
             },
@@ -146,7 +141,7 @@ httpClient.interceptors.response.use(
 
         // 更新原始请求的 token
         if (originalRequest.headers) {
-          delete (originalRequest.headers as any).Authorization;
+          delete (originalRequest.headers as Record<string, unknown>).Authorization;
         }
 
         // 处理队列中的请求

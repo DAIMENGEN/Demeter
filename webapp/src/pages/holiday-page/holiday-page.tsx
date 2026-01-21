@@ -1,5 +1,5 @@
 import "./holiday-page.scss";
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { Typography, Select, Space, Spin, message, Button } from "antd";
 import { LeftOutlined, RightOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
@@ -30,23 +30,23 @@ export const HolidayPage: React.FC = () => {
   }, []);
 
   // Load holidays for selected year
-  const loadHolidays = async () => {
+  const loadHolidays = useCallback(async () => {
     setLoading(true);
     try {
       const startDate = `${selectedYear}-01-01`;
       const endDate = `${selectedYear}-12-31`;
       const response = await holidayApi.getAllHolidays({ startDate, endDate });
       setHolidays(assertApiOk(response));
-    } catch (error) {
+    } catch {
       message.error("加载假期数据失败");
     } finally {
       setLoading(false);
     }
-  };
+  }, [selectedYear]);
 
   useEffect(() => {
     void loadHolidays();
-  }, [selectedYear]);
+  }, [loadHolidays]);
 
   const handleYearChange = (year: number) => {
     setSelectedYear(year);
@@ -98,7 +98,7 @@ export const HolidayPage: React.FC = () => {
       await holidayApi.deleteHoliday(holidayId);
       message.success("删除成功");
       void loadHolidays();
-    } catch (error) {
+    } catch {
       message.error("删除失败");
     }
   };

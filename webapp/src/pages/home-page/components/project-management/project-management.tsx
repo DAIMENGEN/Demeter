@@ -35,7 +35,8 @@ export const ProjectManagement: React.FC = () => {
 
     // 根据当前视图获取对应的数据
     const getCurrentViewData = () => {
-        const safeProjects = (data: any) => Array.isArray(data?.projects) ? data.projects : [];
+        const safeProjects = (data: { projects?: Project[] } | undefined): Project[] =>
+            Array.isArray(data?.projects) ? data.projects : [];
         switch (selectedView) {
             case "myCreated":
                 return {
@@ -60,7 +61,7 @@ export const ProjectManagement: React.FC = () => {
                 };
             default:
                 return {
-                    projects: [],
+                    projects: [] as Project[],
                     loading: false,
                     refetch: () => {},
                     title: "项目列表",
@@ -95,7 +96,7 @@ export const ProjectManagement: React.FC = () => {
                 try {
                     await deleteProject(project.id);
                     currentViewData.refetch();
-                } catch (error) {
+                } catch {
                     // 错误已在 hook 中处理
                 }
             }

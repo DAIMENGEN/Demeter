@@ -91,7 +91,7 @@ export const TaskPreviewDrawer: React.FC<TaskPreviewDrawerProps> = ({
         if (!task?.parentId) return EMPTY_DISPLAY;
         const label = parentLabelMap?.get(task.parentId);
         return label ?? EMPTY_DISPLAY;
-    }, [parentLabelMap, task?.parentId]);
+    }, [parentLabelMap, task]);
 
     const customAttributes = useMemo(() => {
         const raw = task?.customAttributes;

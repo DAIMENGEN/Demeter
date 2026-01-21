@@ -66,8 +66,11 @@ export const ProfileDrawer: React.FC<ProfileDrawerProps> = ({open, onClose}) => 
 
             message.success("个人信息更新成功");
             setIsEditing(false);
-        } catch (error: any) {
-            message.error(error?.message || "更新失败，请重试");
+        } catch (error: unknown) {
+            const errorMessage = error && typeof error === "object" && "message" in error
+                ? String(error.message)
+                : "更新失败，请重试";
+            message.error(errorMessage);
         } finally {
             setLoading(false);
         }

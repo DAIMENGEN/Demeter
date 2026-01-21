@@ -99,10 +99,33 @@ export const ProjectDetail: React.FC = () => {
         loading: attributeConfigsLoading
     } = useProjectTaskAttributeConfigs(projectId, Boolean(projectId));
 
-    const [colorRenderAttributeName, setColorRenderAttributeName] = useState<string | null>(null);
+    // 初始化时从 localStorage 读取颜色渲染属性名
+    const [colorRenderAttributeName, setColorRenderAttributeName] = useState<string | null>(() => {
+        if (!colorRenderStorageKey) return null;
+        try {
+            const raw = localStorage.getItem(colorRenderStorageKey);
+            const v = (raw ?? "").trim();
+            return v || null;
+        } catch {
+            return null;
+        }
+    });
 
     // 列配置状态（title 必选；以 key 数组存储，便于支持动态列）
-    const [selectedColumnKeys, setSelectedColumnKeys] = useState<string[]>([RESOURCE_COLUMN_TITLE_KEY]);
+    // 初始化时从 localStorage 读取
+    const [selectedColumnKeys, setSelectedColumnKeys] = useState<string[]>(() => {
+        if (!visibleColumnsStorageKey) return [RESOURCE_COLUMN_TITLE_KEY];
+        try {
+            const raw = localStorage.getItem(visibleColumnsStorageKey);
+            if (!raw) return [RESOURCE_COLUMN_TITLE_KEY];
+            const parsed = JSON.parse(raw) as unknown;
+            if (!Array.isArray(parsed)) return [RESOURCE_COLUMN_TITLE_KEY];
+            const keys = parsed.filter((k): k is string => typeof k === "string");
+            return ensureTitleSelected(keys);
+        } catch {
+            return [RESOURCE_COLUMN_TITLE_KEY];
+        }
+    });
 
     // 根据 task 字段 + 自定义字段配置，生成统一的“可选列”列表
     const availableColumns = useMemo<AvailableColumn[]>(() => {
@@ -153,29 +176,17 @@ export const ProjectDetail: React.FC = () => {
     // 清理无效列 key（比如自定义字段被删了）
     useEffect(() => {
         const allowed = new Set(availableColumns.map((c) => c.key));
-        setSelectedColumnKeysAndPersist((prev) => prev.filter((k) => allowed.has(k)));
-    }, [availableColumns, setSelectedColumnKeysAndPersist]);
-
-    // 初次进入：从 localStorage 读取用户上次选择的列
-    useEffect(() => {
-        if (!visibleColumnsStorageKey) return;
-        try {
-            const raw = localStorage.getItem(visibleColumnsStorageKey);
-            if (!raw) {
-                setSelectedColumnKeys([RESOURCE_COLUMN_TITLE_KEY]);
-                return;
-            }
-            const parsed = JSON.parse(raw) as unknown;
-            if (!Array.isArray(parsed)) {
-                setSelectedColumnKeys([RESOURCE_COLUMN_TITLE_KEY]);
-                return;
-            }
-            const keys = parsed.filter((k): k is string => typeof k === "string");
-            setSelectedColumnKeys(ensureTitleSelected(keys));
-        } catch {
-            // ignore
+        const filtered = selectedColumnKeys.filter((k) => allowed.has(k));
+        if (filtered.length !== selectedColumnKeys.length) {
+            // 使用 setTimeout 确保在下一个事件循环中更新状态
+            const timeoutId = setTimeout(() => {
+                setSelectedColumnKeysAndPersist(filtered);
+            }, 0);
+            return () => clearTimeout(timeoutId);
         }
-    }, [visibleColumnsStorageKey]);
+    }, [availableColumns, selectedColumnKeys, setSelectedColumnKeysAndPersist]);
+
+    // 删除重复的 useEffect（因为已经在 useState 初始化时从 localStorage 读取）
 
     const setColorRenderAttributeNameAndPersist = useCallback((name: string | null) => {
         setColorRenderAttributeName(name);
@@ -191,21 +202,6 @@ export const ProjectDetail: React.FC = () => {
         }
     }, [colorRenderStorageKey]);
 
-    // 初次进入：从 localStorage 读取用户上次选择
-    // 注意：不要在 attributeConfigs 还没加载时就校验并回退，否则会把刚读出来的值清空
-    useEffect(() => {
-        if (!colorRenderStorageKey) return;
-        try {
-            const raw = localStorage.getItem(colorRenderStorageKey);
-            const v = (raw ?? "").trim();
-            // 初始化只设置 state，不额外触发写回（key 本身就来自 localStorage）
-            setColorRenderAttributeName(v ? v : null);
-        } catch {
-            // ignore (Safari private mode / storage disabled)
-        }
-        // 只需在 key 变化时执行一次
-    }, [colorRenderStorageKey]);
-
     // 当用户删除/变更字段类型导致当前选择不可用时，自动回退
     useEffect(() => {
         if (!colorRenderAttributeName) return;
@@ -213,8 +209,11 @@ export const ProjectDetail: React.FC = () => {
         if (attributeConfigsLoading) return;
         const cfg = attributeConfigs.find((c) => c.attributeName === colorRenderAttributeName);
         if (!cfg || !(cfg.attributeType === "select" || cfg.attributeType === "user")) {
-            // 明确失效时才同步清理 localStorage
-            setColorRenderAttributeNameAndPersist(null);
+            // 使用 setTimeout 确保在下一个事件循环中更新状态
+            const timeoutId = setTimeout(() => {
+                setColorRenderAttributeNameAndPersist(null);
+            }, 0);
+            return () => clearTimeout(timeoutId);
         }
     }, [attributeConfigs, attributeConfigsLoading, colorRenderAttributeName, setColorRenderAttributeNameAndPersist]);
 
@@ -299,18 +298,13 @@ export const ProjectDetail: React.FC = () => {
         return tasks.find((t) => t.id === editingTaskId) ?? null;
     }, [editingTaskId, tasks]);
 
-    // 合并甘特图数据状态，避免多次重渲染
-    const [ganttData, setGanttData] = useState<{
+    // 乐观更新的临时数据（用于拖拽等交互）
+    const [optimisticGanttData, setOptimisticGanttData] = useState<{
         events: Event[];
         resources: Resource[];
         milestones: Milestone[];
         checkpoints: Checkpoint[];
-    }>({
-        events: [],
-        resources: [],
-        milestones: [],
-        checkpoints: []
-    });
+    } | null>(null);
 
     // 甘特图时间范围状态
     const today = dayjs();
@@ -355,15 +349,50 @@ export const ProjectDetail: React.FC = () => {
     const {height: schedulantHeight, containerRef} = useSchedulantHeight(cardHeaderRef, legendRef);
 
     // 当 tasks 加载/刷新时，用真实数据驱动甘特图
-    useEffect(() => {
+    const ganttDataBase = useMemo(() => {
         const {resources, events, milestones, checkpoints} = tasksToSchedulantModels(
             tasks,
             colorRenderAttributeName,
             activeColorMap,
             attributeConfigs
         );
-        setGanttData({resources, events, milestones, checkpoints});
+        return {resources, events, milestones, checkpoints};
     }, [tasks, colorRenderAttributeName, activeColorMap, attributeConfigs]);
+
+    // 同步把列值铺到 resource.extendedProps 上，让 schedulant 能通过 field 读取
+    const ganttData = useMemo(() => {
+        // 如果有乐观更新数据，优先使用
+        if (optimisticGanttData) {
+            return optimisticGanttData;
+        }
+
+        const selected = ensureTitleSelected(selectedColumnKeys);
+        const keysToProject = selected.filter((k) => k !== RESOURCE_COLUMN_TITLE_KEY);
+
+        if (!keysToProject.length || !ganttDataBase.resources.length) {
+            return ganttDataBase;
+        }
+
+        const nextResources = ganttDataBase.resources.map((r) => {
+            const current = (r.extendedProps ?? {}) as Record<string, unknown>;
+            const nextExtendedProps: Record<string, unknown> = {...current};
+
+            for (const k of keysToProject) {
+                if (k in nextExtendedProps) continue;
+                nextExtendedProps[k] = normalizeExtendedPropValue(current[k]);
+            }
+
+            // 保持 order 可读
+            nextExtendedProps.order = nextExtendedProps.order ?? current.order;
+
+            return {
+                ...r,
+                extendedProps: nextExtendedProps,
+            };
+        });
+
+        return {...ganttDataBase, resources: nextResources};
+    }, [ganttDataBase, selectedColumnKeys, optimisticGanttData]);
 
     // 根据配置生成显示的列
     const resourceAreaColumns = useMemo(() => {
@@ -380,38 +409,6 @@ export const ProjectDetail: React.FC = () => {
 
         return columns as unknown as ResourceAreaColumn[];
     }, [availableColumns, selectedColumnKeys]);
-
-    // 同步把列值铺到 resource.extendedProps 上，让 schedulant 能通过 field 读取
-    useEffect(() => {
-        if (!selectedColumnKeys.length) return;
-        const selected = ensureTitleSelected(selectedColumnKeys);
-        const keysToProject = selected.filter((k) => k !== RESOURCE_COLUMN_TITLE_KEY);
-        if (!keysToProject.length) return;
-
-        setGanttData((prev) => {
-            if (!prev.resources.length) return prev;
-
-            const nextResources = prev.resources.map((r) => {
-                const current = (r.extendedProps ?? {}) as Record<string, unknown>;
-                const nextExtendedProps: Record<string, unknown> = {...current};
-
-                for (const k of keysToProject) {
-                    if (k in nextExtendedProps) continue;
-                    nextExtendedProps[k] = normalizeExtendedPropValue(current[k]);
-                }
-
-                // 保持 order 可读
-                nextExtendedProps.order = nextExtendedProps.order ?? current.order;
-
-                return {
-                    ...r,
-                    extendedProps: nextExtendedProps,
-                };
-            });
-
-            return {...prev, resources: nextResources};
-        });
-    }, [selectedColumnKeys]);
 
     // 向前移动时间范围（向左）
     const handleShiftLeft = () => {
@@ -436,7 +433,7 @@ export const ProjectDetail: React.FC = () => {
         void (async () => {
             try {
                 const parentId = eventApi.getResourceApi().getParentId();
-                const payload: Record<string, any> = {
+                const payload: Record<string, string> = {
                     [field === "start" ? "startDateTime" : "endDateTime"]: date.format("YYYY-MM-DDTHH:mm:ss")
                 };
                 if (parentId.isDefined()) {
@@ -444,9 +441,11 @@ export const ProjectDetail: React.FC = () => {
                 }
                 await updateTask(projectId, targetId, payload);
                 await refetchTasks();
+                setOptimisticGanttData(null);
             } catch {
                 // rollback by re-fetching canonical server state
                 await refetchTasks();
+                setOptimisticGanttData(null);
             }
         })();
     };
@@ -472,7 +471,7 @@ export const ProjectDetail: React.FC = () => {
                                     const unit = viewUnitMap[viewType];
                                     const range = viewDefaultRangeMap[viewType];
                                     setGanttStartDate(dayjs());
-                                    setGanttEndDate(dayjs().add(range, unit as any));
+                                    setGanttEndDate(dayjs().add(range, unit as dayjs.ManipulateType));
                                 }}
                                 onOpenTaskAttributeConfig={() => setTaskAttributeDrawerOpen(true)}
                                 onOpenCreateTask={() => {
@@ -620,10 +619,11 @@ export const ProjectDetail: React.FC = () => {
                                     }
 
                                     // optimistic UI update
-                                    setGanttData(prev => {
-                                        const newResources = [...prev.resources];
+                                    setOptimisticGanttData(prev => {
+                                        const base = prev ?? ganttData;
+                                        const newResources = [...base.resources];
                                         const draggedIndex = newResources.findIndex((r) => r.id === draggedId);
-                                        if (draggedIndex === -1) return prev;
+                                        if (draggedIndex === -1) return base;
 
                                         newResources[draggedIndex] = {
                                             ...newResources[draggedIndex],
@@ -634,7 +634,7 @@ export const ProjectDetail: React.FC = () => {
                                             }
                                         };
 
-                                        return {...prev, resources: newResources};
+                                        return {...base, resources: newResources};
                                     });
 
                                     void (async () => {
@@ -651,8 +651,10 @@ export const ProjectDetail: React.FC = () => {
                                             }
 
                                             await refetchTasks();
+                                            setOptimisticGanttData(null); // 清除乐观更新，使用真实数据
                                         } catch {
                                             await refetchTasks();
+                                            setOptimisticGanttData(null); // 清除乐观更新，恢复原始数据
                                         }
                                     })();
                                 }}

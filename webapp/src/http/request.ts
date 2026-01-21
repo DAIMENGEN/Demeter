@@ -9,7 +9,7 @@ import type { AxiosResponse } from "axios";
 /**
  * 通用请求方法
  */
-async function request<T = any>(
+async function request<T = unknown>(
   config: RequestConfig
 ): Promise<ApiResponse<T>> {
   try {
@@ -27,9 +27,9 @@ async function request<T = any>(
 /**
  * GET 请求
  */
-export async function get<T = any>(
+export async function get<T = unknown>(
   url: string,
-  params?: any,
+  params?: Record<string, unknown>,
   config?: RequestConfig
 ): Promise<ApiResponse<T>> {
   return request<T>({
@@ -43,9 +43,9 @@ export async function get<T = any>(
 /**
  * POST 请求
  */
-export async function post<T = any>(
+export async function post<T = unknown>(
   url: string,
-  data?: any,
+  data?: unknown,
   config?: RequestConfig
 ): Promise<ApiResponse<T>> {
   return request<T>({
@@ -59,9 +59,9 @@ export async function post<T = any>(
 /**
  * PUT 请求
  */
-export async function put<T = any>(
+export async function put<T = unknown>(
   url: string,
-  data?: any,
+  data?: unknown,
   config?: RequestConfig
 ): Promise<ApiResponse<T>> {
   return request<T>({
@@ -75,9 +75,9 @@ export async function put<T = any>(
 /**
  * PATCH 请求
  */
-export async function patch<T = any>(
+export async function patch<T = unknown>(
   url: string,
-  data?: any,
+  data?: unknown,
   config?: RequestConfig
 ): Promise<ApiResponse<T>> {
   return request<T>({
@@ -91,9 +91,9 @@ export async function patch<T = any>(
 /**
  * DELETE 请求
  */
-export async function del<T = any>(
+export async function del<T = unknown>(
   url: string,
-  params?: any,
+  params?: Record<string, unknown>,
   config?: RequestConfig
 ): Promise<ApiResponse<T>> {
   return request<T>({
@@ -107,7 +107,7 @@ export async function del<T = any>(
 /**
  * 上传文件
  */
-export async function upload<T = any>(
+export async function upload<T = unknown>(
   url: string,
   file: File | Blob,
   config?: RequestConfig
@@ -132,7 +132,7 @@ export async function upload<T = any>(
  */
 export async function download(
   url: string,
-  params?: any,
+  params?: Record<string, unknown>,
   filename?: string,
   config?: RequestConfig
 ): Promise<void> {

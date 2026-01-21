@@ -7,7 +7,7 @@ import type { AxiosRequestConfig } from "axios";
 /**
  * 通用的 API 响应结构
  */
-export interface ApiResponse<T = any> {
+export interface ApiResponse<T = unknown> {
   code: number;
   data: T;
   message: string;
@@ -22,7 +22,7 @@ export interface RequestConfig extends AxiosRequestConfig {
   // 是否显示错误提示
   showError?: boolean;
   // 自定义错误处理
-  customErrorHandler?: (error: any) => void;
+  customErrorHandler?: (error: unknown) => void;
 }
 
 /**
@@ -36,7 +36,7 @@ export interface PageParams {
 /**
  * 分页响应数据
  */
-export interface PageResponse<T = any> {
+export interface PageResponse<T = unknown> {
   list: T[];
   total: number;
   page: number;
@@ -49,7 +49,7 @@ export interface PageResponse<T = any> {
 export interface HttpError {
   code: number;
   message: string;
-  data?: any;
+  data?: unknown;
   status?: number;
 }
 

@@ -74,8 +74,8 @@ export const {
     logout,
 } = userSlice.actions;
 // 导出 selectors
-// 使用 any 类型避免循环依赖，实际使用时会通过 useAppSelector 获得正确的类型推断
-export const selectCurrentUser = (state: any) => state.user.currentUser;
-export const selectIsAuthenticated = (state: any) => state.user.isAuthenticated;
+// 使用泛型避免循环依赖，实际使用时会通过 useAppSelector 获得正确的类型推断
+export const selectCurrentUser = (state: { user: UserState }) => state.user.currentUser;
+export const selectIsAuthenticated = (state: { user: UserState }) => state.user.isAuthenticated;
 // 导出 reducer
 export default userSlice.reducer;
