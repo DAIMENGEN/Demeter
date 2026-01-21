@@ -230,7 +230,7 @@ export const useDeleteProject = () => {
 /**
  * 项目 task 自定义字段配置列表 Hook
  */
-export const useTaskAttributeConfigs = (projectId: string, enabled = true) => {
+export const useProjectTaskAttributeConfigs = (projectId: string, enabled = true) => {
     const [taskAttributeConfigs, setTaskAttributeConfigs] = useState<TaskAttributeConfig[]>([]);
     const [loading, setLoading] = useState(false);
 
@@ -238,7 +238,7 @@ export const useTaskAttributeConfigs = (projectId: string, enabled = true) => {
         if (!projectId || !enabled) return;
         setLoading(true);
         try {
-            const res = await projectApi.getTaskAttributeConfigs(projectId);
+            const res = await projectApi.getProjectTaskAttributeConfigs(projectId);
             setTaskAttributeConfigs(assertApiOk(res));
         } finally {
             setLoading(false);
@@ -252,13 +252,13 @@ export const useTaskAttributeConfigs = (projectId: string, enabled = true) => {
     return {data: taskAttributeConfigs, loading, refetch: fetch};
 };
 
-export const useCreateTaskAttributeConfig = () => {
+export const useCreateProjectTaskAttributeConfig = () => {
     const [loading, setLoading] = useState(false);
 
     const create = async (projectId: string, data: CreateTaskAttributeConfigParams) => {
         setLoading(true);
         try {
-            const res = await projectApi.createTaskAttributeConfig(projectId, data);
+            const res = await projectApi.createProjectTaskAttributeConfig(projectId, data);
             return assertApiOk(res);
         } finally {
             setLoading(false);
@@ -268,13 +268,13 @@ export const useCreateTaskAttributeConfig = () => {
     return {create, loading};
 };
 
-export const useUpdateTaskAttributeConfig = () => {
+export const useUpdateProjectTaskAttributeConfig = () => {
     const [loading, setLoading] = useState(false);
 
     const update = async (projectId: string, id: string, data: UpdateTaskAttributeConfigParams) => {
         setLoading(true);
         try {
-            const res = await projectApi.updateTaskAttributeConfig(projectId, id, data);
+            const res = await projectApi.updateProjectTaskAttributeConfig(projectId, id, data);
             return assertApiOk(res);
         } finally {
             setLoading(false);
@@ -284,13 +284,13 @@ export const useUpdateTaskAttributeConfig = () => {
     return {update, loading};
 };
 
-export const useDeleteTaskAttributeConfig = () => {
+export const useDeleteProjectTaskAttributeConfig = () => {
     const [loading, setLoading] = useState(false);
 
     const remove = async (projectId: string, id: string) => {
         setLoading(true);
         try {
-            const res = await projectApi.deleteTaskAttributeConfig(projectId, id);
+            const res = await projectApi.deleteProjectTaskAttributeConfig(projectId, id);
             assertApiOk(res);
         } finally {
             setLoading(false);
@@ -303,7 +303,7 @@ export const useDeleteTaskAttributeConfig = () => {
 /**
  * 项目 tasks 列表 Hook
  */
-export const useTasks = (projectId: string, enabled = true) => {
+export const useProjectTasks = (projectId: string, enabled = true) => {
     const [tasks, setTasks] = useState<Task[]>([]);
     const [loading, setLoading] = useState(false);
 
@@ -311,7 +311,7 @@ export const useTasks = (projectId: string, enabled = true) => {
         if (!projectId || !enabled) return;
         setLoading(true);
         try {
-            const res = await projectApi.getTasks(projectId);
+            const res = await projectApi.getProjectTasks(projectId);
             setTasks(assertApiOk(res));
         } finally {
             setLoading(false);
@@ -325,13 +325,13 @@ export const useTasks = (projectId: string, enabled = true) => {
     return {data: tasks, loading, refetch: fetch};
 };
 
-export const useCreateTask = () => {
+export const useCreateProjectTask = () => {
     const [loading, setLoading] = useState(false);
 
     const create = async (projectId: string, data: CreateTaskParams) => {
         setLoading(true);
         try {
-            const res = await projectApi.createTask(projectId, data);
+            const res = await projectApi.createProjectTask(projectId, data);
             return assertApiOk(res);
         } finally {
             setLoading(false);
@@ -341,13 +341,13 @@ export const useCreateTask = () => {
     return {create, loading};
 };
 
-export const useUpdateTask = () => {
+export const useUpdateProjectTask = () => {
     const [loading, setLoading] = useState(false);
 
     const update = async (projectId: string, taskId: string, data: UpdateTaskParams) => {
         setLoading(true);
         try {
-            const res = await projectApi.updateTask(projectId, taskId, data);
+            const res = await projectApi.updateProjectTask(projectId, taskId, data);
             return assertApiOk(res);
         } finally {
             setLoading(false);
@@ -357,13 +357,13 @@ export const useUpdateTask = () => {
     return {update, loading};
 };
 
-export const useDeleteTask = () => {
+export const useDeleteProjectTask = () => {
     const [loading, setLoading] = useState(false);
 
     const remove = async (projectId: string, taskId: string) => {
         setLoading(true);
         try {
-            const res = await projectApi.deleteTask(projectId, taskId);
+            const res = await projectApi.deleteProjectTask(projectId, taskId);
             assertApiOk(res);
         } finally {
             setLoading(false);
@@ -373,13 +373,13 @@ export const useDeleteTask = () => {
     return {remove, loading};
 };
 
-export const useReorderTasks = () => {
+export const useReorderProjectTasks = () => {
     const [loading, setLoading] = useState(false);
 
     const reorder = async (projectId: string, data: ReorderTasksParams) => {
         setLoading(true);
         try {
-            const res = await projectApi.reorderTasks(projectId, data);
+            const res = await projectApi.reorderProjectTasks(projectId, data);
             assertApiOk(res);
         } finally {
             setLoading(false);

@@ -4,8 +4,8 @@ import dayjs from "dayjs";
 import {
     type JsonValue,
     type Task,
-    useTaskAttributeConfigs,
-    useUpdateTask
+    useProjectTaskAttributeConfigs,
+    useUpdateProjectTask
 } from "@Webapp/api/modules/project";
 import {
     buildAttributeTypeMap,
@@ -39,9 +39,9 @@ export const EditTaskDrawer: React.FC<EditTaskDrawerProps> = ({
 }) => {
     const {message} = App.useApp();
     const [form] = Form.useForm<TaskDrawerFormValues>();
-    const {update, loading} = useUpdateTask();
+    const {update, loading} = useUpdateProjectTask();
 
-    const {data: attributeConfigs, loading: attributeConfigsLoading} = useTaskAttributeConfigs(projectId, open);
+    const {data: attributeConfigs, loading: attributeConfigsLoading} = useProjectTaskAttributeConfigs(projectId, open);
 
     const attributeTypeMap = useMemo(() => buildAttributeTypeMap(attributeConfigs), [attributeConfigs]);
 

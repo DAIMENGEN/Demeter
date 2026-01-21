@@ -22,10 +22,10 @@ import {
     AttributeTypeLabels,
     type CreateTaskAttributeConfigParams,
     type TaskAttributeConfig,
-    useCreateTaskAttributeConfig,
-    useDeleteTaskAttributeConfig,
-    useTaskAttributeConfigs,
-    useUpdateTaskAttributeConfig
+    useCreateProjectTaskAttributeConfig,
+    useDeleteProjectTaskAttributeConfig,
+    useProjectTaskAttributeConfigs,
+    useUpdateProjectTaskAttributeConfig
 } from "@Webapp/api/modules/project";
 import {userApi, useUserSelectOptionsInfinite} from "@Webapp/api/modules/user";
 
@@ -63,10 +63,10 @@ export const TaskAttributeConfigDrawer: React.FC<TaskAttributeConfigDrawerProps>
     const {message} = App.useApp();
     const [form] = Form.useForm<FormValues>();
 
-    const {data, loading, refetch} = useTaskAttributeConfigs(projectId, open);
-    const {create, loading: createLoading} = useCreateTaskAttributeConfig();
-    const {update, loading: updateLoading} = useUpdateTaskAttributeConfig();
-    const {remove, loading: deleteLoading} = useDeleteTaskAttributeConfig();
+    const {data, loading, refetch} = useProjectTaskAttributeConfigs(projectId, open);
+    const {create, loading: createLoading} = useCreateProjectTaskAttributeConfig();
+    const {update, loading: updateLoading} = useUpdateProjectTaskAttributeConfig();
+    const {remove, loading: deleteLoading} = useDeleteProjectTaskAttributeConfig();
     const userPicker = useUserSelectOptionsInfinite({pageSize: 20, activeOnly: true});
 
     const {onUserSearch, resetUserSearch} = useDebouncedUserSearch({

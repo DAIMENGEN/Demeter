@@ -4,8 +4,8 @@ import dayjs, {type Dayjs} from "dayjs";
 import {
     type CreateTaskParams,
     TaskType,
-    useCreateTask,
-    useTaskAttributeConfigs
+    useCreateProjectTask,
+    useProjectTaskAttributeConfigs
 } from "@Webapp/api/modules/project";
 import {
     buildAttributeTypeMap,
@@ -50,9 +50,9 @@ export const CreateTaskDrawer: React.FC<CreateTaskDrawerProps> = ({
                                                                    }) => {
     const {message} = App.useApp();
     const [form] = Form.useForm<TaskDrawerFormValues>();
-    const {create, loading} = useCreateTask();
+    const {create, loading} = useCreateProjectTask();
 
-    const {data: attributeConfigs, loading: attributeConfigsLoading} = useTaskAttributeConfigs(projectId, open);
+    const {data: attributeConfigs, loading: attributeConfigsLoading} = useProjectTaskAttributeConfigs(projectId, open);
 
     const attributeTypeMap = useMemo(() => buildAttributeTypeMap(attributeConfigs), [attributeConfigs]);
 

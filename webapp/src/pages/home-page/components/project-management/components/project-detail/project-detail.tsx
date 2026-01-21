@@ -16,12 +16,12 @@ import {
     Schedulant
 } from "schedulant";
 import {
-    useDeleteTask,
     useProjectById,
-    useReorderTasks,
-    useTaskAttributeConfigs,
-    useTasks,
-    useUpdateTask
+    useProjectTaskAttributeConfigs,
+    useProjectTasks,
+    useUpdateProjectTask,
+    useReorderProjectTasks,
+    useDeleteProjectTask,
 } from "@Webapp/api/modules/project";
 import isSameOrBefore from "dayjs/plugin/isSameOrBefore";
 import quarterOfYear from "dayjs/plugin/quarterOfYear";
@@ -89,15 +89,15 @@ export const ProjectDetail: React.FC = () => {
 
     const {project, loading: projectLoading} = useProjectById(projectId);
 
-    const {data: tasks, loading: tasksLoading, refetch: refetchTasks} = useTasks(projectId, Boolean(projectId));
-    const {update: updateTask} = useUpdateTask();
-    const {reorder: reorderTasks} = useReorderTasks();
-    const {remove: deleteTask, loading: deleteTaskLoading} = useDeleteTask();
+    const {data: tasks, loading: tasksLoading, refetch: refetchTasks} = useProjectTasks(projectId, Boolean(projectId));
+    const {update: updateTask} = useUpdateProjectTask();
+    const {reorder: reorderTasks} = useReorderProjectTasks();
+    const {remove: deleteTask, loading: deleteTaskLoading} = useDeleteProjectTask();
 
     const {
         data: attributeConfigs,
         loading: attributeConfigsLoading
-    } = useTaskAttributeConfigs(projectId, Boolean(projectId));
+    } = useProjectTaskAttributeConfigs(projectId, Boolean(projectId));
 
     const [colorRenderAttributeName, setColorRenderAttributeName] = useState<string | null>(null);
 

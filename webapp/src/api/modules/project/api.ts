@@ -93,56 +93,56 @@ export const projectApi = {
   /**
    * 获取项目 tasks
    */
-  getTasks: (projectId: string) => {
+  getProjectTasks: (projectId: string) => {
     return get<Task[]>(`/projects/${projectId}/tasks/all`);
   },
 
   /**
    * 创建项目 task
    */
-  createTask: (projectId: string, data: CreateTaskParams) => {
+  createProjectTask: (projectId: string, data: CreateTaskParams) => {
     return post<Task>(`/projects/${projectId}/tasks`, data);
   },
 
   /**
    * 更新项目 task
    */
-  updateTask: (projectId: string, taskId: string, data: UpdateTaskParams) => {
+  updateProjectTask: (projectId: string, taskId: string, data: UpdateTaskParams) => {
     return put<Task>(`/projects/${projectId}/tasks/${taskId}`, data);
   },
 
   /**
    * 删除项目 task
    */
-  deleteTask: (projectId: string, taskId: string) => {
+  deleteProjectTask: (projectId: string, taskId: string) => {
     return del<void>(`/projects/${projectId}/tasks/${taskId}`);
   },
 
   /**
    * 重排项目 tasks（同一 parentId 下），将 order 归一为 1..N
    */
-  reorderTasks: (projectId: string, data: ReorderTasksParams) => {
+  reorderProjectTasks: (projectId: string, data: ReorderTasksParams) => {
     return post<void>(`/projects/${projectId}/tasks/reorder`, data);
   },
 
   /**
    * 获取项目 task 自定义字段配置
    */
-  getTaskAttributeConfigs: (projectId: string) => {
+  getProjectTaskAttributeConfigs: (projectId: string) => {
     return get<TaskAttributeConfig[]>(`/projects/${projectId}/task-attribute-configs`);
   },
 
   /**
    * 创建项目 task 自定义字段配置
    */
-  createTaskAttributeConfig: (projectId: string, data: CreateTaskAttributeConfigParams) => {
+  createProjectTaskAttributeConfig: (projectId: string, data: CreateTaskAttributeConfigParams) => {
     return post<TaskAttributeConfig>(`/projects/${projectId}/task-attribute-configs`, data);
   },
 
   /**
-   * 更新 task 自定义字段配置
+   * 更新项目 task 自定义字段配置
    */
-  updateTaskAttributeConfig: (
+  updateProjectTaskAttributeConfig: (
     projectId: string,
     id: string,
     data: UpdateTaskAttributeConfigParams
@@ -154,16 +154,19 @@ export const projectApi = {
   },
 
   /**
-   * 删除 task 自定义字段配置
+   * 删除项目 task 自定义字段配置
    */
-  deleteTaskAttributeConfig: (projectId: string, id: string) => {
+  deleteProjectTaskAttributeConfig: (projectId: string, id: string) => {
     return del<void>(`/projects/${projectId}/task-attribute-configs/${id}`);
   },
 
   /**
-   * 批量删除 task 自定义字段配置
+   * 批量删除项目 task 自定义字段配置
    */
-  batchDeleteTaskAttributeConfigs: (projectId: string, data: BatchDeleteTaskAttributeConfigsParams) => {
+  batchDeleteProjectTaskAttributeConfigs: (
+    projectId: string,
+    data: BatchDeleteTaskAttributeConfigsParams
+  ) => {
     return post<void>(`/projects/${projectId}/task-attribute-configs/batch-delete`, data);
   }
 };
