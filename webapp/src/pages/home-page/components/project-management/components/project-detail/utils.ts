@@ -18,6 +18,8 @@ export const CUSTOM_ATTRIBUTE_PREFIX = "ca.";
 
 type ColorMap = ReadonlyMap<string, string>;
 
+export type { ColorMap };
+
 export const ensureTitleSelected = (keys: readonly string[]) => {
     const set = new Set(keys);
     set.add(RESOURCE_COLUMN_TITLE_KEY);
