@@ -27,7 +27,6 @@ export const authApi = {
    * 用户登出
    */
   logout: () => {
-    // refresh_token 由 HttpOnly Cookie 承载，不需要传参
     return post<void>("/auth/logout");
   },
 

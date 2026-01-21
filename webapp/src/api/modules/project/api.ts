@@ -1,4 +1,5 @@
 import { get, post, put, del } from "@Webapp/http";
+import type { PageResponse } from "@Webapp/http";
 import type {
   Project,
   CreateProjectParams,
@@ -23,14 +24,14 @@ export const projectApi = {
    * 获取项目列表（分页）
    */
   getProjects: (params?: ProjectQueryParams) => {
-    return get<Project[]>("/projects", { params });
+    return get<PageResponse<Project>>("/projects", params);
   },
 
   /**
    * 获取所有项目（不分页）
    */
   getAllProjects: (params?: Omit<ProjectQueryParams, "page" | "pageSize">) => {
-    return get<Project[]>("/projects/all", { params });
+    return get<Project[]>("/projects/all", params);
   },
 
   /**
@@ -65,28 +66,28 @@ export const projectApi = {
    * 删除项目
    */
   deleteProject: (id: string) => {
-    return del(`/projects/${id}`);
+    return del<void>(`/projects/${id}`);
   },
 
   /**
    * 批量删除项目
    */
   batchDeleteProjects: (data: BatchDeleteParams) => {
-    return post("/projects/batch-delete", data);
+    return post<void>("/projects/batch-delete", data);
   },
 
   /**
    * 获取我创建的项目列表（分页）
    */
   getMyProjects: (params?: ProjectQueryParams) => {
-    return get<Project[]>("/projects/my", { params });
+    return get<PageResponse<Project>>("/projects/my", params);
   },
 
   /**
    * 获取我创建的所有项目（不分页）
    */
   getMyAllProjects: (params?: Omit<ProjectQueryParams, "page" | "pageSize">) => {
-    return get<Project[]>("/projects/my/all", { params });
+    return get<Project[]>("/projects/my/all", params);
   },
 
   /**
@@ -114,7 +115,7 @@ export const projectApi = {
    * 删除项目 task
    */
   deleteTask: (projectId: string, taskId: string) => {
-    return del(`/projects/${projectId}/tasks/${taskId}`);
+    return del<void>(`/projects/${projectId}/tasks/${taskId}`);
   },
 
   /**
@@ -156,13 +157,13 @@ export const projectApi = {
    * 删除 task 自定义字段配置
    */
   deleteTaskAttributeConfig: (projectId: string, id: string) => {
-    return del(`/projects/${projectId}/task-attribute-configs/${id}`);
+    return del<void>(`/projects/${projectId}/task-attribute-configs/${id}`);
   },
 
   /**
    * 批量删除 task 自定义字段配置
    */
   batchDeleteTaskAttributeConfigs: (projectId: string, data: BatchDeleteTaskAttributeConfigsParams) => {
-    return post(`/projects/${projectId}/task-attribute-configs/batch-delete`, data);
+    return post<void>(`/projects/${projectId}/task-attribute-configs/batch-delete`, data);
   }
 };

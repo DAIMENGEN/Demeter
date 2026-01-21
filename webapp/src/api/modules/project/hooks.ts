@@ -26,8 +26,8 @@ export const useProjects = (params?: ProjectQueryParams) => {
         setLoading(true);
         try {
             const response = await projectApi.getProjects(params);
-            const projects = assertApiOk(response);
-            setProjects(projects);
+            const page = assertApiOk(response);
+            setProjects(page.list);
         } finally {
             setLoading(false);
         }
@@ -77,8 +77,8 @@ export const useMyProjects = (params?: ProjectQueryParams) => {
         setLoading(true);
         try {
             const response = await projectApi.getMyProjects(params);
-            const projects = assertApiOk(response);
-            setProjects(projects);
+            const page = assertApiOk(response);
+            setProjects(page.list);
         } finally {
             setLoading(false);
         }
