@@ -1,5 +1,5 @@
 import React, { useMemo, useRef, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { Navigate, useNavigate, useParams } from "react-router-dom";
 import { App, Card, Spin } from "antd";
 import { Schedulant } from "schedulant";
 import {
@@ -23,6 +23,7 @@ import {
 import { useProjectDetailState } from "./use-project-detail-state";
 import { useGanttData } from "./use-gantt-data";
 import { useGanttHandlers } from "./use-gantt-handlers";
+import { buildResultUrl } from "@Webapp/pages/result-page";
 import type { GanttDataState } from "./constants";
 import "schedulant/dist/schedulant.css";
 import "./project-detail.scss";
@@ -38,9 +39,23 @@ const RESOURCE_LANE_CONTEXT_MENU_ITEMS = [
 
 export const ProjectDetail: React.FC = () => {
     const { message, modal } = App.useApp();
-    const { id } = useParams<{ id: string }>();
+    const { id: projectId } = useParams<{ id: string }>();
     const navigate = useNavigate();
-    const projectId = id ?? "";
+
+    // 项目 ID 不存在时跳转到结果页
+    if (!projectId) {
+        return (
+            <Navigate
+                to={buildResultUrl({
+                    type: "error",
+                    title: "项目不存在",
+                    subtitle: "请检查项目 ID 是否正确",
+                    showBack: false,
+                })}
+                replace
+            />
+        );
+    }
 
     // 数据获取
     const { project, loading: projectLoading } = useProjectById(projectId);
