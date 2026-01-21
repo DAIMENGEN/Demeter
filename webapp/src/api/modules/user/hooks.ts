@@ -9,6 +9,7 @@ import type { UserSelectOption } from "./helpers";
 import { toUserOptionSelectOption } from "./helpers";
 import type { UserOptionQueryParams } from "./types";
 import {assertApiOk} from "@Webapp/api/common/response.ts";
+import {DEFAULT_PAGINATION, type Pagination} from "@Webapp/api/common/pagination.ts";
 
 /**
  * 用户列表 Hook
@@ -17,11 +18,7 @@ export const useUserList = () => {
     const [users, setUsers] = useState<User[]>([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<Error | null>(null);
-    const [pagination, setPagination] = useState({
-        page: 1,
-        pageSize: 10,
-        total: 0,
-    });
+    const [pagination, setPagination] = useState<Pagination>(DEFAULT_PAGINATION);
 
     const fetchUsers = useCallback(async (params?: UserQueryParams) => {
         try {

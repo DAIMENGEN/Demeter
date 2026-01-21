@@ -13,6 +13,7 @@ import type {
   BatchCreateHolidaysParams
 } from "./types";
 import { assertApiOk } from "@Webapp/api/common/response.ts";
+import { DEFAULT_PAGINATION, type Pagination } from "@Webapp/api/common/pagination.ts";
 
 /**
  * 假期列表 Hook
@@ -20,11 +21,7 @@ import { assertApiOk } from "@Webapp/api/common/response.ts";
 export const useHolidayList = () => {
   const [holidays, setHolidays] = useState<Holiday[]>([]);
   const [loading, setLoading] = useState(false);
-  const [pagination, setPagination] = useState({
-    page: 1,
-    pageSize: 10,
-    total: 0
-  });
+  const [pagination, setPagination] = useState<Pagination>(DEFAULT_PAGINATION);
 
   const fetchHolidays = useCallback(async (params?: HolidayQueryParams) => {
     try {
