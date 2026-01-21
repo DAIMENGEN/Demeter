@@ -3,11 +3,9 @@
  */
 import {useCallback, useState} from "react";
 import {userApi} from "./api";
-import type {User, UserQueryParams, CreateUserParams, UpdateUserParams} from "./types";
-import {log} from "@Webapp/logging.ts";
-import type { UserSelectOption } from "./helpers";
-import { toUserOptionSelectOption } from "./helpers";
-import type { UserOptionQueryParams } from "./types";
+import type {CreateUserParams, UpdateUserParams, User, UserOptionQueryParams, UserQueryParams} from "./types";
+import type {UserSelectOption} from "./helpers";
+import {toUserOptionSelectOption} from "./helpers";
 import {assertApiOk} from "@Webapp/api/common/response.ts";
 import {DEFAULT_PAGINATION, type Pagination} from "@Webapp/api/common/pagination.ts";
 
@@ -17,14 +15,11 @@ import {DEFAULT_PAGINATION, type Pagination} from "@Webapp/api/common/pagination
 export const useUserList = () => {
     const [users, setUsers] = useState<User[]>([]);
     const [loading, setLoading] = useState(false);
-    const [error, setError] = useState<Error | null>(null);
     const [pagination, setPagination] = useState<Pagination>(DEFAULT_PAGINATION);
 
     const fetchUsers = useCallback(async (params?: UserQueryParams) => {
         try {
             setLoading(true);
-            setError(null);
-
             const response = await userApi.getUserList({
                 page: pagination.page,
                 pageSize: pagination.pageSize,
@@ -39,9 +34,6 @@ export const useUserList = () => {
                 page: params?.page ?? prev.page,
                 pageSize: params?.pageSize ?? prev.pageSize,
             }));
-        } catch (err) {
-            setError(err as Error);
-            log.error("获取用户列表失败:", err);
         } finally {
             setLoading(false);
         }
@@ -50,7 +42,6 @@ export const useUserList = () => {
     return {
         users,
         loading,
-        error,
         pagination,
         fetchUsers,
         setPagination,
@@ -63,17 +54,12 @@ export const useUserList = () => {
 export const useUserDetail = () => {
     const [user, setUser] = useState<User | null>(null);
     const [loading, setLoading] = useState(false);
-    const [error, setError] = useState<Error | null>(null);
 
     const fetchUser = useCallback(async (id: string) => {
         try {
             setLoading(true);
-            setError(null);
             const response = await userApi.getUserById(id);
             setUser(assertApiOk(response));
-        } catch (err) {
-            setError(err as Error);
-            log.error("获取用户详情失败:", err);
         } finally {
             setLoading(false);
         }
@@ -82,7 +68,6 @@ export const useUserDetail = () => {
     return {
         user,
         loading,
-        error,
         fetchUser,
     };
 };
@@ -92,19 +77,12 @@ export const useUserDetail = () => {
  */
 export const useUserActions = () => {
     const [loading, setLoading] = useState(false);
-    const [error, setError] = useState<Error | null>(null);
 
     const createUser = useCallback(async (data: CreateUserParams) => {
         try {
             setLoading(true);
-            setError(null);
-
             const response = await userApi.createUser(data);
             return assertApiOk(response);
-        } catch (err) {
-            setError(err as Error);
-            log.error("创建用户失败:", err);
-            throw err;
         } finally {
             setLoading(false);
         }
@@ -116,14 +94,8 @@ export const useUserActions = () => {
     ) => {
         try {
             setLoading(true);
-            setError(null);
-
             const response = await userApi.updateUser(id, data);
             return assertApiOk(response);
-        } catch (err) {
-            setError(err as Error);
-            log.error("更新用户失败:", err);
-            throw err;
         } finally {
             setLoading(false);
         }
@@ -132,14 +104,8 @@ export const useUserActions = () => {
     const deleteUser = useCallback(async (id: string) => {
         try {
             setLoading(true);
-            setError(null);
-
             const response = await userApi.deleteUser(id);
             assertApiOk(response);
-        } catch (err) {
-            setError(err as Error);
-            log.error("删除用户失败:", err);
-            throw err;
         } finally {
             setLoading(false);
         }
@@ -148,14 +114,8 @@ export const useUserActions = () => {
     const toggleUserStatus = useCallback(async (id: string, isActive: boolean) => {
         try {
             setLoading(true);
-            setError(null);
-
             const response = await userApi.toggleUserStatus(id, isActive);
             return assertApiOk(response);
-        } catch (err) {
-            setError(err as Error);
-            log.error("更新用户状态失败:", err);
-            throw err;
         } finally {
             setLoading(false);
         }
@@ -163,7 +123,6 @@ export const useUserActions = () => {
 
     return {
         loading,
-        error,
         createUser,
         updateUser,
         deleteUser,
@@ -178,11 +137,8 @@ export const useUserActions = () => {
 export const useUserSelectOptionsInfinite = (init?: { pageSize?: number; activeOnly?: boolean }) => {
     const pageSize = init?.pageSize ?? 20;
     const activeOnly = init?.activeOnly ?? true;
-
     const [options, setOptions] = useState<UserSelectOption[]>([]);
     const [loading, setLoading] = useState(false);
-    const [error, setError] = useState<Error | null>(null);
-
     const [keyword, setKeyword] = useState<string>("");
     const [page, setPage] = useState<number>(1);
     const [total, setTotal] = useState<number>(0);
@@ -192,8 +148,6 @@ export const useUserSelectOptionsInfinite = (init?: { pageSize?: number; activeO
     const fetchPage = useCallback(async (nextPage: number, nextKeyword: string, reset: boolean) => {
         try {
             setLoading(true);
-            setError(null);
-
             const params: UserOptionQueryParams = {
                 page: nextPage,
                 pageSize,
@@ -218,9 +172,6 @@ export const useUserSelectOptionsInfinite = (init?: { pageSize?: number; activeO
             });
 
             setPage(nextPage);
-        } catch (err) {
-            setError(err as Error);
-            log.error("获取用户选项（分页）失败:", err);
         } finally {
             setLoading(false);
         }
@@ -243,13 +194,11 @@ export const useUserSelectOptionsInfinite = (init?: { pageSize?: number; activeO
         setKeyword("");
         setPage(1);
         setTotal(0);
-        setError(null);
     }, []);
 
     return {
         options,
         loading,
-        error,
         keyword,
         page,
         pageSize,
