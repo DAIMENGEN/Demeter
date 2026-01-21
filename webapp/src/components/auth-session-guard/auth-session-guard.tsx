@@ -53,7 +53,7 @@ export const AuthSessionGuard = ({ children }: AuthSessionGuardProps) => {
         checkingRef.current = false;
       }
     })();
-  }, [location.pathname, dispatch, navigate, getSession]);
+  }, [location.pathname, dispatch, navigate, getSession, message]);
 
   if (!checked) return null;
   return <>{children}</>;
