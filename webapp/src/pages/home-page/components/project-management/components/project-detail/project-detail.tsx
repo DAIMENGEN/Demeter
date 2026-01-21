@@ -11,10 +11,6 @@ import {
     useReorderProjectTasks,
     useDeleteProjectTask,
 } from "@Webapp/api/modules/project";
-import isSameOrBefore from "dayjs/plugin/isSameOrBefore";
-import quarterOfYear from "dayjs/plugin/quarterOfYear";
-import weekOfYear from "dayjs/plugin/weekOfYear";
-import weekYear from "dayjs/plugin/weekYear";
 import { useSchedulantHeight } from "./hooks";
 import {
     CreateTaskDrawer,
@@ -31,11 +27,6 @@ import { useGanttHandlers } from "./use-gantt-handlers";
 import type { GanttDataState } from "./constants";
 import "schedulant/dist/schedulant.css";
 import "./project-detail.scss";
-
-dayjs.extend(isSameOrBefore);
-dayjs.extend(quarterOfYear);
-dayjs.extend(weekOfYear);
-dayjs.extend(weekYear);
 
 const RESOURCE_LANE_CONTEXT_MENU_ITEMS = [
     { key: "create-subtask", label: "创建子任务" },

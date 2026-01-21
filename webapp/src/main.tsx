@@ -1,4 +1,5 @@
 import "@Webapp/index.css";
+import "@Webapp/config/dayjs";
 import { StrictMode } from "react"
 import { createRoot } from "react-dom/client"
 import { Provider } from 'react-redux'
