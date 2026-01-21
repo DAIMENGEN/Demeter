@@ -2,8 +2,8 @@ import React, {useEffect, useMemo} from "react";
 import {App, Button, Drawer, Form, Space, Spin, Typography} from "antd";
 import dayjs, {type Dayjs} from "dayjs";
 import {
-    type CreateTaskParams,
-    TaskType,
+    type CreateProjectTaskParams,
+    ProjectTaskType,
     useCreateProjectTask,
     useProjectTaskAttributeConfigs
 } from "@Webapp/api/modules/project";
@@ -44,7 +44,7 @@ export const CreateTaskDrawer: React.FC<CreateTaskDrawerProps> = ({
                                                                        defaultParentId,
                                                                        defaultOrder = 1.0,
                                                                        defaultRange,
-                                                                       defaultTaskType = TaskType.DEFAULT,
+                                                                       defaultTaskType = ProjectTaskType.DEFAULT,
                                                                        onCreated,
                                                                        onClose
                                                                    }) => {
@@ -62,7 +62,7 @@ export const CreateTaskDrawer: React.FC<CreateTaskDrawerProps> = ({
             let end = defaultRange?.end ?? start.add(7, "day");
 
             // For checkpoint and milestone, set end date to match start date
-            const isSingleDateType = defaultTaskType === TaskType.CHECKPOINT || defaultTaskType === TaskType.MILESTONE;
+            const isSingleDateType = defaultTaskType === ProjectTaskType.CHECKPOINT || defaultTaskType === ProjectTaskType.MILESTONE;
             if (isSingleDateType) {
                 end = start;
             }
@@ -91,7 +91,7 @@ export const CreateTaskDrawer: React.FC<CreateTaskDrawerProps> = ({
 
             const customAttributes = normalizeCustomAttributesToStrings(values.customAttributes, attributeTypeMap);
 
-            const payload: CreateTaskParams = {
+            const payload: CreateProjectTaskParams = {
                 taskName: values.taskName,
                 parentId: values.parentId ?? null,
                 order: values.order,

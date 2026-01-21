@@ -1,7 +1,7 @@
 import React from "react";
 import {DatePicker, Form, Input, InputNumber, Select} from "antd";
 import type {Dayjs} from "dayjs";
-import {TaskType} from "@Webapp/api/modules/project";
+import {ProjectTaskType} from "@Webapp/api/modules/project";
 
 export interface TaskDrawerFormFieldsProps {
     parentOptions: Array<{ value: string; label: string }>;
@@ -15,7 +15,7 @@ export const TaskDrawerFormFields: React.FC<TaskDrawerFormFieldsProps> = ({
     const form = Form.useFormInstance();
     const taskType = Form.useWatch("taskType", form);
 
-    const isSingleDateType = taskType === TaskType.CHECKPOINT || taskType === TaskType.MILESTONE;
+    const isSingleDateType = taskType === ProjectTaskType.CHECKPOINT || taskType === ProjectTaskType.MILESTONE;
 
     return (
         <>
@@ -46,13 +46,13 @@ export const TaskDrawerFormFields: React.FC<TaskDrawerFormFieldsProps> = ({
             >
                 <Select
                     options={[
-                        {value: TaskType.UNKNOWN, label: "未知"},
-                        {value: TaskType.DEFAULT, label: "普通任务"},
-                        {value: TaskType.MILESTONE, label: "里程碑"},
-                        {value: TaskType.CHECKPOINT, label: "检查点"}
+                        {value: ProjectTaskType.UNKNOWN, label: "未知"},
+                        {value: ProjectTaskType.DEFAULT, label: "普通任务"},
+                        {value: ProjectTaskType.MILESTONE, label: "里程碑"},
+                        {value: ProjectTaskType.CHECKPOINT, label: "检查点"}
                     ]}
                     onChange={(value) => {
-                        const isSingle = value === TaskType.CHECKPOINT || value === TaskType.MILESTONE;
+                        const isSingle = value === ProjectTaskType.CHECKPOINT || value === ProjectTaskType.MILESTONE;
                         const currentRange = form.getFieldValue("dateRange") as [Dayjs, Dayjs] | undefined;
 
                         if (isSingle && currentRange?.[0]) {

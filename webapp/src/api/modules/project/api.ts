@@ -6,14 +6,14 @@ import type {
   UpdateProjectParams,
   ProjectQueryParams,
   BatchDeleteParams,
-  TaskAttributeConfig,
-  CreateTaskAttributeConfigParams,
-  UpdateTaskAttributeConfigParams,
-  BatchDeleteTaskAttributeConfigsParams,
-  Task,
-  CreateTaskParams,
-  UpdateTaskParams,
-  ReorderTasksParams
+  ProjectTaskAttributeConfig,
+  CreateProjectTaskAttributeConfigParams,
+  UpdateProjectTaskAttributeConfigParams,
+  BatchDeleteProjectTaskAttributeConfigsParams,
+  ProjectTask,
+  CreateProjectTaskParams,
+  UpdateProjectTaskParams,
+  ReorderProjectTasksParams
 } from "./types";
 
 /**
@@ -94,21 +94,21 @@ export const projectApi = {
    * 获取项目 tasks
    */
   getProjectTasks: (projectId: string) => {
-    return get<Task[]>(`/projects/${projectId}/tasks/all`);
+    return get<ProjectTask[]>(`/projects/${projectId}/tasks/all`);
   },
 
   /**
    * 创建项目 task
    */
-  createProjectTask: (projectId: string, data: CreateTaskParams) => {
-    return post<Task>(`/projects/${projectId}/tasks`, data);
+  createProjectTask: (projectId: string, data: CreateProjectTaskParams) => {
+    return post<ProjectTask>(`/projects/${projectId}/tasks`, data);
   },
 
   /**
    * 更新项目 task
    */
-  updateProjectTask: (projectId: string, taskId: string, data: UpdateTaskParams) => {
-    return put<Task>(`/projects/${projectId}/tasks/${taskId}`, data);
+  updateProjectTask: (projectId: string, taskId: string, data: UpdateProjectTaskParams) => {
+    return put<ProjectTask>(`/projects/${projectId}/tasks/${taskId}`, data);
   },
 
   /**
@@ -121,7 +121,7 @@ export const projectApi = {
   /**
    * 重排项目 tasks（同一 parentId 下），将 order 归一为 1..N
    */
-  reorderProjectTasks: (projectId: string, data: ReorderTasksParams) => {
+  reorderProjectTasks: (projectId: string, data: ReorderProjectTasksParams) => {
     return post<void>(`/projects/${projectId}/tasks/reorder`, data);
   },
 
@@ -129,14 +129,14 @@ export const projectApi = {
    * 获取项目 task 自定义字段配置
    */
   getProjectTaskAttributeConfigs: (projectId: string) => {
-    return get<TaskAttributeConfig[]>(`/projects/${projectId}/task-attribute-configs`);
+    return get<ProjectTaskAttributeConfig[]>(`/projects/${projectId}/task-attribute-configs`);
   },
 
   /**
    * 创建项目 task 自定义字段配置
    */
-  createProjectTaskAttributeConfig: (projectId: string, data: CreateTaskAttributeConfigParams) => {
-    return post<TaskAttributeConfig>(`/projects/${projectId}/task-attribute-configs`, data);
+  createProjectTaskAttributeConfig: (projectId: string, data: CreateProjectTaskAttributeConfigParams) => {
+    return post<ProjectTaskAttributeConfig>(`/projects/${projectId}/task-attribute-configs`, data);
   },
 
   /**
@@ -145,9 +145,9 @@ export const projectApi = {
   updateProjectTaskAttributeConfig: (
     projectId: string,
     id: string,
-    data: UpdateTaskAttributeConfigParams
+    data: UpdateProjectTaskAttributeConfigParams
   ) => {
-    return put<TaskAttributeConfig>(
+    return put<ProjectTaskAttributeConfig>(
       `/projects/${projectId}/task-attribute-configs/${id}`,
       data
     );
@@ -165,7 +165,7 @@ export const projectApi = {
    */
   batchDeleteProjectTaskAttributeConfigs: (
     projectId: string,
-    data: BatchDeleteTaskAttributeConfigsParams
+    data: BatchDeleteProjectTaskAttributeConfigsParams
   ) => {
     return post<void>(`/projects/${projectId}/task-attribute-configs/batch-delete`, data);
   }

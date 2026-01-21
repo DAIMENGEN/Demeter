@@ -6,7 +6,7 @@ import type {
     Resource,
     ResourceAreaColumn,
 } from "schedulant";
-import type { TaskAttributeConfig, Task } from "@Webapp/api/modules/project";
+import type { ProjectTaskAttributeConfig, ProjectTask } from "@Webapp/api/modules/project";
 import type { GanttDataState } from "./constants";
 import {
     ensureTitleSelected,
@@ -19,10 +19,10 @@ import type { AvailableColumn } from "./constants";
 import type { ColorMap } from "./utils";
 
 type UseGanttDataOptions = {
-    tasks: Task[];
+    tasks: ProjectTask[];
     colorRenderAttributeName: string | null;
     activeColorMap: ColorMap | null;
-    attributeConfigs: TaskAttributeConfig[];
+    attributeConfigs: ProjectTaskAttributeConfig[];
     selectedColumnKeys: string[];
     availableColumns: AvailableColumn[];
     optimisticGanttData: GanttDataState | null;

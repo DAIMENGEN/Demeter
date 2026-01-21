@@ -7,7 +7,7 @@ import type {
     MilestoneMoveMountArg,
     ResourceLaneMoveMountArg,
 } from "schedulant";
-import type { Task } from "@Webapp/api/modules/project";
+import type { ProjectTask } from "@Webapp/api/modules/project";
 import type { GanttDataState } from "./constants";
 import type { ViewType } from "./components";
 import { viewDefaultRangeMap, viewUnitMap } from "./components";
@@ -16,7 +16,7 @@ import { calcFractionalOrder } from "./utils";
 
 type UseGanttHandlersOptions = {
     projectId: string;
-    tasks: Task[];
+    tasks: ProjectTask[];
     ganttData: GanttDataState;
     ganttStartDate: dayjs.Dayjs;
     ganttEndDate: dayjs.Dayjs;

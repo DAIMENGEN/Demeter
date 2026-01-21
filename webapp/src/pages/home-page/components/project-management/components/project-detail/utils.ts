@@ -1,5 +1,5 @@
 import dayjs from "dayjs";
-import {type JsonValue, type TaskAttributeConfig, TaskType, TaskTypeLabels} from "@Webapp/api";
+import {type JsonValue, type ProjectTaskAttributeConfig, ProjectTaskType, TaskTypeLabels} from "@Webapp/api";
 import {
     normalizeColorMapToRows,
     normalizeOptionsToRows,
@@ -82,10 +82,10 @@ export const getDisplayFieldKey = (key: string): string => {
 };
 
 export const tasksToSchedulantModels = (
-    tasks: import("@Webapp/api/modules/project").Task[],
+    tasks: import("@Webapp/api/modules/project").ProjectTask[],
     colorRenderAttributeName: string | null,
     colorMap: ColorMap | null,
-    attributeConfigs: readonly TaskAttributeConfig[]
+    attributeConfigs: readonly ProjectTaskAttributeConfig[]
 ) => {
     const configByName = new Map(attributeConfigs.map((c) => [c.attributeName, c] as const));
 
@@ -103,12 +103,12 @@ export const tasksToSchedulantModels = (
     }
 
     const resources: Resource[] = tasks
-        .filter((t) => t.taskType !== TaskType.MILESTONE && t.taskType !== TaskType.CHECKPOINT)
+        .filter((t) => t.taskType !== ProjectTaskType.MILESTONE && t.taskType !== ProjectTaskType.CHECKPOINT)
         .map((t) => {
             const baseExtendedProps: Record<string, unknown> = {
                 order: t.order ?? undefined,
                 taskType: t.taskType,
-                taskTypeLabel: TaskTypeLabels[(t.taskType as TaskType) ?? TaskType.UNKNOWN] ?? String(t.taskType),
+                taskTypeLabel: TaskTypeLabels[(t.taskType as ProjectTaskType) ?? ProjectTaskType.UNKNOWN] ?? String(t.taskType),
                 startDateTime: dayjs(t.startDateTime).format("YYYY-MM-DD"),
                 endDateTime: dayjs(t.endDateTime).format("YYYY-MM-DD"),
                 parentId: t.parentId ?? null,
@@ -149,7 +149,7 @@ export const tasksToSchedulantModels = (
             };
         });
 
-    const getColorForTask = (t: import("@Webapp/api/modules/project").Task): string | undefined => {
+    const getColorForTask = (t: import("@Webapp/api/modules/project").ProjectTask): string | undefined => {
         if (!colorRenderAttributeName || !colorMap) return undefined;
         const attrs = t.customAttributes;
         if (!attrs || typeof attrs !== "object" || Array.isArray(attrs)) return undefined;
@@ -168,7 +168,7 @@ export const tasksToSchedulantModels = (
         const end = safeDayjs(t.endDateTime);
         const color = getColorForTask(t);
 
-        if (t.taskType === TaskType.MILESTONE) {
+        if (t.taskType === ProjectTaskType.MILESTONE) {
             milestones.push({
                 id: t.id,
                 title: t.taskName,
@@ -180,7 +180,7 @@ export const tasksToSchedulantModels = (
             continue;
         }
 
-        if (t.taskType === TaskType.CHECKPOINT) {
+        if (t.taskType === ProjectTaskType.CHECKPOINT) {
             checkpoints.push({
                 id: t.id,
                 title: t.taskName,

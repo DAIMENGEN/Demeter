@@ -2,11 +2,11 @@ import React, {useMemo} from "react";
 import {Button, Drawer, Divider, Descriptions, Space, Spin, Tag, Typography} from "antd";
 import dayjs from "dayjs";
 import {
-    AttributeTypeLabels,
+    ProjectTaskAttributeTypeLabels,
     type JsonValue,
-    type Task,
-    type TaskAttributeConfig,
-    TaskType,
+    type ProjectTask,
+    type ProjectTaskAttributeConfig,
+    ProjectTaskType,
     TaskTypeLabels
 } from "@Webapp/api/modules/project";
 import {
@@ -20,8 +20,8 @@ const {Text} = Typography;
 
 export interface TaskPreviewDrawerProps {
     open: boolean;
-    task: Task | null;
-    attributeConfigs: readonly TaskAttributeConfig[];
+    task: ProjectTask | null;
+    attributeConfigs: readonly ProjectTaskAttributeConfig[];
     attributeConfigsLoading?: boolean;
     parentLabelMap?: ReadonlyMap<string, string>;
     onEdit?: () => void;
@@ -38,7 +38,7 @@ const formatDateTime = (raw: string | null | undefined) => {
 
 const formatCustomValue = (
     raw: JsonValue | undefined,
-    cfg: TaskAttributeConfig,
+    cfg: ProjectTaskAttributeConfig,
     selectLabelMap: ReadonlyMap<string, string> | undefined,
     userLabelMap: ReadonlyMap<string, string> | undefined
 ): string => {
@@ -84,7 +84,7 @@ export const TaskPreviewDrawer: React.FC<TaskPreviewDrawerProps> = ({
     onClose
 }) => {
     const taskTypeLabel = task
-        ? TaskTypeLabels[(task.taskType as TaskType) ?? TaskType.UNKNOWN] ?? String(task.taskType)
+        ? TaskTypeLabels[(task.taskType as ProjectTaskType) ?? ProjectTaskType.UNKNOWN] ?? String(task.taskType)
         : EMPTY_DISPLAY;
 
     const parentDisplay = useMemo(() => {
@@ -199,8 +199,8 @@ export const TaskPreviewDrawer: React.FC<TaskPreviewDrawerProps> = ({
                                             <span>{cfg.attributeLabel || name}</span>
                                             <Text type="secondary" style={{fontSize: 12}}>
                                                 ({
-                                                    AttributeTypeLabels[
-                                                        (cfg.attributeType as keyof typeof AttributeTypeLabels) ?? "text"
+                                                    ProjectTaskAttributeTypeLabels[
+                                                        (cfg.attributeType as keyof typeof ProjectTaskAttributeTypeLabels) ?? "text"
                                                     ] ?? cfg.attributeType
                                                 })
                                             </Text>

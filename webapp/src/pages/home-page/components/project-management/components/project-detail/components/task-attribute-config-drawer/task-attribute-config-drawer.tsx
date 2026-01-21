@@ -18,10 +18,10 @@ import {
 } from "antd";
 import {DeleteOutlined, EditOutlined, LoadingOutlined} from "@ant-design/icons";
 import {
-    type AttributeType,
-    AttributeTypeLabels,
-    type CreateTaskAttributeConfigParams,
-    type TaskAttributeConfig,
+    type ProjectTaskAttributeType,
+    ProjectTaskAttributeTypeLabels,
+    type CreateProjectTaskAttributeConfigParams,
+    type ProjectTaskAttributeConfig,
     useCreateProjectTaskAttributeConfig,
     useDeleteProjectTaskAttributeConfig,
     useProjectTaskAttributeConfigs,
@@ -74,7 +74,7 @@ export const TaskAttributeConfigDrawer: React.FC<TaskAttributeConfigDrawerProps>
         search: userPicker.search
     });
 
-    const [editing, setEditing] = useState<TaskAttributeConfig | null>(null);
+    const [editing, setEditing] = useState<ProjectTaskAttributeConfig | null>(null);
 
     const isSubmitting = createLoading || updateLoading;
 
@@ -94,14 +94,14 @@ export const TaskAttributeConfigDrawer: React.FC<TaskAttributeConfigDrawerProps>
 
     const attributeTypeOptions = useMemo(
         () =>
-            (Object.keys(AttributeTypeLabels) as AttributeType[]).map((value) => ({
+            (Object.keys(ProjectTaskAttributeTypeLabels) as ProjectTaskAttributeType[]).map((value) => ({
                 value,
-                label: AttributeTypeLabels[value]
+                label: ProjectTaskAttributeTypeLabels[value]
             })),
         []
     );
 
-    const columns: TableColumnsType<TaskAttributeConfig> = [
+    const columns: TableColumnsType<ProjectTaskAttributeConfig> = [
         {
             title: "字段名",
             dataIndex: "attributeName",
@@ -113,7 +113,7 @@ export const TaskAttributeConfigDrawer: React.FC<TaskAttributeConfigDrawerProps>
             title: "类型",
             dataIndex: "attributeType",
             width: 120,
-            render: (v: string) => AttributeTypeLabels[v as AttributeType] ?? v
+            render: (v: string) => ProjectTaskAttributeTypeLabels[v as ProjectTaskAttributeType] ?? v
         },
         {
             title: "必填",
@@ -151,7 +151,7 @@ export const TaskAttributeConfigDrawer: React.FC<TaskAttributeConfigDrawerProps>
                                 onClick={async () => {
                                     setEditing(record);
 
-                                    const type = (record.attributeType as AttributeType) ?? "text";
+                                    const type = (record.attributeType as ProjectTaskAttributeType) ?? "text";
 
                                     const defaultUserId =
                                         type === "user" ? (record.defaultValue ?? undefined) : undefined;
@@ -342,7 +342,7 @@ export const TaskAttributeConfigDrawer: React.FC<TaskAttributeConfigDrawerProps>
                 });
                 message.success("保存成功");
             } else {
-                const payload: CreateTaskAttributeConfigParams = {
+                const payload: CreateProjectTaskAttributeConfigParams = {
                     attributeName: values.attributeName,
                     attributeLabel: values.attributeLabel,
                     attributeType: values.attributeType,
@@ -410,7 +410,7 @@ export const TaskAttributeConfigDrawer: React.FC<TaskAttributeConfigDrawerProps>
                 <Space orientation="vertical" style={{width: "100%"}} size="middle">
                     <Text type="secondary">这里配置的是该项目下 Task 支持的额外字段。固定字段不在此处管理。</Text>
 
-                    <Table<TaskAttributeConfig>
+                    <Table<ProjectTaskAttributeConfig>
                         rowKey={(r) => r.id}
                         size="small"
                         columns={columns}
@@ -484,7 +484,7 @@ export const TaskAttributeConfigDrawer: React.FC<TaskAttributeConfigDrawerProps>
                                     prev.attributeType !== cur.attributeType || prev.optionsRows !== cur.optionsRows
                                 }>
                                 {({getFieldValue}) => {
-                                    const type = getFieldValue("attributeType") as AttributeType | undefined;
+                                    const type = getFieldValue("attributeType") as ProjectTaskAttributeType | undefined;
                                     const optionsRows = (getFieldValue("optionsRows") as FormValues["optionsRows"]) ?? [];
                                     let valueOptions: { label: string; value: string }[] = [];
                                     if (type === "select") {

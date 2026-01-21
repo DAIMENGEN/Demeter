@@ -97,9 +97,9 @@ export interface BatchDeleteParams {
 /**
  * Task attribute config (per-project) - mirrors backend: src/modules/business/project/task/models.rs
  */
-export type AttributeType = "text" | "number" | "boolean" | "date" | "datetime" | "select" | "user";
+export type ProjectTaskAttributeType = "text" | "number" | "boolean" | "date" | "datetime" | "select" | "user";
 
-export const AttributeTypeLabels: Record<AttributeType, string> = {
+export const ProjectTaskAttributeTypeLabels: Record<ProjectTaskAttributeType, string> = {
   text: "文本",
   number: "数字",
   boolean: "布尔",
@@ -120,12 +120,12 @@ export type JsonValue =
   | JsonValue[]
   | { [key: string]: JsonValue };
 
-export interface TaskAttributeConfig {
+export interface ProjectTaskAttributeConfig {
   id: string;
   projectId: string;
   attributeName: string;
   attributeLabel: string;
-  attributeType: AttributeType | string;
+  attributeType: ProjectTaskAttributeType | string;
   isRequired: boolean;
   defaultValue: string | null;
   options: JsonValue | null;
@@ -137,11 +137,11 @@ export interface TaskAttributeConfig {
   updateDateTime: string | null;
 }
 
-export interface CreateTaskAttributeConfigParams {
+export interface CreateProjectTaskAttributeConfigParams {
   attributeName: string;
   attributeLabel: string;
   /** backend is String; we restrict to enum for UI */
-  attributeType: AttributeType;
+  attributeType: ProjectTaskAttributeType;
   isRequired: boolean;
   defaultValue?: string | null;
   options?: JsonValue | null;
@@ -149,7 +149,7 @@ export interface CreateTaskAttributeConfigParams {
   order?: number | null;
 }
 
-export interface UpdateTaskAttributeConfigParams {
+export interface UpdateProjectTaskAttributeConfigParams {
   attributeLabel?: string;
   isRequired?: boolean;
   defaultValue?: string | null;
@@ -158,30 +158,30 @@ export interface UpdateTaskAttributeConfigParams {
   order?: number | null;
 }
 
-export interface BatchDeleteTaskAttributeConfigsParams {
+export interface BatchDeleteProjectTaskAttributeConfigsParams {
   ids: string[];
 }
 
 /**
  * Task - mirrors backend: src/modules/business/project/task/models.rs
  */
-export const TaskType = {
+export const ProjectTaskType = {
   UNKNOWN: 0,
   DEFAULT: 1,
   MILESTONE: 2,
   CHECKPOINT: 3
 } as const;
 
-export type TaskType = (typeof TaskType)[keyof typeof TaskType];
+export type ProjectTaskType = (typeof ProjectTaskType)[keyof typeof ProjectTaskType];
 
-export const TaskTypeLabels: Record<TaskType, string> = {
-  [TaskType.UNKNOWN]: "未指定",
-  [TaskType.DEFAULT]: "普通任务",
-  [TaskType.MILESTONE]: "里程碑",
-  [TaskType.CHECKPOINT]: "检查点"
+export const TaskTypeLabels: Record<ProjectTaskType, string> = {
+  [ProjectTaskType.UNKNOWN]: "未指定",
+  [ProjectTaskType.DEFAULT]: "普通任务",
+  [ProjectTaskType.MILESTONE]: "里程碑",
+  [ProjectTaskType.CHECKPOINT]: "检查点"
 };
 
-export interface Task {
+export interface ProjectTask {
   id: string;
   taskName: string;
   parentId: string | null;
@@ -197,7 +197,7 @@ export interface Task {
   updateDateTime: string | null;
 }
 
-export interface CreateTaskParams {
+export interface CreateProjectTaskParams {
   taskName: string;
   parentId?: string | null;
   order: number;
@@ -211,7 +211,7 @@ export interface CreateTaskParams {
  * 更新 task 参数
  * Mirrors backend UpdateTaskParams (all optional)
  */
-export interface UpdateTaskParams {
+export interface UpdateProjectTaskParams {
   taskName?: string;
   parentId?: string | null;
   order?: number | null;
@@ -221,7 +221,7 @@ export interface UpdateTaskParams {
   customAttributes?: JsonValue | null;
 }
 
-export interface ReorderTasksParams {
+export interface ReorderProjectTasksParams {
   /** null 表示重排根任务 */
   parentId?: string | null;
 }

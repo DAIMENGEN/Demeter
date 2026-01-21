@@ -2,16 +2,16 @@ import {useCallback, useEffect, useState} from "react";
 import {projectApi} from "./api";
 import type {
     CreateProjectParams,
-    CreateTaskAttributeConfigParams,
-    CreateTaskParams,
+    CreateProjectTaskAttributeConfigParams,
+    CreateProjectTaskParams,
     Project,
     ProjectQueryParams,
-    ReorderTasksParams,
-    Task,
-    TaskAttributeConfig,
+    ReorderProjectTasksParams,
+    ProjectTask,
+    ProjectTaskAttributeConfig,
     UpdateProjectParams,
-    UpdateTaskAttributeConfigParams,
-    UpdateTaskParams
+    UpdateProjectTaskAttributeConfigParams,
+    UpdateProjectTaskParams
 } from "./types";
 import {assertApiOk} from "@Webapp/api/common/response.ts";
 
@@ -231,7 +231,7 @@ export const useDeleteProject = () => {
  * 项目 task 自定义字段配置列表 Hook
  */
 export const useProjectTaskAttributeConfigs = (projectId: string, enabled = true) => {
-    const [taskAttributeConfigs, setTaskAttributeConfigs] = useState<TaskAttributeConfig[]>([]);
+    const [taskAttributeConfigs, setTaskAttributeConfigs] = useState<ProjectTaskAttributeConfig[]>([]);
     const [loading, setLoading] = useState(false);
 
     const fetch = useCallback(async () => {
@@ -255,7 +255,7 @@ export const useProjectTaskAttributeConfigs = (projectId: string, enabled = true
 export const useCreateProjectTaskAttributeConfig = () => {
     const [loading, setLoading] = useState(false);
 
-    const create = async (projectId: string, data: CreateTaskAttributeConfigParams) => {
+    const create = async (projectId: string, data: CreateProjectTaskAttributeConfigParams) => {
         setLoading(true);
         try {
             const res = await projectApi.createProjectTaskAttributeConfig(projectId, data);
@@ -271,7 +271,7 @@ export const useCreateProjectTaskAttributeConfig = () => {
 export const useUpdateProjectTaskAttributeConfig = () => {
     const [loading, setLoading] = useState(false);
 
-    const update = async (projectId: string, id: string, data: UpdateTaskAttributeConfigParams) => {
+    const update = async (projectId: string, id: string, data: UpdateProjectTaskAttributeConfigParams) => {
         setLoading(true);
         try {
             const res = await projectApi.updateProjectTaskAttributeConfig(projectId, id, data);
@@ -304,7 +304,7 @@ export const useDeleteProjectTaskAttributeConfig = () => {
  * 项目 tasks 列表 Hook
  */
 export const useProjectTasks = (projectId: string, enabled = true) => {
-    const [tasks, setTasks] = useState<Task[]>([]);
+    const [tasks, setTasks] = useState<ProjectTask[]>([]);
     const [loading, setLoading] = useState(false);
 
     const fetch = useCallback(async () => {
@@ -328,7 +328,7 @@ export const useProjectTasks = (projectId: string, enabled = true) => {
 export const useCreateProjectTask = () => {
     const [loading, setLoading] = useState(false);
 
-    const create = async (projectId: string, data: CreateTaskParams) => {
+    const create = async (projectId: string, data: CreateProjectTaskParams) => {
         setLoading(true);
         try {
             const res = await projectApi.createProjectTask(projectId, data);
@@ -344,7 +344,7 @@ export const useCreateProjectTask = () => {
 export const useUpdateProjectTask = () => {
     const [loading, setLoading] = useState(false);
 
-    const update = async (projectId: string, taskId: string, data: UpdateTaskParams) => {
+    const update = async (projectId: string, taskId: string, data: UpdateProjectTaskParams) => {
         setLoading(true);
         try {
             const res = await projectApi.updateProjectTask(projectId, taskId, data);
@@ -376,7 +376,7 @@ export const useDeleteProjectTask = () => {
 export const useReorderProjectTasks = () => {
     const [loading, setLoading] = useState(false);
 
-    const reorder = async (projectId: string, data: ReorderTasksParams) => {
+    const reorder = async (projectId: string, data: ReorderProjectTasksParams) => {
         setLoading(true);
         try {
             const res = await projectApi.reorderProjectTasks(projectId, data);

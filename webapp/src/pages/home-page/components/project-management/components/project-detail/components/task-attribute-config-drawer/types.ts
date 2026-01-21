@@ -1,4 +1,4 @@
-import type { AttributeType } from "@Webapp/api/modules/project";
+import type { ProjectTaskAttributeType } from "@Webapp/api/modules/project";
 import React from "react";
 
 export type SelectOptionRow = {
@@ -15,7 +15,7 @@ export type ColorMapRow = {
 export type FormValues = {
   attributeName: string;
   attributeLabel: string;
-  attributeType: AttributeType;
+  attributeType: ProjectTaskAttributeType;
   isRequired: boolean;
   defaultValue?: string;
   order?: number;

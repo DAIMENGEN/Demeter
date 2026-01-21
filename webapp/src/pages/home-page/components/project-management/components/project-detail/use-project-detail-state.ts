@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import dayjs from "dayjs";
-import type { TaskAttributeConfig } from "@Webapp/api/modules/project";
+import type { ProjectTaskAttributeConfig } from "@Webapp/api/modules/project";
 import {
     type AvailableColumn,
     type LineHeightMode,
@@ -26,7 +26,7 @@ import type { ViewType } from "./components";
 
 type UseProjectDetailStateOptions = {
     projectId: string;
-    attributeConfigs: TaskAttributeConfig[];
+    attributeConfigs: ProjectTaskAttributeConfig[];
     attributeConfigsLoading: boolean;
 };
 

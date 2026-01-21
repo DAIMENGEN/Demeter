@@ -1,7 +1,7 @@
 import React, {useMemo, useState} from "react";
 import {Button, Checkbox, Collapse, InputNumber, Popover, Segmented, Select, Tooltip} from "antd";
 import {ControlOutlined} from "@ant-design/icons";
-import type {TaskAttributeConfig} from "@Webapp/api/modules/project";
+import type {ProjectTaskAttributeConfig} from "@Webapp/api/modules/project";
 import type {AvailableColumn} from "./gantt-view.ts";
 
 export interface DisplayConfigPopoverProps {
@@ -25,7 +25,7 @@ export interface DisplayConfigPopoverProps {
      * 任务颜色渲染字段来源：仅允许用户自定义字段中的 select/user 类型。
      * 传入以便在“显示配置”中选择用于上色的字段。
      */
-    attributeConfigs?: TaskAttributeConfig[];
+    attributeConfigs?: ProjectTaskAttributeConfig[];
     /** 当前用于渲染颜色的 attributeName；null/undefined 表示不启用 */
     colorRenderAttributeName?: string | null;
     onColorRenderAttributeNameChange?: (name: string | null) => void;

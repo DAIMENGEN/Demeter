@@ -3,7 +3,7 @@ import {App, Button, Drawer, Form, Space, Spin, Typography} from "antd";
 import dayjs from "dayjs";
 import {
     type JsonValue,
-    type Task,
+    type ProjectTask,
     useProjectTaskAttributeConfigs,
     useUpdateProjectTask
 } from "@Webapp/api/modules/project";
@@ -22,7 +22,7 @@ export interface EditTaskDrawerProps {
     open: boolean;
     projectId: string;
     /** current task to edit; must include full fields for prefill */
-    task: Task | null;
+    task: ProjectTask | null;
     /** for parent selection */
     parentOptions: Array<{ value: string; label: string }>;
     onUpdated?: () => void;

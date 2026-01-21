@@ -10,7 +10,7 @@ import {
 } from "@ant-design/icons";
 import type {Dayjs} from "dayjs";
 import {DisplayConfigPopover} from "./display-config-popover.tsx";
-import type {TaskAttributeConfig} from "@Webapp/api/modules/project";
+import type {ProjectTaskAttributeConfig} from "@Webapp/api/modules/project";
 import {viewPickerMap, type AvailableColumn, type ViewType} from "./gantt-view.ts";
 
 // 视图选项
@@ -58,7 +58,7 @@ export interface GanttToolbarProps {
      * 用于“任务颜色渲染”的字段来源（只取 select/user 自定义字段）。
      * 由 ProjectDetail 拉取并传入。
      */
-    attributeConfigs?: TaskAttributeConfig[];
+    attributeConfigs?: ProjectTaskAttributeConfig[];
     colorRenderAttributeName?: string | null;
     onColorRenderAttributeNameChange?: (name: string | null) => void;
 }

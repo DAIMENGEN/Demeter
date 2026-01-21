@@ -29,7 +29,7 @@ async function request<T = unknown>(
  */
 export async function get<T = unknown>(
   url: string,
-  params?: Record<string, unknown>,
+  params?: unknown,
   config?: RequestConfig
 ): Promise<ApiResponse<T>> {
   return request<T>({

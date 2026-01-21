@@ -2,10 +2,10 @@ import React from "react";
 import {DatePicker, Form, Input, InputNumber, Select, Space, Typography} from "antd";
 import dayjs, {type Dayjs} from "dayjs";
 import {
-    AttributeTypeLabels,
+    ProjectTaskAttributeTypeLabels,
     type JsonValue,
-    type TaskAttributeConfig,
-    TaskType,
+    type ProjectTaskAttributeConfig,
+    ProjectTaskType,
     TaskTypeLabels
 } from "@Webapp/api/modules/project";
 
@@ -24,7 +24,7 @@ export interface TaskDrawerFormValues {
     customAttributes?: Record<string, CustomAttributeFormValue>;
 }
 
-export const buildAttributeTypeMap = (attributeConfigs: TaskAttributeConfig[]) => {
+export const buildAttributeTypeMap = (attributeConfigs: ProjectTaskAttributeConfig[]) => {
     const map = new Map<string, string>();
     for (const cfg of attributeConfigs) {
         if (cfg.attributeName) map.set(cfg.attributeName, cfg.attributeType);
@@ -33,7 +33,7 @@ export const buildAttributeTypeMap = (attributeConfigs: TaskAttributeConfig[]) =
 };
 
 export const buildTaskTypeOptions = () => {
-    return [TaskType.UNKNOWN, TaskType.DEFAULT, TaskType.MILESTONE, TaskType.CHECKPOINT].map((v) => ({
+    return [ProjectTaskType.UNKNOWN, ProjectTaskType.DEFAULT, ProjectTaskType.MILESTONE, ProjectTaskType.CHECKPOINT].map((v) => ({
         value: v,
         label: TaskTypeLabels[v]
     }));
@@ -179,7 +179,7 @@ export const mapServerCustomAttrsToForm = (
 };
 
 export const buildDefaultCustomAttrsFromConfigs = (
-    configs: TaskAttributeConfig[]
+    configs: ProjectTaskAttributeConfig[]
 ): Record<string, CustomAttributeFormValue> => {
     const defaults: Record<string, CustomAttributeFormValue> = {};
 
@@ -200,7 +200,7 @@ export const buildDefaultCustomAttrsFromConfigs = (
 };
 
 export const renderCustomAttributeItems = (
-    attributeConfigs: TaskAttributeConfig[],
+    attributeConfigs: ProjectTaskAttributeConfig[],
 ) => {
     return attributeConfigs
         .slice()
@@ -214,8 +214,8 @@ export const renderCustomAttributeItems = (
                     <span>{cfg.attributeLabel || cfg.attributeName}</span>
                     <Text type="secondary" style={{fontSize: 12}}>
                         ({
-                            AttributeTypeLabels[
-                                (cfg.attributeType as keyof typeof AttributeTypeLabels) ?? "text"
+                            ProjectTaskAttributeTypeLabels[
+                                (cfg.attributeType as keyof typeof ProjectTaskAttributeTypeLabels) ?? "text"
                             ] ?? cfg.attributeType
                         })
                     </Text>
