@@ -1,40 +1,55 @@
-import React, {useCallback, useEffect, useRef, useState} from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
+
+const MIN_HEIGHT = 400;
+const DEFAULT_HEIGHT = 800;
 
 export const useSchedulantHeight = (
     cardHeaderRef: React.RefObject<HTMLDivElement | null>,
     legendRef: React.RefObject<HTMLDivElement | null>
 ) => {
-    const [height, setHeight] = useState(800);
+    const rafRef = useRef<number | null>(null);
+    const [height, setHeight] = useState(DEFAULT_HEIGHT);
     const containerRef = useRef<HTMLDivElement | null>(null);
     const calculateHeight = useCallback(() => {
-        const windowHeight = window.innerHeight;
-        const containerTop = containerRef.current?.getBoundingClientRect().top || 0;
-        const bottomMargin = 16;
-        const cardOverhead = 2;
-        const headerHeight = cardHeaderRef.current?.offsetHeight || 64;
-        const legendHeight = legendRef.current?.offsetHeight || 60;
-        const cardBodyPadding = 48;
-        const availableHeight = windowHeight - containerTop - headerHeight - legendHeight - cardBodyPadding - bottomMargin - cardOverhead;
-        const newHeight = Math.max(400, availableHeight);
-        setHeight(newHeight);
+        if (rafRef.current) {
+            cancelAnimationFrame(rafRef.current);
+        }
+        rafRef.current = requestAnimationFrame(() => {
+            const windowHeight = window.innerHeight;
+            const containerTop = containerRef.current?.getBoundingClientRect().top ?? 0;
+            const headerHeight = cardHeaderRef.current?.offsetHeight ?? 64;
+            const legendHeight = legendRef.current?.offsetHeight ?? 60;
+            const overhead = {
+                bottomMargin: 16,
+                cardOverhead: 2,
+                cardBodyPadding: 48,
+            };
+            const totalOverhead = overhead.bottomMargin + overhead.cardOverhead + overhead.cardBodyPadding;
+            const availableHeight = windowHeight - containerTop - headerHeight - legendHeight - totalOverhead;
+            setHeight(prev => {
+                const newHeight = Math.max(MIN_HEIGHT, availableHeight);
+                return prev === newHeight ? prev : newHeight;
+            });
+        });
     }, [cardHeaderRef, legendRef]);
+
     useEffect(() => {
-        const timer = setTimeout(() => {
-            calculateHeight();
-        }, 100);
-        const handleResize = () => calculateHeight();
-        window.addEventListener("resize", handleResize);
+        calculateHeight();
+
         const resizeObserver = new ResizeObserver(calculateHeight);
-        const elements = [
-            cardHeaderRef.current,
-            legendRef.current,
-        ].filter((el): el is HTMLDivElement => el !== null);
-        elements.forEach(el => resizeObserver.observe(el));
+        resizeObserver.observe(document.body);
+
+        [containerRef.current, cardHeaderRef.current, legendRef.current]
+            .filter((el): el is HTMLDivElement => el !== null)
+            .forEach(el => resizeObserver.observe(el));
+
         return () => {
-            clearTimeout(timer);
-            window.removeEventListener("resize", handleResize);
+            if (rafRef.current) {
+                cancelAnimationFrame(rafRef.current);
+            }
             resizeObserver.disconnect();
         };
     }, [calculateHeight, cardHeaderRef, legendRef]);
-    return {height, containerRef};
+
+    return { height, containerRef };
 };
