@@ -53,21 +53,16 @@ export interface UserQueryParams {
 }
 
 /**
- * 用户选项数据类型 (用于下拉选择)
+ * 批量删除用户参数
  */
-export interface UserOption {
-  id: string;
-  username: string;
-  fullName: string;
-  isActive: boolean;
+export interface BatchDeleteUsersParams {
+  ids: string[];
 }
 
 /**
- * 用户选项查询参数 (用于下拉选择)
+ * 切换用户状态参数
  */
-export interface UserOptionQueryParams {
-  page?: number;
-  pageSize?: number;
-  keyword?: string;
-  isActive?: boolean;
+export interface ToggleUserStatusParams {
+  isActive: boolean;
 }
+

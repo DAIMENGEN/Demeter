@@ -9,8 +9,8 @@ import type {
   CreateUserParams,
   UpdateUserParams,
   UserQueryParams,
-  UserOptionQueryParams,
-  UserOption
+  BatchDeleteUsersParams,
+  ToggleUserStatusParams
 } from "./types";
 
 /**
@@ -69,21 +69,14 @@ export const userApi = {
   /**
    * 批量删除用户
    */
-  batchDeleteUsers: (ids: string[]) => {
-    return post<void>("/users/batch-delete", { ids });
+  batchDeleteUsers: (params: BatchDeleteUsersParams) => {
+    return post<void>("/users/batch-delete", params);
   },
 
   /**
    * 激活/停用用户
    */
-  toggleUserStatus: (id: string, isActive: boolean) => {
-    return put<User>(`/users/${id}/status`, { isActive });
-  },
-
-  /**
-   * 获取用户下拉选项（分页，轻量字段）
-   */
-  getUserOptions: (params?: UserOptionQueryParams) => {
-    return get<PageResponse<UserOption>>("/users/options", params);
+  toggleUserStatus: (id: string, params: ToggleUserStatusParams) => {
+    return put<User>(`/users/${id}/status`, params);
   },
 };

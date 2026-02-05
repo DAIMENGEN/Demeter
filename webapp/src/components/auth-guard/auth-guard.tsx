@@ -16,7 +16,7 @@ interface AuthSessionGuardProps {
  * - 有效：回填 redux 用户信息
  * - 失效：清理 redux，跳转 /login
  */
-export const AuthSessionGuard = ({children}: AuthSessionGuardProps) => {
+export const AuthGuard = ({children}: AuthSessionGuardProps) => {
     const {message} = App.useApp();
     const location = useLocation();
     const navigate = useNavigate();

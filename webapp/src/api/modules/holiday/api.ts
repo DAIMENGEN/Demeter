@@ -61,9 +61,10 @@ export const holidayApi = {
 
   /**
    * 批量删除假期
+   * @returns 返回删除的数量
    */
   batchDeleteHolidays: (params: BatchDeleteHolidaysParams) => {
-    return post<void>("/holidays/batch-delete", params);
+    return post<number>("/holidays/batch-delete", params);
   },
 
   /**
