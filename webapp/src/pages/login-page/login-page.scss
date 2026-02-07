@@ -46,6 +46,15 @@ body {
         height: 40px;
         font-size: 16px;
       }
+
+      .register-link {
+        text-align: center;
+        width: 100%;
+
+        .register-link-text {
+          color: #a7a5a5;
+        }
+      }
     }
   }
 }

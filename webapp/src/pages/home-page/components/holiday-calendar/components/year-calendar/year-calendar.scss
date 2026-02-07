@@ -1,0 +1,247 @@
+@import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600;700&family=Fira+Sans:wght@300;400;500;600;700&display=swap');
+
+.year-calendar {
+  background: #fff;
+  border-radius: 8px;
+  padding: 24px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+
+  &__toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid #f8d7da;
+    flex-shrink: 0;
+  }
+
+  &__legend {
+    display: flex;
+    gap: 24px;
+  }
+
+  &__legend-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    color: #91003c;
+    font-family: 'Fira Sans', sans-serif;
+  }
+
+  &__legend-color {
+    width: 20px;
+    height: 20px;
+    border-radius: 4px;
+    border: 1px solid rgba(0, 0, 0, 0.06);
+
+    &--legal {
+      background: #FEE2E2;
+      border-color: #FCA5A5;
+    }
+
+    &--company {
+      background: #FEF3C7;
+      border-color: #FCD34D;
+    }
+
+    &--workday {
+      background: #DBEAFE;
+      border-color: #93C5FD;
+    }
+
+    &--weekend {
+      background: #e9ecef;
+      border-color: #D1D5DB;
+    }
+  }
+
+  &__actions {
+    display: flex;
+    gap: 12px;
+  }
+
+
+  &__grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    overflow-y: auto;
+    padding-right: 8px;
+    flex: 1;
+    align-content: start;
+
+    /* 自定义滚动条样式 */
+    &::-webkit-scrollbar {
+      width: 8px;
+    }
+
+    &::-webkit-scrollbar-track {
+      background: #f1f1f1;
+      border-radius: 4px;
+    }
+
+    &::-webkit-scrollbar-thumb {
+      background: #91003c;
+      border-radius: 4px;
+
+      &:hover {
+        background: #7a0032;
+      }
+    }
+
+    @media (max-width: 1440px) {
+      grid-template-columns: repeat(3, 1fr);
+    }
+
+    @media (max-width: 1024px) {
+      grid-template-columns: repeat(2, 1fr);
+    }
+
+    @media (max-width: 768px) {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  &__month {
+    background: #FAFAFA;
+    border-radius: 6px;
+    padding: 12px;
+    border: 1px solid #f8d7da;
+  }
+
+  &__month-header {
+    font-size: 16px;
+    font-weight: 600;
+    color: #91003c;
+    margin-bottom: 12px;
+    text-align: center;
+    font-family: 'Fira Sans', sans-serif;
+  }
+
+  &__weekdays {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 4px;
+    margin-bottom: 4px;
+  }
+
+  &__weekday {
+    font-size: 12px;
+    font-weight: 500;
+    color: #6B7280;
+    text-align: center;
+    padding: 4px;
+    font-family: 'Fira Sans', sans-serif;
+  }
+
+  &__days {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 4px;
+  }
+
+  &__cell {
+    aspect-ratio: 1;
+    position: relative;
+  }
+
+  &__day {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.15s;
+    position: relative;
+    font-family: 'Fira Code', monospace;
+    font-size: 13px;
+    font-weight: 500;
+    background: #fff;
+    border: 1px solid transparent;
+
+    &:hover {
+      border-color: #91003c;
+      box-shadow: 0 0 0 2px rgba(145, 0, 60, 0.1);
+      transform: scale(1.05);
+    }
+
+    &--today {
+      border: 2px solid #91003c;
+      font-weight: 600;
+    }
+
+    &--weekend {
+      background: #e9ecef;
+      color: #6B7280;
+    }
+
+    &--legal {
+      background: #FEE2E2;
+      color: #991B1B;
+      font-weight: 600;
+    }
+
+    &--company {
+      background: #FEF3C7;
+      color: #92400E;
+      font-weight: 600;
+    }
+
+    &--workday {
+      background: #DBEAFE;
+      color: #1E40AF;
+      font-weight: 600;
+    }
+
+    &--selected {
+      border: 2px solid #91003c;
+      background: #fff5f7;
+      box-shadow: 0 0 0 2px rgba(145, 0, 60, 0.2);
+    }
+  }
+
+  &__day-content {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  &__day-number {
+    position: relative;
+    z-index: 1;
+  }
+
+  &__day-delete {
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    font-size: 10px;
+    opacity: 0;
+    transition: opacity 0.2s;
+    color: #DC2626;
+    z-index: 2;
+    padding: 2px;
+    background: #fff;
+    border-radius: 2px;
+
+    &:hover {
+      color: #B91C1C;
+    }
+  }
+
+  &__day:hover &__day-delete {
+    opacity: 1;
+  }
+}
+

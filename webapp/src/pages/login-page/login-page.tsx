@@ -1,7 +1,7 @@
 import "./login-page.scss";
 import {useCallback} from "react";
 import {Button, Form, Input, Layout, message, Space} from "antd";
-import {useNavigate} from "react-router-dom";
+import {Link, useNavigate} from "react-router-dom";
 import {type LoginParams, useLogin} from "@Webapp/api";
 import {useAppDispatch} from "@Webapp/store/hooks";
 import {loginFailure, loginSuccess} from "@Webapp/store/slices/user-slice";
@@ -99,12 +99,12 @@ export const LoginPage = () => {
                             </Button>
                         </Form.Item>
                     </Form>
-                    <div style={{textAlign: "center", width: "100%"}}>
+                    <div className="register-link">
                         <Space>
-                            <span style={{color: "#a7a5a5"}}>还没有账号？</span>
-                            <a href="#" onClick={() => navigate("/register")}>
+                            <span className="register-link-text">还没有账号？</span>
+                            <Link to="/register">
                                 立即注册
-                            </a>
+                            </Link>
                         </Space>
                     </div>
                 </div>

@@ -1,7 +1,7 @@
 import "./register-page.scss";
 import {useCallback} from "react";
 import {Button, Form, Input, Layout, message} from "antd";
-import {useNavigate} from "react-router-dom";
+import {Link, useNavigate} from "react-router-dom";
 import {type RegisterParams, useRegister} from "@Webapp/api";
 import registerBgImage from "@Webapp/assets/backgrounds/auth-bg-image.jpeg";
 import registerLogoImage from "@Webapp/assets/trademark/wine-red-logo.jpg";
@@ -196,7 +196,7 @@ export const RegisterPage = () => {
 
                             <div className="login-link">
                                 <span>已有账号？</span>
-                                <a onClick={() => navigate("/login")}>立即登录</a>
+                                <Link to="/login">立即登录</Link>
                             </div>
                         </div>
                     </div>
