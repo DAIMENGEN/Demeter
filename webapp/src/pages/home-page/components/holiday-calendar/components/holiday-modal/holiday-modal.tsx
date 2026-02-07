@@ -1,5 +1,5 @@
 ﻿import React, {useEffect, useRef} from "react";
-import {Form, Input, message, Modal, Select, Space, Tag} from "antd";
+import {App, Form, Input, Modal, Select, Space, Tag} from "antd";
 import dayjs from "dayjs";
 import {holidayApi} from "@Webapp/api";
 import type {CreateHolidayParams, Holiday} from "@Webapp/api/modules/holiday/types";
@@ -25,6 +25,7 @@ export const HolidayModal: React.FC<HolidayModalProps> = ({
                                                           }) => {
      const [form] = Form.useForm();
      const nameInputRef = useRef<InputRef>(null);
+     const {message} = App.useApp();
 
      const focusNameInput = () => {
          // 等 Modal 动画/FocusTrap 建立完成后再聚焦，避免首次打开时焦点落到 close button
