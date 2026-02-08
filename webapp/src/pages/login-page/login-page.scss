@@ -21,6 +21,13 @@ body {
       border-radius: 8px;
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
       background-color: #fff;
+      position: relative;
+
+      .language-switcher-container {
+        position: absolute;
+        top: 16px;
+        right: 16px;
+      }
 
       .logo-container {
         text-align: center;

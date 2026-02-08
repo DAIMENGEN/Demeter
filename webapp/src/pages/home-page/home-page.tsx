@@ -10,11 +10,14 @@ import {ProfileDrawer} from "@Webapp/pages/home-page/components/profile-drawer/p
 import {authApi} from "@Webapp/api";
 import {clearLoggingOut, markLoggingOut} from "@Webapp/http/client";
 import {log} from "@Webapp/logging";
+import {useTranslation} from "react-i18next";
+import {LanguageSwitcher} from "@Webapp/components";
 
 const {Header, Content} = Layout;
 const {Text} = Typography;
 
 export const HomePage: React.FC = () => {
+    const {t} = useTranslation();
     const navigate = useNavigate();
     const location = useLocation();
     const dispatch = useAppDispatch();
@@ -47,7 +50,7 @@ export const HomePage: React.FC = () => {
         } catch (error) {
             // 即使 API 失败，也继续清理本地状态
             log.error('Logout API failed:', error);
-            message.error('退出登录失败，但将清除本地状态');
+            message.error(t('menu.logoutFailed'));
         } finally {
             // Clear Redux state
             dispatch(logoutAction());
@@ -56,7 +59,7 @@ export const HomePage: React.FC = () => {
             navigate("/login");
             clearLoggingOut();
         }
-    }, [navigate, dispatch, message]);
+    }, [navigate, dispatch, message, t]);
 
     const handleSignUp = useCallback(() => {
         navigate("/register");
@@ -83,7 +86,7 @@ export const HomePage: React.FC = () => {
         },
         {
             key: "profile",
-            label: "个人设置",
+            label: t('menu.settings'),
             icon: <SettingOutlined/>,
             onClick: handleProfile
         },
@@ -92,12 +95,12 @@ export const HomePage: React.FC = () => {
         },
         {
             key: "logout",
-            label: "退出登录",
+            label: t('menu.logout'),
             icon: <LogoutOutlined/>,
             onClick: handleLogout,
             danger: true,
         }
-    ], [currentUser, handleProfile, handleLogout]);
+    ], [currentUser, handleProfile, handleLogout, t]);
 
     return (
         <Layout className="home-page">
@@ -115,13 +118,14 @@ export const HomePage: React.FC = () => {
                         items={[
                             {
                                 key: "/home",
-                                label: "Home",
+                                label: t('menu.home'),
                                 icon: <HomeOutlined/>,
                             }
                         ]}
                     />
                 </Space>
                 <Space className="header-right" size="middle">
+                    <LanguageSwitcher style={{color: "white"}} iconStyle={{color: "white"}}/>
                     {isAuthenticated && currentUser ? (
                         <Dropdown
                             menu={{items: userMenuItems}}
@@ -145,7 +149,7 @@ export const HomePage: React.FC = () => {
                             onClick={handleSignUp}
                             size="middle"
                         >
-                            Sign up
+                            {t('auth.register')}
                         </Button>
                     )}
                 </Space>

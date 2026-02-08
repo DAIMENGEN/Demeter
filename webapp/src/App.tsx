@@ -1,11 +1,15 @@
 import "@Webapp/App.css"
 import {BrowserRouter} from "react-router-dom"
 import {AppRoutes} from "@Webapp/AppRoutes.tsx";
-import {ConfigProvider, App as AntdApp} from "antd";
+import {App as AntdApp, ConfigProvider} from "antd";
+import {useLanguage} from "@Webapp/components";
 
 function App() {
+    const {getAntdLocale} = useLanguage();
+
     return (
         <ConfigProvider
+            locale={getAntdLocale()}
             theme={{
                 token: {
                     colorPrimary: "#91003c",

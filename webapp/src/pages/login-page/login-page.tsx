@@ -7,10 +7,13 @@ import {useAppDispatch} from "@Webapp/store/hooks";
 import {loginFailure, loginSuccess} from "@Webapp/store/slices/user-slice";
 import loginBgImage from "@Webapp/assets/backgrounds/auth-bg-image.jpeg";
 import loginLogoImage from "@Webapp/assets/trademark/wine-red-logo.jpg";
+import {useTranslation} from "react-i18next";
+import {LanguageSwitcher} from "@Webapp/components";
 
 const {Content} = Layout;
 
 export const LoginPage = () => {
+    const {t} = useTranslation();
     const navigate = useNavigate();
     const dispatch = useAppDispatch();
     const {login, loading} = useLogin();
@@ -21,14 +24,14 @@ export const LoginPage = () => {
             try {
                 const response = await login(values);
                 dispatch(loginSuccess(response.user));
-                await messageApi.success("Login successful", 0.5);
+                await messageApi.success(t("auth.loginSuccess"), 0.5);
                 navigate("/home");
             } catch (error) {
                 dispatch(loginFailure())
-                await messageApi.error(error instanceof Error ? error.message : "Login failed, please try again");
+                await messageApi.error(error instanceof Error ? error.message : t("auth.loginFailed"));
             }
         },
-        [login, dispatch, navigate, messageApi]
+        [login, dispatch, navigate, messageApi, t]
     );
 
     return (
@@ -44,10 +47,13 @@ export const LoginPage = () => {
             <Content className="login-content">
                 <div className="login-form">
                     {contextHolder}
+                    <div className="language-switcher-container">
+                        <LanguageSwitcher/>
+                    </div>
                     <div className="logo-container">
                         <img src={loginLogoImage} alt="Demeter"/>
                     </div>
-                    <h1 className="login-title">Welcome to Demeter</h1>
+                    <h1 className="login-title">{t("auth.welcomeTitle")}</h1>
                     <Form
                         name="loginForm"
                         initialValues={{remember: true}}
@@ -59,12 +65,12 @@ export const LoginPage = () => {
                             rules={[
                                 {
                                     required: true,
-                                    message: "请输入用户名！",
+                                    message: t("auth.usernameRequired"),
                                 },
                             ]}
                         >
                             <Input
-                                placeholder="用户名"
+                                placeholder={t("auth.usernamePlaceholder")}
                                 autoComplete="username"
                                 size="large"
                             />
@@ -75,12 +81,12 @@ export const LoginPage = () => {
                             rules={[
                                 {
                                     required: true,
-                                    message: "请输入密码！",
+                                    message: t("auth.passwordRequired"),
                                 },
                             ]}
                         >
                             <Input.Password
-                                placeholder="密码"
+                                placeholder={t("auth.passwordPlaceholder")}
                                 autoComplete="current-password"
                                 size="large"
                             />
@@ -95,15 +101,15 @@ export const LoginPage = () => {
                                 size="large"
                                 block
                             >
-                                登录
+                                {t("auth.login")}
                             </Button>
                         </Form.Item>
                     </Form>
                     <div className="register-link">
                         <Space>
-                            <span className="register-link-text">还没有账号？</span>
+                            <span className="register-link-text">{t("auth.noAccount")}</span>
                             <Link to="/register">
-                                立即注册
+                                {t("auth.registerNow")}
                             </Link>
                         </Space>
                     </div>
