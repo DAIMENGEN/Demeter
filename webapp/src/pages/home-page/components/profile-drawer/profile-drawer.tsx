@@ -2,6 +2,7 @@ import React, {useState, useEffect, useMemo} from "react";
 import {Drawer, Form, Input, Button, Divider, Typography, Space, Tag, App} from "antd";
 import {UserOutlined, MailOutlined, PhoneOutlined, CalendarOutlined} from "@ant-design/icons";
 import dayjs from "dayjs";
+import {useTranslation} from "react-i18next";
 import {useAppDispatch, useAppSelector} from "@Webapp/store/hooks.ts";
 import {selectCurrentUser, updateUser} from "@Webapp/store/slices/user-slice.ts";
 import {userApi} from "@Webapp/api/modules/user/api.ts";
@@ -16,6 +17,7 @@ interface ProfileDrawerProps {
 }
 
 export const ProfileDrawer: React.FC<ProfileDrawerProps> = ({open, onClose}) => {
+    const {t} = useTranslation();
     const [form] = Form.useForm();
     const dispatch = useAppDispatch();
     const currentUser = useAppSelector(selectCurrentUser);
@@ -34,8 +36,8 @@ export const ProfileDrawer: React.FC<ProfileDrawerProps> = ({open, onClose}) => 
     // Format registration date
     const formattedRegistrationDate = useMemo(() => {
         if (!currentUser?.createDateTime) return "-";
-        return dayjs(currentUser.createDateTime).format("YYYY年MM月DD日 HH:mm");
-    }, [currentUser?.createDateTime]);
+        return dayjs(currentUser.createDateTime).format(t("profile.dateFormat"));
+    }, [currentUser?.createDateTime, t]);
 
     // Set form values when drawer opens or currentUser changes
     useEffect(() => {
@@ -51,7 +53,7 @@ export const ProfileDrawer: React.FC<ProfileDrawerProps> = ({open, onClose}) => 
 
     const handleSubmit = async (values: UpdateUserParams) => {
         if (!currentUser?.id) {
-            message.error("用户信息不存在");
+            message.error(t("profile.userInfoNotExist"));
             return;
         }
 
@@ -65,12 +67,12 @@ export const ProfileDrawer: React.FC<ProfileDrawerProps> = ({open, onClose}) => 
                 id: currentUser.id,
             }));
 
-            message.success("个人信息更新成功");
+            message.success(t("profile.updateSuccess"));
             setIsEditing(false);
         } catch (error: unknown) {
             const errorMessage = error instanceof Error
                 ? error.message
-                : "更新失败，请重试";
+                : t("profile.updateFailed");
             message.error(errorMessage);
         } finally {
             setLoading(false);
@@ -91,7 +93,7 @@ export const ProfileDrawer: React.FC<ProfileDrawerProps> = ({open, onClose}) => 
 
     return (
         <Drawer
-            title="个人信息"
+            title={t("profile.title")}
             placement="right"
             size="large"
             onClose={onClose}
@@ -101,16 +103,16 @@ export const ProfileDrawer: React.FC<ProfileDrawerProps> = ({open, onClose}) => 
                 isEditing ? (
                     <div className="drawer-footer">
                         <Button onClick={handleCancel} style={{marginRight: 8}}>
-                            取消
+                            {t("common.cancel")}
                         </Button>
                         <Button type="primary" onClick={() => form.submit()} loading={loading}>
-                            保存
+                            {t("common.save")}
                         </Button>
                     </div>
                 ) : (
                     <div className="drawer-footer">
                         <Button type="primary" onClick={() => setIsEditing(true)}>
-                            编辑资料
+                            {t("profile.editProfile")}
                         </Button>
                     </div>
                 )
@@ -122,13 +124,13 @@ export const ProfileDrawer: React.FC<ProfileDrawerProps> = ({open, onClose}) => 
                     <Space size="small" style={{width: "100%", flexDirection: "column"}}>
                         <div className="info-item">
                             <Text type="secondary">
-                                <CalendarOutlined /> 注册日期
+                                <CalendarOutlined /> {t("profile.registrationDate")}
                             </Text>
                             <Text strong>{formattedRegistrationDate}</Text>
                         </div>
                         <div className="membership-badge">
                             <Tag color="blue" style={{fontSize: "14px", padding: "4px 12px"}}>
-                                已成为用户第 {membershipDays} 天 🎉
+                                {t("profile.membershipDays", {days: membershipDays})}
                             </Tag>
                         </div>
                     </Space>
@@ -144,54 +146,54 @@ export const ProfileDrawer: React.FC<ProfileDrawerProps> = ({open, onClose}) => 
                     disabled={!isEditing}
                 >
                     <Form.Item
-                        label="用户名"
+                        label={t("auth.username")}
                         name="username"
                         rules={[
-                            {required: true, message: "请输入用户名"},
-                            {min: 3, message: "用户名至少3个字符"},
+                            {required: true, message: t("profile.usernameRequired")},
+                            {min: 3, message: t("profile.usernameMinLength")},
                         ]}
                     >
                         <Input
                             prefix={<UserOutlined />}
-                            placeholder="请输入用户名"
+                            placeholder={t("profile.usernamePlaceholder")}
                             disabled
                         />
                     </Form.Item>
 
                     <Form.Item
-                        label="姓名"
+                        label={t("auth.fullName")}
                         name="fullName"
                         rules={[
-                            {required: true, message: "请输入姓名"},
+                            {required: true, message: t("profile.fullNameRequired")},
                         ]}
                     >
                         <Input
                             prefix={<UserOutlined />}
-                            placeholder="请输入姓名"
+                            placeholder={t("profile.fullNamePlaceholder")}
                         />
                     </Form.Item>
 
                     <Form.Item
-                        label="邮箱"
+                        label={t("auth.email")}
                         name="email"
                         rules={[
-                            {required: true, message: "请输入邮箱"},
-                            {type: "email", message: "请输入有效的邮箱地址"},
+                            {required: true, message: t("profile.emailRequired")},
+                            {type: "email", message: t("profile.emailInvalid")},
                         ]}
                     >
                         <Input
                             prefix={<MailOutlined />}
-                            placeholder="请输入邮箱"
+                            placeholder={t("profile.emailPlaceholder")}
                         />
                     </Form.Item>
 
                     <Form.Item
-                        label="手机号"
+                        label={t("auth.phone")}
                         name="phone"
                     >
                         <Input
                             prefix={<PhoneOutlined />}
-                            placeholder="请输入手机号"
+                            placeholder={t("profile.phonePlaceholder")}
                         />
                     </Form.Item>
                 </Form>

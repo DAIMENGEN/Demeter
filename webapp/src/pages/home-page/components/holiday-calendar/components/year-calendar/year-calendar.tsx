@@ -3,6 +3,7 @@ import React, { useState, useMemo } from "react";
 import { Popconfirm, Tooltip, Button } from "antd";
 import { DeleteOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
+import {useTranslation} from "react-i18next";
 import type { Holiday } from "@Webapp/api/modules/holiday/types";
 
 interface YearCalendarProps {
@@ -43,6 +44,8 @@ interface DayContentProps {
 }
 
 const DayContent: React.FC<DayContentProps> = React.memo(({ dayInfo, isSelecting, onDelete }) => {
+  const {t} = useTranslation();
+
   if (dayInfo.isHoliday && dayInfo.holiday) {
     const handleConfirm = (e: React.MouseEvent<HTMLElement> | undefined) => {
       if (e) {
@@ -67,11 +70,11 @@ const DayContent: React.FC<DayContentProps> = React.memo(({ dayInfo, isSelecting
           <span className="year-calendar__day-number">{dayInfo.dayOfMonth}</span>
           {!isSelecting && (
             <Popconfirm
-              title="确定删除此假期？"
+              title={t("holiday.deleteConfirm")}
               onConfirm={handleConfirm}
               onCancel={handleCancel}
-              okText="删除"
-              cancelText="取消"
+              okText={t("common.delete")}
+              cancelText={t("common.cancel")}
             >
               <DeleteOutlined
                 className="year-calendar__day-delete"
@@ -94,6 +97,7 @@ export const YearCalendar: React.FC<YearCalendarProps> = ({
   onBatchAdd,
   onDelete,
 }) => {
+  const {t} = useTranslation();
   const [selectedDates, setSelectedDates] = useState<Set<string>>(new Set());
   const [isSelecting, setIsSelecting] = useState(false);
 
@@ -143,12 +147,12 @@ export const YearCalendar: React.FC<YearCalendarProps> = ({
 
       months.push({
         month,
-        monthName: firstDay.format("M月"),
+        monthName: t("holiday.monthLabel", {month: month + 1}),
         days,
       });
     }
     return months;
-  }, [year, holidayMap]);
+  }, [year, holidayMap, t]);
 
   const handleDayClick = (dayInfo: DayInfo) => {
     if (isSelecting) {
@@ -206,33 +210,33 @@ export const YearCalendar: React.FC<YearCalendarProps> = ({
         <div className="year-calendar__legend">
           <span className="year-calendar__legend-item">
             <span className="year-calendar__legend-color year-calendar__legend-color--legal"></span>
-            法定假期
+            {t("holiday.typeLegal")}
           </span>
           <span className="year-calendar__legend-item">
             <span className="year-calendar__legend-color year-calendar__legend-color--company"></span>
-            公司假期
+            {t("holiday.typeCompany")}
           </span>
           <span className="year-calendar__legend-item">
             <span className="year-calendar__legend-color year-calendar__legend-color--workday"></span>
-            调休上班
+            {t("holiday.typeWorkday")}
           </span>
           <span className="year-calendar__legend-item">
             <span className="year-calendar__legend-color year-calendar__legend-color--weekend"></span>
-            周末
+            {t("holiday.weekend")}
           </span>
         </div>
         <div className="year-calendar__actions">
           {isSelecting ? (
             <>
               <Button onClick={handleCancelSelection}>
-                取消
+                {t("common.cancel")}
               </Button>
               <Button
                 type="primary"
                 onClick={handleToggleSelectionMode}
                 disabled={selectedDates.size === 0}
               >
-                批量添加 ({selectedDates.size})
+                {t("holiday.batchAddButton", {count: selectedDates.size})}
               </Button>
             </>
           ) : (
@@ -240,7 +244,7 @@ export const YearCalendar: React.FC<YearCalendarProps> = ({
               type="primary"
               onClick={handleToggleSelectionMode}
             >
-              批量选择
+              {t("holiday.batchSelect")}
             </Button>
           )}
         </div>
@@ -251,7 +255,15 @@ export const YearCalendar: React.FC<YearCalendarProps> = ({
           <div key={month} className="year-calendar__month">
             <div className="year-calendar__month-header">{monthName}</div>
             <div className="year-calendar__weekdays">
-              {["日", "一", "二", "三", "四", "五", "六"].map((day, index) => (
+              {[
+                t("holiday.weekdays.sun"),
+                t("holiday.weekdays.mon"),
+                t("holiday.weekdays.tue"),
+                t("holiday.weekdays.wed"),
+                t("holiday.weekdays.thu"),
+                t("holiday.weekdays.fri"),
+                t("holiday.weekdays.sat")
+              ].map((day, index) => (
                 <div key={index} className="year-calendar__weekday">
                   {day}
                 </div>

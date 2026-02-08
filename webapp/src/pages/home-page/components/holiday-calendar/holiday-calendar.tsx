@@ -3,6 +3,7 @@ import React, {useCallback, useEffect, useMemo, useState} from "react";
 import {Button, message, Select, Space, Spin, Typography} from "antd";
 import {LeftOutlined, RightOutlined} from "@ant-design/icons";
 import dayjs from "dayjs";
+import {useTranslation} from "react-i18next";
 import {holidayApi} from "@Webapp/api";
 import {assertApiOk} from "@Webapp/api/common/response.ts";
 import type {Holiday} from "@Webapp/api/modules/holiday/types";
@@ -13,6 +14,7 @@ import {log} from "@Webapp/logging";
 const {Title} = Typography;
 
 export const HolidayCalendar: React.FC = () => {
+    const {t} = useTranslation();
     const [selectedYear, setSelectedYear] = useState<number>(dayjs().year());
     const [holidays, setHolidays] = useState<Holiday[]>([]);
     const [loading, setLoading] = useState(false);
@@ -25,10 +27,10 @@ export const HolidayCalendar: React.FC = () => {
         const currentYear = dayjs().year();
         const years = [];
         for (let i = currentYear - 4; i <= currentYear; i++) {
-            years.push({value: i, label: `${i}年`});
+            years.push({value: i, label: t("holiday.yearLabel", {year: i})});
         }
         return years;
-    }, []);
+    }, [t]);
 
     // Load holidays for selected year
     const loadHolidays = useCallback(async () => {
@@ -40,12 +42,12 @@ export const HolidayCalendar: React.FC = () => {
             setHolidays(assertApiOk(response));
         } catch (error) {
             log.error("Failed to load holidays:", error);
-            const errorMessage = error instanceof Error ? error.message : "加载假期数据失败";
+            const errorMessage = error instanceof Error ? error.message : t("holiday.loadFailed");
             message.error(errorMessage);
         } finally {
             setLoading(false);
         }
-    }, [selectedYear]);
+    }, [selectedYear, t]);
 
     useEffect(() => {
         loadHolidays().catch(error => {
@@ -97,21 +99,21 @@ export const HolidayCalendar: React.FC = () => {
         setSelectedDates([]);
         loadHolidays().catch(error => {
             log.error("Failed to reload holidays after modal success:", error);
-            message.error("刷新假期数据失败");
+            void message.error(t("holiday.refreshFailed"));
         });
     };
 
     const handleDelete = async (holidayId: string) => {
         try {
             await holidayApi.deleteHoliday(holidayId);
-            message.success("删除成功");
+            message.success(t("holiday.deleteSuccess"));
             loadHolidays().catch(error => {
                 log.error("Failed to reload holidays after delete:", error);
-                message.error("刷新假期数据失败");
+                message.error(t("holiday.refreshFailed"));
             });
         } catch (error) {
             log.error("Failed to delete holiday:", error);
-            const errorMessage = error instanceof Error ? error.message : "删除失败";
+            const errorMessage = error instanceof Error ? error.message : t("holiday.deleteFailed");
             message.error(errorMessage);
         }
     };
@@ -119,7 +121,7 @@ export const HolidayCalendar: React.FC = () => {
     return (
         <div className="holiday-calendar">
             <div className="holiday-calendar__header">
-                <Title level={2}>假期管理</Title>
+                <Title level={2}>{t("holiday.title")}</Title>
                 <Space size="large" className="holiday-calendar__controls">
                     <Space>
                         <Button

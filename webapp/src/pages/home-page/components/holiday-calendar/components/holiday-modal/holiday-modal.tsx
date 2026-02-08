@@ -1,6 +1,7 @@
 ﻿import React, {useEffect, useRef} from "react";
 import {App, Form, Input, Modal, Select, Space, Tag} from "antd";
 import dayjs from "dayjs";
+import {useTranslation} from "react-i18next";
 import {holidayApi} from "@Webapp/api";
 import type {CreateHolidayParams, Holiday} from "@Webapp/api/modules/holiday/types";
 import type { InputRef } from "antd";
@@ -23,6 +24,7 @@ export const HolidayModal: React.FC<HolidayModalProps> = ({
                                                               onClose,
                                                               onSuccess,
                                                           }) => {
+     const {t} = useTranslation();
      const [form] = Form.useForm();
      const nameInputRef = useRef<InputRef>(null);
      const {message} = App.useApp();
@@ -71,7 +73,7 @@ export const HolidayModal: React.FC<HolidayModalProps> = ({
                     holidayDate: dates[0],
                     holidayType: values.holidayType,
                 });
-                message.success("更新成功");
+                message.success(t("holiday.updateSuccess"));
             } else {
                 // Create new holiday(s)
                 if (dates.length === 1) {
@@ -82,7 +84,7 @@ export const HolidayModal: React.FC<HolidayModalProps> = ({
                         holidayDate: dates[0],
                         holidayType: values.holidayType,
                     });
-                    message.success("添加成功");
+                    message.success(t("holiday.createSuccess"));
                 } else {
                     // Multiple dates (batch)
                     const holidays: CreateHolidayParams[] = dates.map(date => ({
@@ -92,7 +94,7 @@ export const HolidayModal: React.FC<HolidayModalProps> = ({
                         holidayType: values.holidayType,
                     }));
                     await holidayApi.batchCreateHolidays({holidays});
-                    message.success(`批量添加成功 (${dates.length}个)`);
+                    message.success(t("holiday.batchCreateSuccess", {count: dates.length}));
                 }
             }
             onSuccess();
@@ -101,15 +103,17 @@ export const HolidayModal: React.FC<HolidayModalProps> = ({
             log.error("Failed to submit holiday:", error);
 
             // Show user-friendly error message
-            const errorMessage = error instanceof Error ? error.message : "操作失败";
+            const errorMessage = error instanceof Error
+                ? error.message
+                : (editingHoliday ? t("holiday.updateFailed") : t("holiday.createFailed"));
             message.error(errorMessage);
         }
     };
     const getTitle = () => {
         if (editingHoliday) {
-            return "编辑";
+            return t("holiday.editHoliday");
         }
-        return dates.length > 1 ? `批量添加 (${dates.length}个日期)` : "添加";
+        return dates.length > 1 ? t("holiday.batchAdd", {count: dates.length}) : t("holiday.addHoliday");
     };
     return (
         <Modal
@@ -120,8 +124,8 @@ export const HolidayModal: React.FC<HolidayModalProps> = ({
             }}
             onOk={handleSubmit}
             onCancel={onClose}
-            okText="确定"
-            cancelText="取消"
+            okText={t("common.confirm")}
+            cancelText={t("common.cancel")}
             width={500}
             className="holiday-modal"
             forceRender
@@ -131,25 +135,25 @@ export const HolidayModal: React.FC<HolidayModalProps> = ({
                 layout="vertical">
                 <Form.Item
                     name="holidayName"
-                    label="名称"
-                    rules={[{required: true, message: "请输入名称"}]}
+                    label={t("holiday.name")}
+                    rules={[{required: true, message: t("holiday.nameRequired")}]}
                 >
-                    <Input ref={nameInputRef} placeholder="例如：国庆节、春节、调休补班"/>
+                    <Input ref={nameInputRef} placeholder={t("holiday.namePlaceholder")}/>
                 </Form.Item>
                 <Form.Item
                     name="holidayType"
-                    label="类型"
-                    rules={[{required: true, message: "请选择类型"}]}
+                    label={t("holiday.type")}
+                    rules={[{required: true, message: t("holiday.typeRequired")}]}
                 >
                     <Select
                         options={[
-                            {value: 1, label: "法定假期"},
-                            {value: 2, label: "公司假期"},
-                            {value: 3, label: "调休上班"},
+                            {value: 1, label: t("holiday.typeLegal")},
+                            {value: 2, label: t("holiday.typeCompany")},
+                            {value: 3, label: t("holiday.typeWorkday")},
                         ]}
                     />
                 </Form.Item>
-                <Form.Item label={dates.length > 1 ? "选中的日期" : "日期"}>
+                <Form.Item label={dates.length > 1 ? t("holiday.selectedDates") : t("holiday.date")}>
                     <Space size={[8, 8]} wrap>
                         {dates.slice(0, 10).map((date, index) => (
                             <Tag key={index} color="blue">
@@ -158,15 +162,15 @@ export const HolidayModal: React.FC<HolidayModalProps> = ({
                         ))}
                         {dates.length > 10 && (
                             <Tag color="default">
-                                ...还有 {dates.length - 10} 个
+                                {t("holiday.moreCount", {count: dates.length - 10})}
                             </Tag>
                         )}
                     </Space>
                 </Form.Item>
-                <Form.Item name="description" label="描述（可选）">
+                <Form.Item name="description" label={t("holiday.description")}>
                     <TextArea
                         rows={3}
-                        placeholder="添加一些备注信息"
+                        placeholder={t("holiday.descriptionPlaceholder")}
                         maxLength={200}
                         showCount
                     />
