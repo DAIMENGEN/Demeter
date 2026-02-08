@@ -1,7 +1,7 @@
 import React, {useState, useEffect, useMemo} from "react";
 import {Drawer, Form, Input, Button, Divider, Typography, Space, Tag, App} from "antd";
 import {UserOutlined, MailOutlined, PhoneOutlined, CalendarOutlined} from "@ant-design/icons";
-import dayjs from "dayjs";
+import dayjs from "@Webapp/config/dayjs";
 import {useTranslation} from "react-i18next";
 import {useAppDispatch, useAppSelector} from "@Webapp/store/hooks.ts";
 import {selectCurrentUser, updateUser} from "@Webapp/store/slices/user-slice.ts";

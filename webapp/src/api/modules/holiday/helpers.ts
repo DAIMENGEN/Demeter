@@ -3,7 +3,7 @@
  */
 
 import type { Holiday } from "./types";
-import dayjs from "dayjs";
+import dayjs from "@Webapp/config/dayjs";
 
 /**
  * 假期下拉选项类型

@@ -2,7 +2,7 @@ import "./year-calendar.scss";
 import React, { useState, useMemo } from "react";
 import { Popconfirm, Tooltip, Button } from "antd";
 import { DeleteOutlined } from "@ant-design/icons";
-import dayjs from "dayjs";
+import dayjs from "@Webapp/config/dayjs";
 import {useTranslation} from "react-i18next";
 import type { Holiday } from "@Webapp/api/modules/holiday/types";
 

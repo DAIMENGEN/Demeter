@@ -1,6 +1,6 @@
 ﻿import React, {useEffect, useRef} from "react";
 import {App, Form, Input, Modal, Select, Space, Tag} from "antd";
-import dayjs from "dayjs";
+import dayjs from "@Webapp/config/dayjs";
 import {useTranslation} from "react-i18next";
 import {holidayApi} from "@Webapp/api";
 import type {CreateHolidayParams, Holiday} from "@Webapp/api/modules/holiday/types";

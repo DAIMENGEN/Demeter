@@ -2,7 +2,7 @@ import "./holiday-calendar.scss";
 import React, {useCallback, useEffect, useMemo, useState} from "react";
 import {Button, message, Select, Space, Spin, Typography} from "antd";
 import {LeftOutlined, RightOutlined} from "@ant-design/icons";
-import dayjs from "dayjs";
+import dayjs from "@Webapp/config/dayjs";
 import {useTranslation} from "react-i18next";
 import {holidayApi} from "@Webapp/api";
 import {assertApiOk} from "@Webapp/api/common/response.ts";
