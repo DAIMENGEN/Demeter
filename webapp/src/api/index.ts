@@ -12,7 +12,7 @@ export * from "./modules/auth";
 export * from "./modules/user";
 
 // 项目模块
-// export * from "./modules/project";
+export * from "./modules/project";
 
 // 假期模块
 export * from "./modules/holiday";
