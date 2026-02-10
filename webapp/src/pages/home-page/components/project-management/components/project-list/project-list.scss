@@ -1,0 +1,60 @@
+.project-list {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+
+  .list-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 24px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid #f0f0f0;
+
+    .list-title {
+      margin: 0;
+      font-size: 20px;
+      font-weight: 600;
+      color: #262626;
+    }
+
+    .list-actions {
+      display: flex;
+      gap: 12px;
+    }
+  }
+
+  .empty-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 400px;
+    background-color: #fafafa;
+    border-radius: 8px;
+  }
+
+  .project-grid {
+    flex: 1;
+    overflow-y: auto;
+    padding-bottom: 24px;
+
+    &::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    &::-webkit-scrollbar-track {
+      background: #f0f0f0;
+      border-radius: 3px;
+    }
+
+    &::-webkit-scrollbar-thumb {
+      background: #bfbfbf;
+      border-radius: 3px;
+
+      &:hover {
+        background: #8c8c8c;
+      }
+    }
+  }
+}
+

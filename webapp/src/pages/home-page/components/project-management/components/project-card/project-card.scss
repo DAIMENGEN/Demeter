@@ -1,0 +1,57 @@
+.project-card {
+  height: 100%;
+  transition: all 0.3s ease;
+
+  &:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    transform: translateY(-2px);
+  }
+
+  .more-icon {
+    font-size: 18px;
+    padding: 4px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+
+    &:hover {
+      background-color: rgba(0, 0, 0, 0.06);
+    }
+  }
+
+  .card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+
+    .project-title {
+      flex: 1;
+      margin: 0;
+      font-size: 16px;
+      font-weight: 600;
+    }
+  }
+
+  .project-description {
+    margin-bottom: 16px;
+    min-height: 44px;
+    color: rgba(0, 0, 0, 0.65);
+    font-size: 14px;
+  }
+
+  .project-meta {
+    width: 100%;
+    padding-top: 12px;
+
+    .meta-icon {
+      color: rgba(0, 0, 0, 0.45);
+      font-size: 14px;
+    }
+
+    .meta-text {
+      font-size: 13px;
+    }
+  }
+}
+

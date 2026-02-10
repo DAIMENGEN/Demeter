@@ -5,6 +5,7 @@ import {RegisterPage} from "@Webapp/pages/register-page";
 import {HomePage} from "@Webapp/pages/home-page";
 import {HolidayCalendar} from "@Webapp/pages/home-page/components/holiday-calendar";
 import {HomeContent} from "@Webapp/pages/home-page/components/home-content";
+import {ProjectManagement} from "@Webapp/pages/home-page/components/project-management/project-management.tsx";
 
 export const AppRoutes = () => {
     return (
@@ -16,6 +17,7 @@ export const AppRoutes = () => {
                 <Route path="/home" element={<HomePage/>}>
                     <Route index element={<HomeContent/>}/>
                     <Route path="holiday" element={<HolidayCalendar/>}/>
+                    <Route path="project-management" element={<ProjectManagement/>}/>
                 </Route>
             </Routes>
         </AuthGuard>
