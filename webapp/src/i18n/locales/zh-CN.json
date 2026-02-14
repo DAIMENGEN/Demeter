@@ -151,6 +151,7 @@
     "noAccessibleProjects": "暂无可访问的项目",
     "noRecentProjects": "暂无最近访问的项目",
     "refresh": "刷新",
+    "searchPlaceholder": "搜索项目名称",
     "createProject": "新建项目",
     "editProject": "编辑项目",
     "deleteProject": "删除项目",

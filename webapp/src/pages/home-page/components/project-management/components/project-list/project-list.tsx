@@ -1,5 +1,5 @@
-import {Button, Col, Empty, Row, Spin} from "antd";
-import {PlusOutlined, ReloadOutlined} from "@ant-design/icons";
+import {Button, Col, Empty, Input, Row, Spin} from "antd";
+import {PlusOutlined, ReloadOutlined, SearchOutlined} from "@ant-design/icons";
 import type {Project} from "@Webapp/api/modules/project";
 import {useTranslation} from "react-i18next";
 import "./project-list.scss";
@@ -16,6 +16,8 @@ interface ProjectListProps {
     onClick?: (project: Project) => void;
     onRefresh?: () => void;
     onCreateNew?: () => void;
+    onSearch?: (keyword: string) => void;
+    searchKeyword?: string;
 }
 
 export const ProjectList: React.FC<ProjectListProps> = ({
@@ -27,15 +29,36 @@ export const ProjectList: React.FC<ProjectListProps> = ({
                                                             onDelete,
                                                             onClick,
                                                             onRefresh,
-                                                            onCreateNew
+                                                            onCreateNew,
+                                                            onSearch,
+                                                            searchKeyword = ""
                                                         }) => {
     const {t} = useTranslation();
+
+    const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        onSearch?.(e.target.value);
+    };
+
+    const handleSearch = (value: string) => {
+        onSearch?.(value);
+    };
 
     return (
         <div className="project-list">
             <div className="list-header">
                 <h2 className="list-title">{title || t("project.projectList")}</h2>
                 <div className="list-actions">
+                    {onSearch && (
+                        <Input.Search
+                            placeholder={t("project.searchPlaceholder")}
+                            allowClear
+                            value={searchKeyword}
+                            onChange={handleSearchChange}
+                            onSearch={handleSearch}
+                            style={{width: 240, marginRight: 8}}
+                            prefix={<SearchOutlined/>}
+                        />
+                    )}
                     {onRefresh && (
                         <Button
                             icon={<ReloadOutlined/>}

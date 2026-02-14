@@ -208,10 +208,10 @@ export const useMyAllProjects = () => {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(false);
 
-  const fetchAllProjects = useCallback(async () => {
+  const fetchAllProjects = useCallback(async (params?: Omit<ProjectQueryParams, "page" | "pageSize">) => {
     try {
       setLoading(true);
-      const response = await projectApi.getMyAllProjects();
+      const response = await projectApi.getMyAllProjects(params);
       setProjects(assertApiOk(response));
     } finally {
       setLoading(false);

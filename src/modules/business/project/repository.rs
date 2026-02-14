@@ -25,9 +25,8 @@ impl ProjectRepository {
               AND ($2::SMALLINT IS NULL OR project_status = $2)
               AND ($3::TIMESTAMP IS NULL OR start_date_time >= $3)
               AND ($4::TIMESTAMP IS NULL OR end_date_time <= $4)
-              AND ($5::BIGINT IS NULL OR creator_id = $5)
             ORDER BY "order" ASC NULLS LAST, create_date_time DESC
-            LIMIT $6 OFFSET $7
+            LIMIT $5 OFFSET $6
             "#,
         )
         .bind(&project_name_pattern)
@@ -47,7 +46,6 @@ impl ProjectRepository {
               AND ($2::SMALLINT IS NULL OR project_status = $2)
               AND ($3::TIMESTAMP IS NULL OR start_date_time >= $3)
               AND ($4::TIMESTAMP IS NULL OR end_date_time <= $4)
-              AND ($5::BIGINT IS NULL OR creator_id = $5)
             "#,
         )
         .bind(&project_name_pattern)
@@ -75,7 +73,6 @@ impl ProjectRepository {
               AND ($2::SMALLINT IS NULL OR project_status = $2)
               AND ($3::TIMESTAMP IS NULL OR start_date_time >= $3)
               AND ($4::TIMESTAMP IS NULL OR end_date_time <= $4)
-              AND ($5::BIGINT IS NULL OR creator_id = $5)
             ORDER BY "order" ASC NULLS LAST, create_date_time DESC
             "#,
         )
@@ -129,12 +126,12 @@ impl ProjectRepository {
     pub async fn get_my_project_list(
         pool: &PgPool,
         creator_id: i64,
-        page: Option<i64>,
-        page_size: Option<i64>,
+        params: ProjectQueryParams,
     ) -> AppResult<(Vec<Project>, i64)> {
-        let page = page.unwrap_or(1);
-        let page_size = page_size.unwrap_or(10);
+        let page = params.page.unwrap_or(1);
+        let page_size = params.page_size.unwrap_or(10);
         let offset = (page - 1) * page_size;
+        let project_name_pattern = params.project_name.as_ref().map(|p| format!("%{}%", p));
 
         let projects = sqlx::query_as::<_, Project>(
             r#"
@@ -143,11 +140,13 @@ impl ProjectRepository {
                    create_date_time, update_date_time
             FROM projects
             WHERE creator_id = $1
+              AND ($2::TEXT IS NULL OR project_name ILIKE $2)
             ORDER BY "order" ASC NULLS LAST, create_date_time DESC
-            LIMIT $2 OFFSET $3
+            LIMIT $3 OFFSET $4
             "#,
         )
         .bind(creator_id)
+        .bind(&project_name_pattern)
         .bind(page_size)
         .bind(offset)
         .fetch_all(pool)
@@ -158,16 +157,23 @@ impl ProjectRepository {
             SELECT COUNT(*)
             FROM projects
             WHERE creator_id = $1
+              AND ($2::TEXT IS NULL OR project_name ILIKE $2)
             "#,
         )
         .bind(creator_id)
+        .bind(&project_name_pattern)
         .fetch_one(pool)
         .await?;
 
         Ok((projects, total.0))
     }
 
-    pub async fn get_my_all_projects(pool: &PgPool, creator_id: i64) -> AppResult<Vec<Project>> {
+    pub async fn get_my_all_projects(
+        pool: &PgPool,
+        creator_id: i64,
+        params: ProjectQueryParams,
+    ) -> AppResult<Vec<Project>> {
+        let project_name_pattern = params.project_name.as_ref().map(|p| format!("%{}%", p));
         let projects = sqlx::query_as::<_, Project>(
             r#"
             SELECT id, project_name, description, start_date_time, end_date_time,
@@ -175,10 +181,12 @@ impl ProjectRepository {
                    create_date_time, update_date_time
             FROM projects
             WHERE creator_id = $1
+              AND ($2::TEXT IS NULL OR project_name ILIKE $2)
             ORDER BY "order" ASC NULLS LAST, create_date_time DESC
             "#,
         )
         .bind(creator_id)
+        .bind(&project_name_pattern)
         .fetch_all(pool)
         .await?;
 

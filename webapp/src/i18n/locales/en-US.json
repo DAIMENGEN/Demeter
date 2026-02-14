@@ -151,6 +151,7 @@
     "noAccessibleProjects": "No accessible projects",
     "noRecentProjects": "No recently accessed projects",
     "refresh": "Refresh",
+    "searchPlaceholder": "Search by project name",
     "createProject": "New Project",
     "editProject": "Edit Project",
     "deleteProject": "Delete Project",

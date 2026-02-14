@@ -31,13 +31,8 @@ pub async fn get_my_project_list(
     Query(params): Query<ProjectQueryParams>,
 ) -> AppResult<Json<ApiResponse<PageResponse<Project>>>> {
     let creator_id = claims.sub;
-    let (projects, total) = ProjectRepository::get_my_project_list(
-        &state.pool,
-        creator_id,
-        params.page,
-        params.page_size,
-    )
-    .await?;
+    let (projects, total) =
+        ProjectRepository::get_my_project_list(&state.pool, creator_id, params).await?;
     Ok(Json(ApiResponse::success(PageResponse {
         list: projects,
         total,
@@ -55,9 +50,11 @@ pub async fn get_all_projects(
 pub async fn get_my_all_projects(
     State(state): State<AppState>,
     Extension(claims): Extension<Claims>,
+    Query(params): Query<ProjectQueryParams>,
 ) -> AppResult<Json<ApiResponse<Vec<Project>>>> {
     let creator_id = claims.sub;
-    let projects = ProjectRepository::get_my_all_projects(&state.pool, creator_id).await?;
+    let projects =
+        ProjectRepository::get_my_all_projects(&state.pool, creator_id, params).await?;
     Ok(Json(ApiResponse::success(projects)))
 }
 

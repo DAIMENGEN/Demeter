@@ -2,7 +2,7 @@ import React, {useCallback, useEffect, useMemo, useState} from "react";
 import {App, Layout, Menu} from "antd";
 import {useNavigate} from "react-router-dom";
 import {ClockCircleOutlined, ExclamationCircleOutlined, FolderOutlined, TeamOutlined} from "@ant-design/icons";
-import {type Project, useMyProjectList, useProjectActions} from "@Webapp/api/modules/project";
+import {type Project, useMyAllProjects, useProjectActions} from "@Webapp/api/modules/project";
 import "./project-management.scss";
 import {ProjectList} from "./components/project-list";
 import {CreateProjectDrawer, EditProjectDrawer} from "./components/project-drawer";
@@ -22,12 +22,13 @@ export const ProjectManagement: React.FC = () => {
     const [editDrawerOpen, setEditDrawerOpen] = useState(false);
     const [editingProject, setEditingProject] = useState<Project | null>(null);
     const [selectedView, setSelectedView] = useState<ProjectViewType>("myCreated");
+    const [searchKeyword, setSearchKeyword] = useState("");
 
     // 获取不同视图的项目数据
     const {deleteProject} = useProjectActions();
-    const myCreatedProjects = useMyProjectList();
-    const myAccessibleProjects = useMyProjectList();
-    const recentlyAccessedProjects = useMyProjectList();
+    const myCreatedProjects = useMyAllProjects();
+    const myAccessibleProjects = useMyAllProjects();
+    const recentlyAccessedProjects = useMyAllProjects();
 
     // 使用 useMemo 缓存当前视图配置，避免每次渲染都创建新对象
     const viewConfig = useMemo(() => {
@@ -36,7 +37,7 @@ export const ProjectManagement: React.FC = () => {
                 return {
                     projects: myCreatedProjects.projects,
                     loading: myCreatedProjects.loading,
-                    refetch: myCreatedProjects.fetchProjects,
+                    refetch: myCreatedProjects.fetchAllProjects,
                     title: t("project.myCreatedTitle"),
                     emptyDescription: t("project.myCreatedEmpty")
                 };
@@ -44,7 +45,7 @@ export const ProjectManagement: React.FC = () => {
                 return {
                     projects: myAccessibleProjects.projects,
                     loading: myAccessibleProjects.loading,
-                    refetch: myAccessibleProjects.fetchProjects,
+                    refetch: myAccessibleProjects.fetchAllProjects,
                     title: t("project.myAccessibleTitle"),
                     emptyDescription: t("project.myAccessibleEmpty")
                 };
@@ -52,7 +53,7 @@ export const ProjectManagement: React.FC = () => {
                 return {
                     projects: recentlyAccessedProjects.projects,
                     loading: recentlyAccessedProjects.loading,
-                    refetch: recentlyAccessedProjects.fetchProjects,
+                    refetch: recentlyAccessedProjects.fetchAllProjects,
                     title: t("project.recentlyAccessedTitle"),
                     emptyDescription: t("project.recentlyAccessedEmpty")
                 };
@@ -69,13 +70,13 @@ export const ProjectManagement: React.FC = () => {
         selectedView,
         myCreatedProjects.projects,
         myCreatedProjects.loading,
-        myCreatedProjects.fetchProjects,
+        myCreatedProjects.fetchAllProjects,
         myAccessibleProjects.projects,
         myAccessibleProjects.loading,
-        myAccessibleProjects.fetchProjects,
+        myAccessibleProjects.fetchAllProjects,
         recentlyAccessedProjects.projects,
         recentlyAccessedProjects.loading,
-        recentlyAccessedProjects.fetchProjects,
+        recentlyAccessedProjects.fetchAllProjects,
         t,
     ]);
 
@@ -126,10 +127,17 @@ export const ProjectManagement: React.FC = () => {
         viewConfig.refetch().catch(log.error);
     }, [viewConfig.refetch]);
 
-    // 初始化时加载当前视图的数据
+    // 处理搜索
+    const handleSearch = useCallback((keyword: string) => {
+        setSearchKeyword(keyword);
+        viewConfig.refetch(keyword ? {projectName: keyword} : undefined).catch(log.error);
+    }, [viewConfig]);
+
+    // 当视图切换时，清空搜索关键字并重新加载数据
     useEffect(() => {
+        setSearchKeyword("");
         viewConfig.refetch().catch(log.error);
-    }, [viewConfig.refetch]);
+    }, [selectedView, viewConfig.refetch]);
 
     return (
         <Layout className="project-management">
@@ -171,6 +179,8 @@ export const ProjectManagement: React.FC = () => {
                              onEdit={handleEditProject}
                              onDelete={handleDeleteProject}
                              onRefresh={handleRefresh}
+                             onSearch={handleSearch}
+                             searchKeyword={searchKeyword}
                              onCreateNew={selectedView === "myCreated" ? handleCreateProject : undefined}/>
             </Content>
             <CreateProjectDrawer open={createDrawerOpen}

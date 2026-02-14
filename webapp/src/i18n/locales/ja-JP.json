@@ -151,6 +151,7 @@
     "noAccessibleProjects": "アクセス可能なプロジェクトがありません",
     "noRecentProjects": "最近アクセスしたプロジェクトがありません",
     "refresh": "更新",
+    "searchPlaceholder": "プロジェクト名で検索",
     "createProject": "新規プロジェクト",
     "editProject": "プロジェクトを編集",
     "deleteProject": "プロジェクトを削除",

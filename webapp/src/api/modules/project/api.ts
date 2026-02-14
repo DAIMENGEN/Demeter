@@ -48,8 +48,8 @@ export const projectApi = {
   /**
    * 获取我创建的所有项目（不分页）
    */
-  getMyAllProjects: () => {
-    return get<Project[]>("/projects/my/all");
+  getMyAllProjects: (params?: Omit<ProjectQueryParams, "page" | "pageSize">) => {
+    return get<Project[]>("/projects/my/all", params);
   },
 
   /**
