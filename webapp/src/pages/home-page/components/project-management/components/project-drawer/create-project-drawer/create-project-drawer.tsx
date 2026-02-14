@@ -8,7 +8,7 @@ import type {CreateProjectParams} from "@Webapp/api/modules/project/types.ts";
 import {ProjectStatus} from "@Webapp/api/modules/project/types.ts";
 import "./create-project-drawer.scss";
 import {ProjectDrawerFormFields} from "../form-fields.tsx";
-import {parseOptionalNonNegativeInteger, toNaiveDateTimeString} from "../utils.ts";
+import {toNaiveDateTimeString} from "../utils.ts";
 
 const INITIAL_FORM_VALUES = {
     projectStatus: ProjectStatus.PLANNING
@@ -39,8 +39,7 @@ export const CreateProjectDrawer: React.FC<CreateProjectDrawerProps> = ({
                 description: values.description,
                 startDateTime: startDate ? toNaiveDateTimeString(startDate) : toNaiveDateTimeString(dayjs()),
                 endDateTime: endDate ? toNaiveDateTimeString(endDate) : undefined,
-                projectStatus: values.projectStatus || ProjectStatus.PLANNING,
-                order: parseOptionalNonNegativeInteger(values.order)
+                projectStatus: values.projectStatus || ProjectStatus.PLANNING
             };
 
             await createProject(params);

@@ -5,7 +5,7 @@ use crate::common::jwt::Claims;
 use crate::common::response::{ApiResponse, PageResponse};
 use crate::modules::business::project::models::{
     BatchDeleteProjectsParams, CreateProjectParams, Project, ProjectQueryParams,
-    UpdateProjectParams,
+    ReorderProjectsParams, UpdateProjectParams,
 };
 use crate::modules::business::project::repository::ProjectRepository;
 use axum::{
@@ -135,4 +135,13 @@ pub async fn batch_delete_projects(
     let project_ids: Vec<i64> = params.ids.into_iter().map(|id| id.0).collect();
     let count = ProjectRepository::batch_delete_projects(&state.pool, project_ids).await?;
     Ok(Json(ApiResponse::success(count)))
+}
+
+pub async fn reorder_projects(
+    State(state): State<AppState>,
+    Json(params): Json<ReorderProjectsParams>,
+) -> AppResult<Json<ApiResponse<()>>> {
+    let project_ids: Vec<i64> = params.project_ids.into_iter().map(|id| id.0).collect();
+    ProjectRepository::reorder_projects(&state.pool, project_ids).await?;
+    Ok(Json(ApiResponse::success(())))
 }

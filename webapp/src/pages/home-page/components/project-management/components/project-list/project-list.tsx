@@ -3,8 +3,65 @@ import {PlusOutlined, ReloadOutlined, SearchOutlined} from "@ant-design/icons";
 import type {Project} from "@Webapp/api/modules/project";
 import {useTranslation} from "react-i18next";
 import "./project-list.scss";
-import React from "react";
+import React, {useState} from "react";
 import {ProjectCard} from "../project-card";
+import {
+    DndContext,
+    closestCenter,
+    KeyboardSensor,
+    PointerSensor,
+    useSensor,
+    useSensors,
+    type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+    arrayMove,
+    SortableContext,
+    sortableKeyboardCoordinates,
+    rectSortingStrategy,
+    useSortable,
+} from "@dnd-kit/sortable";
+import {CSS} from "@dnd-kit/utilities";
+
+interface SortableProjectCardProps {
+    project: Project;
+    onEdit?: (project: Project) => void;
+    onDelete?: (project: Project) => void;
+    onClick?: (project: Project) => void;
+}
+
+const SortableProjectCard: React.FC<SortableProjectCardProps> = ({
+    project,
+    onEdit,
+    onDelete,
+    onClick,
+}) => {
+    const {
+        attributes,
+        listeners,
+        setNodeRef,
+        transform,
+        transition,
+        isDragging,
+    } = useSortable({ id: project.id });
+
+    const style = {
+        transform: CSS.Transform.toString(transform),
+        transition,
+    };
+
+    return (
+        <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
+            <ProjectCard
+                project={project}
+                onEdit={onEdit}
+                onDelete={onDelete}
+                onClick={onClick}
+                isDragging={isDragging}
+            />
+        </div>
+    );
+};
 
 interface ProjectListProps {
     projects: Project[];
@@ -18,6 +75,8 @@ interface ProjectListProps {
     onCreateNew?: () => void;
     onSearch?: (keyword: string) => void;
     searchKeyword?: string;
+    onReorder?: (projects: Project[]) => void;
+    enableDragSort?: boolean;
 }
 
 export const ProjectList: React.FC<ProjectListProps> = ({
@@ -31,9 +90,41 @@ export const ProjectList: React.FC<ProjectListProps> = ({
                                                             onRefresh,
                                                             onCreateNew,
                                                             onSearch,
-                                                            searchKeyword = ""
+                                                            searchKeyword = "",
+                                                            onReorder,
+                                                            enableDragSort = true,
                                                         }) => {
     const {t} = useTranslation();
+    const [items, setItems] = useState<Project[]>(projects);
+
+    // 当 projects 改变时更新本地状态
+    React.useEffect(() => {
+        setItems(projects);
+    }, [projects]);
+
+    const sensors = useSensors(
+        useSensor(PointerSensor, {
+            activationConstraint: {
+                distance: 8, // 移动 8px 后才开始拖拽，避免误触
+            },
+        }),
+        useSensor(KeyboardSensor, {
+            coordinateGetter: sortableKeyboardCoordinates,
+        })
+    );
+
+    const handleDragEnd = (event: DragEndEvent) => {
+        const {active, over} = event;
+
+        if (over && active.id !== over.id) {
+            const oldIndex = items.findIndex((item) => item.id === active.id);
+            const newIndex = items.findIndex((item) => item.id === over.id);
+
+            const newItems = arrayMove(items, oldIndex, newIndex);
+            setItems(newItems);
+            onReorder?.(newItems);
+        }
+    };
 
     const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         onSearch?.(e.target.value);
@@ -81,13 +172,45 @@ export const ProjectList: React.FC<ProjectListProps> = ({
             </div>
 
             <Spin spinning={loading}>
-                {projects.length === 0 ? (
+                {items.length === 0 ? (
                     <div className="empty-container">
                         <Empty description={emptyDescription || t("project.noProjects")}/>
                     </div>
+                ) : enableDragSort ? (
+                    <DndContext
+                        sensors={sensors}
+                        collisionDetection={closestCenter}
+                        onDragEnd={handleDragEnd}
+                    >
+                        <SortableContext
+                            items={items.map(item => item.id)}
+                            strategy={rectSortingStrategy}
+                        >
+                            <Row gutter={[16, 16]} className="project-grid">
+                                {items.map((project) => (
+                                    <Col
+                                        key={project.id}
+                                        xs={24}
+                                        sm={12}
+                                        md={8}
+                                        lg={8}
+                                        xl={6}
+                                        xxl={4}
+                                    >
+                                        <SortableProjectCard
+                                            project={project}
+                                            onEdit={onEdit}
+                                            onDelete={onDelete}
+                                            onClick={onClick}
+                                        />
+                                    </Col>
+                                ))}
+                            </Row>
+                        </SortableContext>
+                    </DndContext>
                 ) : (
                     <Row gutter={[16, 16]} className="project-grid">
-                        {projects.map((project) => (
+                        {items.map((project) => (
                             <Col
                                 key={project.id}
                                 xs={24}

@@ -10,6 +10,7 @@ import type {
   UpdateProjectParams,
   ProjectQueryParams,
   BatchDeleteProjectsParams,
+  ReorderProjectsParams,
   ProjectTaskAttributeConfig,
   CreateProjectTaskAttributeConfigParams,
   UpdateProjectTaskAttributeConfigParams,
@@ -92,6 +93,13 @@ export const projectApi = {
    */
   batchDeleteProjects: (params: BatchDeleteProjectsParams) => {
     return post<number>("/projects/batch-delete", params);
+  },
+
+  /**
+   * 重排项目顺序
+   */
+  reorderProjects: (params: ReorderProjectsParams) => {
+    return post<void>("/projects/reorder", params);
   },
 
   /**

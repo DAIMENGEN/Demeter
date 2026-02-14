@@ -25,7 +25,7 @@ export const ProjectManagement: React.FC = () => {
     const [searchKeyword, setSearchKeyword] = useState("");
 
     // 获取不同视图的项目数据
-    const {deleteProject} = useProjectActions();
+    const {deleteProject, reorderProjects} = useProjectActions();
     const myCreatedProjects = useMyAllProjects();
     const myAccessibleProjects = useMyAllProjects();
     const recentlyAccessedProjects = useMyAllProjects();
@@ -133,6 +133,20 @@ export const ProjectManagement: React.FC = () => {
         viewConfig.refetch(keyword ? {projectName: keyword} : undefined).catch(log.error);
     }, [viewConfig]);
 
+    // 处理项目重排序
+    const handleReorder = useCallback(async (projects: Project[]) => {
+        try {
+            const projectIds = projects.map(p => p.id);
+            await reorderProjects({projectIds});
+            // 重排序成功后可以选择刷新列表
+            // await viewConfig.refetch();
+        } catch (error) {
+            log.error("重排项目失败:", error);
+            // 如果失败，刷新列表以恢复原来的顺序
+            await viewConfig.refetch();
+        }
+    }, [reorderProjects, viewConfig]);
+
     // 当视图切换时，清空搜索关键字并重新加载数据
     useEffect(() => {
         setSearchKeyword("");
@@ -181,6 +195,8 @@ export const ProjectManagement: React.FC = () => {
                              onRefresh={handleRefresh}
                              onSearch={handleSearch}
                              searchKeyword={searchKeyword}
+                             onReorder={selectedView === "myCreated" ? handleReorder : undefined}
+                             enableDragSort={selectedView === "myCreated"}
                              onCreateNew={selectedView === "myCreated" ? handleCreateProject : undefined}/>
             </Content>
             <CreateProjectDrawer open={createDrawerOpen}

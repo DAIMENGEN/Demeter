@@ -10,6 +10,7 @@ import type {
   CreateProjectParams,
   UpdateProjectParams,
   BatchDeleteProjectsParams,
+  ReorderProjectsParams,
   ProjectTask,
   CreateProjectTaskParams,
   UpdateProjectTaskParams,
@@ -130,12 +131,23 @@ export const useProjectActions = () => {
     }
   }, []);
 
+  const reorderProjects = useCallback(async (params: ReorderProjectsParams) => {
+    try {
+      setLoading(true);
+      const response = await projectApi.reorderProjects(params);
+      assertApiOk(response);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
   return {
     loading,
     createProject,
     updateProject,
     deleteProject,
     batchDeleteProjects,
+    reorderProjects,
   };
 };
 

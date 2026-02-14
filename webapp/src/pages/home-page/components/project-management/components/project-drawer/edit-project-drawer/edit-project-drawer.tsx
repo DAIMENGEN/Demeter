@@ -7,7 +7,7 @@ import {useProjectActions} from "@Webapp/api/modules/project";
 import type {Project, UpdateProjectParams} from "@Webapp/api/modules/project/types.ts";
 import "./edit-project-drawer.scss";
 import {ProjectDrawerFormFields} from "../form-fields.tsx";
-import {parseOptionalNonNegativeInteger, toNaiveDateTimeString} from "../utils.ts";
+import {toNaiveDateTimeString} from "../utils.ts";
 
 export interface EditProjectDrawerProps {
     open: boolean;
@@ -36,8 +36,7 @@ export const EditProjectDrawer: React.FC<EditProjectDrawerProps> = ({
                     project.startDateTime ? dayjs(project.startDateTime) : null,
                     project.endDateTime ? dayjs(project.endDateTime) : null
                 ],
-                projectStatus: project.projectStatus,
-                order: project.order
+                projectStatus: project.projectStatus
             });
         } else if (!open) {
             form.resetFields();
@@ -56,8 +55,7 @@ export const EditProjectDrawer: React.FC<EditProjectDrawerProps> = ({
                 description: values.description,
                 startDateTime: startDate ? toNaiveDateTimeString(startDate) : undefined,
                 endDateTime: endDate ? toNaiveDateTimeString(endDate) : undefined,
-                projectStatus: values.projectStatus,
-                order: parseOptionalNonNegativeInteger(values.order)
+                projectStatus: values.projectStatus
             };
 
             await updateProject(project.id, params);

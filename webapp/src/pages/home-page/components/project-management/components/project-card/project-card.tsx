@@ -5,6 +5,7 @@ import {
     CalendarOutlined,
     DeleteOutlined,
     EditOutlined,
+    EyeOutlined,
     MoreOutlined,
     SafetyOutlined,
     UserOutlined
@@ -22,6 +23,7 @@ interface ProjectCardProps {
     onEdit?: (project: Project) => void;
     onDelete?: (project: Project) => void;
     onClick?: (project: Project) => void;
+    isDragging?: boolean;
 }
 
 /**
@@ -42,11 +44,13 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({
                                                             project,
                                                             onEdit,
                                                             onDelete,
-                                                            onClick
+                                                            onClick,
+                                                            isDragging = false
                                                         }) => {
     const {t} = useTranslation();
 
-    const handleCardClick = useCallback(() => {
+    const handleView = useCallback((e: React.MouseEvent) => {
+        e.stopPropagation();
         onClick?.(project);
     }, [onClick, project]);
 
@@ -79,12 +83,13 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({
     ], [t, onDelete, project]);
 
     const cardActions = useMemo(() => [
+        <EyeOutlined key="view" onClick={handleView}/>,
         <EditOutlined key="edit" onClick={handleEdit}/>,
         <SafetyOutlined key="permission" onClick={handlePermission}/>,
         <Dropdown menu={{items: moreMenuItems}} trigger={["click"]} key="more">
             <MoreOutlined onClick={handleMoreClick}/>
         </Dropdown>
-    ], [handleEdit, handlePermission, handleMoreClick, moreMenuItems]);
+    ], [handleView, handleEdit, handlePermission, handleMoreClick, moreMenuItems]);
 
     const cardTitle = useMemo(() => (
         <div className="card-header">
@@ -113,9 +118,8 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({
 
     return (
         <Card
-            className="project-card"
-            hoverable
-            onClick={handleCardClick}
+            className={`project-card ${isDragging ? 'dragging' : ''}`}
+            hoverable={false}
             title={cardTitle}
             actions={cardActions}
         >

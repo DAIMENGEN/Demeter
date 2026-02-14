@@ -1,5 +1,5 @@
 import React from "react";
-import {DatePicker, Form, Input, InputNumber, Select} from "antd";
+import {DatePicker, Form, Input, Select} from "antd";
 import type {Dayjs} from "dayjs";
 import {useTranslation} from "react-i18next";
 import {getProjectStatusOptions} from "@Webapp/api/modules/project/utils.ts";
@@ -72,15 +72,6 @@ export const ProjectDrawerFormFields: React.FC<ProjectDrawerFormFieldsProps> = (
                 rules={[{required: true, message: t("project.statusRequired")}]}
             >
                 <Select placeholder={t("project.statusPlaceholder")} options={options}/>
-            </Form.Item>
-
-            <Form.Item name="order" label={t("project.order")} tooltip={t("project.orderTooltip")}>
-                <InputNumber
-                    placeholder={t("project.orderPlaceholder")}
-                    min={0}
-                    precision={0}
-                    style={{width: "100%"}}
-                />
             </Form.Item>
         </>
     );

@@ -58,3 +58,9 @@ pub struct ProjectQueryParams {
 pub struct BatchDeleteProjectsParams {
     pub ids: Vec<Id>,
 }
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ReorderProjectsParams {
+    pub project_ids: Vec<Id>,
+}

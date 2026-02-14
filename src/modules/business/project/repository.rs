@@ -302,4 +302,30 @@ impl ProjectRepository {
         tx.commit().await?;
         Ok(result.rows_affected())
     }
+
+    pub async fn reorder_projects(pool: &PgPool, project_ids: Vec<i64>) -> AppResult<()> {
+        if project_ids.is_empty() {
+            return Ok(());
+        }
+
+        let mut tx = pool.begin().await?;
+
+        // 为每个项目设置新的 order 值，从 0 开始递增
+        for (index, project_id) in project_ids.iter().enumerate() {
+            sqlx::query(
+                r#"
+                UPDATE projects
+                SET "order" = $1, update_date_time = CURRENT_TIMESTAMP
+                WHERE id = $2
+                "#,
+            )
+            .bind(index as f64)
+            .bind(project_id)
+            .execute(&mut *tx)
+            .await?;
+        }
+
+        tx.commit().await?;
+        Ok(())
+    }
 }

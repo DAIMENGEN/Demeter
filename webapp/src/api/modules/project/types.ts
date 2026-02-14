@@ -95,6 +95,13 @@ export interface BatchDeleteProjectsParams {
 }
 
 /**
+ * 重排项目顺序参数
+ */
+export interface ReorderProjectsParams {
+  projectIds: string[];
+}
+
+/**
  * Task attribute config (per-project) - mirrors backend: src/modules/business/project/task/models.rs
  */
 export type ProjectTaskAttributeType = "text" | "number" | "boolean" | "date" | "datetime" | "select" | "user";

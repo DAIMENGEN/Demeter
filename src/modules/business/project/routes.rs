@@ -25,6 +25,7 @@ pub fn project_routes(state: AppState) -> Router {
             "/projects/batch-delete",
             post(handlers::batch_delete_projects),
         )
+        .route("/projects/reorder", post(handlers::reorder_projects))
         .layer(middleware::from_fn_with_state(
             state.jwt_config.clone(),
             jwt_auth_middleware,
