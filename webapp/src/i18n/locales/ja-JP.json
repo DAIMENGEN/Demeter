@@ -183,6 +183,12 @@
     "statusPaused": "一時停止",
     "statusCompleted": "完了",
     "statusCancelled": "キャンセル"
+  },
+  "notFound": {
+    "title": "404",
+    "subTitle": "申し訳ございません。お探しのページは存在しません。",
+    "backHome": "ホームに戻る",
+    "backTo": "{{page}}に戻る"
   }
 }
 

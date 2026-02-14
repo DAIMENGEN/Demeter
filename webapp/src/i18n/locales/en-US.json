@@ -183,6 +183,12 @@
     "statusPaused": "Paused",
     "statusCompleted": "Completed",
     "statusCancelled": "Cancelled"
+  },
+  "notFound": {
+    "title": "404",
+    "subTitle": "Sorry, the page you visited does not exist.",
+    "backHome": "Back Home",
+    "backTo": "Back to {{page}}"
   }
 }
 

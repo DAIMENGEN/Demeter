@@ -183,6 +183,12 @@
     "statusPaused": "已暂停",
     "statusCompleted": "已完成",
     "statusCancelled": "已取消"
+  },
+  "notFound": {
+    "title": "404",
+    "subTitle": "抱歉，您访问的页面不存在。",
+    "backHome": "返回首页",
+    "backTo": "返回 {{page}}"
   }
 }
 
