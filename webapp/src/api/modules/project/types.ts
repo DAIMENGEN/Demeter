@@ -21,14 +21,14 @@ export const ProjectStatus = {
 export type ProjectStatus = (typeof ProjectStatus)[keyof typeof ProjectStatus];
 
 /**
- * 项目状态标签映射
+ * 项目状态标签映射 (i18n keys)
  */
-export const ProjectStatusLabels: Record<ProjectStatus, string> = {
-  [ProjectStatus.PLANNING]: "规划中",
-  [ProjectStatus.IN_PROGRESS]: "进行中",
-  [ProjectStatus.PAUSED]: "已暂停",
-  [ProjectStatus.COMPLETED]: "已完成",
-  [ProjectStatus.CANCELLED]: "已取消",
+export const ProjectStatusLabelKeys: Record<ProjectStatus, string> = {
+  [ProjectStatus.PLANNING]: "project.statusPlanning",
+  [ProjectStatus.IN_PROGRESS]: "project.statusInProgress",
+  [ProjectStatus.PAUSED]: "project.statusPaused",
+  [ProjectStatus.COMPLETED]: "project.statusCompleted",
+  [ProjectStatus.CANCELLED]: "project.statusCancelled",
 };
 
 /**
@@ -106,14 +106,14 @@ export interface ReorderProjectsParams {
  */
 export type ProjectTaskAttributeType = "text" | "number" | "boolean" | "date" | "datetime" | "select" | "user";
 
-export const ProjectTaskAttributeTypeLabels: Record<ProjectTaskAttributeType, string> = {
-  text: "文本",
-  number: "数字",
-  boolean: "布尔",
-  date: "日期",
-  datetime: "日期时间",
-  select: "选项",
-  user: "人员"
+export const ProjectTaskAttributeTypeLabelKeys: Record<ProjectTaskAttributeType, string> = {
+  text: "attributeConfig.typeText",
+  number: "attributeConfig.typeNumber",
+  boolean: "attributeConfig.typeBoolean",
+  date: "attributeConfig.typeDate",
+  datetime: "attributeConfig.typeDatetime",
+  select: "attributeConfig.typeSelect",
+  user: "attributeConfig.typeUser"
 };
 
 /**
@@ -181,11 +181,11 @@ export const ProjectTaskType = {
 
 export type ProjectTaskType = (typeof ProjectTaskType)[keyof typeof ProjectTaskType];
 
-export const TaskTypeLabels: Record<ProjectTaskType, string> = {
-  [ProjectTaskType.UNKNOWN]: "未指定",
-  [ProjectTaskType.DEFAULT]: "普通任务",
-  [ProjectTaskType.MILESTONE]: "里程碑",
-  [ProjectTaskType.CHECKPOINT]: "检查点",
+export const TaskTypeLabelKeys: Record<ProjectTaskType, string> = {
+  [ProjectTaskType.UNKNOWN]: "task.taskTypeUnknown",
+  [ProjectTaskType.DEFAULT]: "task.taskTypeDefault",
+  [ProjectTaskType.MILESTONE]: "task.taskTypeMilestone",
+  [ProjectTaskType.CHECKPOINT]: "task.taskTypeCheckpoint",
 };
 
 export interface ProjectTask {

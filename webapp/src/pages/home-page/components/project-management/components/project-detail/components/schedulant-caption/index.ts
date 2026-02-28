@@ -1,0 +1,1 @@
+export {SchedulantCaption} from "./schedulant-caption";

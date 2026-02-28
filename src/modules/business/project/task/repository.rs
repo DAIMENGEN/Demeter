@@ -96,7 +96,7 @@ impl TaskRepository {
                    is_required = COALESCE($2, is_required),
                    default_value = COALESCE($3, default_value),
                    options = COALESCE($4, options),
-                   value_color_map = COALESCE($5, value_color_map),
+                   value_color_map = $5,
                    "order" = COALESCE($6, "order"),
                    updater_id = $7,
                    update_date_time = CURRENT_TIMESTAMP

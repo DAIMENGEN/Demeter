@@ -2,6 +2,7 @@ import type {ReactNode} from "react";
 import {useEffect, useRef, useState} from "react";
 import {useLocation, useNavigate} from "react-router-dom";
 import {App} from "antd";
+import {useTranslation} from "react-i18next";
 import {useSession} from "@Webapp/api";
 import {useAppDispatch} from "@Webapp/store/hooks";
 import {loginSuccess, logout as logoutAction} from "@Webapp/store/slices/user-slice";
@@ -18,6 +19,7 @@ interface AuthSessionGuardProps {
  */
 export const AuthGuard = ({children}: AuthSessionGuardProps) => {
     const {message} = App.useApp();
+    const {t} = useTranslation();
     const location = useLocation();
     const navigate = useNavigate();
     const dispatch = useAppDispatch();
@@ -44,7 +46,7 @@ export const AuthGuard = ({children}: AuthSessionGuardProps) => {
             } catch {
                 if (!notifiedRef.current) {
                     notifiedRef.current = true;
-                    message.info("登录状态已失效，请重新登录", 2);
+                    message.info(t("auth.sessionExpired"), 2);
                 }
                 dispatch(logoutAction());
                 navigate("/login", {replace: true});
@@ -53,7 +55,7 @@ export const AuthGuard = ({children}: AuthSessionGuardProps) => {
                 checkingRef.current = false;
             }
         })();
-    }, [location.pathname, dispatch, navigate, getSession, message]);
+    }, [location.pathname, dispatch, navigate, getSession, message, t]);
 
     if (!checked) return null;
     return <>{children}</>;

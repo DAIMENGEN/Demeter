@@ -1,5 +1,6 @@
 import React, {useCallback, useMemo} from "react";
-import {Button, Drawer, Form, Space} from "antd";
+import {Button, Form, Space} from "antd";
+import {ResizableDrawer} from "@Webapp/components";
 import type {Dayjs} from "dayjs";
 import dayjs from "dayjs";
 import {useTranslation} from "react-i18next";
@@ -69,13 +70,10 @@ export const CreateProjectDrawer: React.FC<CreateProjectDrawerProps> = ({
     ), [handleCancel, handleSubmit, loading, t]);
 
     return (
-        <Drawer
+        <ResizableDrawer
             title={t("project.createProject")}
-            placement="right"
             onClose={handleCancel}
             open={open}
-            resizable
-            size={500}
             classNames={{
                 body: "create-project-drawer-body"
             }}
@@ -88,6 +86,6 @@ export const CreateProjectDrawer: React.FC<CreateProjectDrawerProps> = ({
             >
                 <ProjectDrawerFormFields/>
             </Form>
-        </Drawer>
+        </ResizableDrawer>
     );
 };

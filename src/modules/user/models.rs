@@ -47,6 +47,8 @@ pub struct UpdateUserParams {
 pub struct UserQueryParams {
     pub page: Option<i64>,
     pub page_size: Option<i64>,
+    /// 模糊搜索关键词，同时匹配 username 和 full_name（OR 逻辑）
+    pub keyword: Option<String>,
     pub username: Option<String>,
     pub full_name: Option<String>,
     pub email: Option<String>,

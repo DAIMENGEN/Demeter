@@ -1,0 +1,26 @@
+.schedulant-legend {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 10px 0 8px 0;
+    gap: 24px;
+    flex-wrap: wrap;
+
+    &__item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    &__color-box {
+        width: 16px;
+        height: 16px;
+        border-radius: 2px;
+    }
+
+    &__label {
+        font-size: 13px;
+        color: rgba(0, 0, 0, 0.65);
+    }
+}
+

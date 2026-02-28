@@ -45,6 +45,8 @@ export interface UpdateUserParams {
 export interface UserQueryParams {
   page?: number;
   pageSize?: number;
+  /** 模糊搜索关键词，同时匹配 username 和 fullName（OR 逻辑） */
+  keyword?: string;
   username?: string;
   fullName?: string;
   email?: string;

@@ -12,6 +12,7 @@ impl UserRepository {
         let page = params.page.unwrap_or(1);
         let page_size = params.page_size.unwrap_or(10);
         let offset = (page - 1) * page_size;
+        let keyword_pattern = params.keyword.as_ref().map(|k| format!("%{}%", k));
         let username_pattern = params.username.as_ref().map(|u| format!("%{}%", u));
         let full_name_pattern = params.full_name.as_ref().map(|f| format!("%{}%", f));
         let email_pattern = params.email.as_ref().map(|e| format!("%{}%", e));
@@ -30,15 +31,17 @@ impl UserRepository {
                    create_date_time, 
                    update_date_time
             FROM users
-            WHERE ($1::TEXT IS NULL OR username ILIKE $1)
-              AND ($2::TEXT IS NULL OR full_name ILIKE $2)
-              AND ($3::TEXT IS NULL OR email ILIKE $3)
-              AND ($4::TEXT IS NULL OR phone ILIKE $4)
-              AND ($5::BOOLEAN IS NULL OR is_active = $5)
+            WHERE ($1::TEXT IS NULL OR username ILIKE $1 OR full_name ILIKE $1)
+              AND ($2::TEXT IS NULL OR username ILIKE $2)
+              AND ($3::TEXT IS NULL OR full_name ILIKE $3)
+              AND ($4::TEXT IS NULL OR email ILIKE $4)
+              AND ($5::TEXT IS NULL OR phone ILIKE $5)
+              AND ($6::BOOLEAN IS NULL OR is_active = $6)
             ORDER BY create_date_time DESC
-            LIMIT $6 OFFSET $7
+            LIMIT $7 OFFSET $8
             "#,
         )
+        .bind(&keyword_pattern)
         .bind(&username_pattern)
         .bind(&full_name_pattern)
         .bind(&email_pattern)
@@ -53,13 +56,15 @@ impl UserRepository {
             r#"
             SELECT COUNT(*)
             FROM users
-            WHERE ($1::TEXT IS NULL OR username ILIKE $1)
-              AND ($2::TEXT IS NULL OR full_name ILIKE $2)
-              AND ($3::TEXT IS NULL OR email ILIKE $3)
-              AND ($4::TEXT IS NULL OR phone ILIKE $4)
-              AND ($5::BOOLEAN IS NULL OR is_active = $5)
+            WHERE ($1::TEXT IS NULL OR username ILIKE $1 OR full_name ILIKE $1)
+              AND ($2::TEXT IS NULL OR username ILIKE $2)
+              AND ($3::TEXT IS NULL OR full_name ILIKE $3)
+              AND ($4::TEXT IS NULL OR email ILIKE $4)
+              AND ($5::TEXT IS NULL OR phone ILIKE $5)
+              AND ($6::BOOLEAN IS NULL OR is_active = $6)
             "#,
         )
+        .bind(&keyword_pattern)
         .bind(&username_pattern)
         .bind(&full_name_pattern)
         .bind(&email_pattern)
@@ -72,6 +77,7 @@ impl UserRepository {
     }
 
     pub async fn get_all_users(pool: &PgPool, params: UserQueryParams) -> AppResult<Vec<User>> {
+        let keyword_pattern = params.keyword.as_ref().map(|k| format!("%{}%", k));
         let username_pattern = params.username.as_ref().map(|u| format!("%{}%", u));
         let full_name_pattern = params.full_name.as_ref().map(|f| format!("%{}%", f));
         let email_pattern = params.email.as_ref().map(|e| format!("%{}%", e));
@@ -90,14 +96,16 @@ impl UserRepository {
                    create_date_time,
                    update_date_time
             FROM users
-            WHERE ($1::TEXT IS NULL OR username ILIKE $1)
-              AND ($2::TEXT IS NULL OR full_name ILIKE $2)
-              AND ($3::TEXT IS NULL OR email ILIKE $3)
-              AND ($4::TEXT IS NULL OR phone ILIKE $4)
-              AND ($5::BOOLEAN IS NULL OR is_active = $5)
+            WHERE ($1::TEXT IS NULL OR username ILIKE $1 OR full_name ILIKE $1)
+              AND ($2::TEXT IS NULL OR username ILIKE $2)
+              AND ($3::TEXT IS NULL OR full_name ILIKE $3)
+              AND ($4::TEXT IS NULL OR email ILIKE $4)
+              AND ($5::TEXT IS NULL OR phone ILIKE $5)
+              AND ($6::BOOLEAN IS NULL OR is_active = $6)
             ORDER BY create_date_time DESC
             "#,
         )
+        .bind(&keyword_pattern)
         .bind(&username_pattern)
         .bind(&full_name_pattern)
         .bind(&email_pattern)

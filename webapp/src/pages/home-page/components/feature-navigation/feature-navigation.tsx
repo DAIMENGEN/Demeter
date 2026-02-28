@@ -1,5 +1,6 @@
 import {Card, Col, Row, Typography} from "antd";
 import {useNavigate} from "react-router-dom";
+import {useTranslation} from "react-i18next";
 import "./feature-navigation.scss";
 import projectManagementImage from "@Webapp/assets/nv/project-management-nv.gif";
 import calendarImage from "@Webapp/assets/nv/calendar-nv.gif";
@@ -8,8 +9,8 @@ const {Title, Paragraph} = Typography;
 
 interface FeatureItem {
     key: string;
-    title: string;
-    description: string;
+    titleKey: string;
+    descriptionKey: string;
     path: string;
     image: string;
 }
@@ -17,22 +18,22 @@ interface FeatureItem {
 const features: FeatureItem[] = [
     {
         key: "project-management",
-        title: "项目管理",
-        description: "例如：创建和跟踪项目进度，管理项目资源和任务分配。",
+        titleKey: "featureNav.projectManagement",
+        descriptionKey: "featureNav.projectManagementDesc",
         path: "/home/project-management",
         image: projectManagementImage,
     },
     {
         key: "calendar",
-        title: "公司日历",
-        description: "例如：查看公司假期和国家法定假期。",
+        titleKey: "featureNav.calendar",
+        descriptionKey: "featureNav.calendarDesc",
         path: "/home/calendar",
         image: calendarImage,
     },
     {
         key: "holiday",
-        title: "假期管理",
-        description: "例如：管理法定假期和调休工作日，支持批量操作。",
+        titleKey: "featureNav.holiday",
+        descriptionKey: "featureNav.holidayDesc",
         path: "/home/holiday",
         image: calendarImage,
     }
@@ -40,6 +41,7 @@ const features: FeatureItem[] = [
 
 export const FeatureNavigation = () => {
     const navigate = useNavigate();
+    const {t} = useTranslation();
 
     const handleCardClick = (path: string) => {
         navigate(path);
@@ -48,9 +50,9 @@ export const FeatureNavigation = () => {
     return (
         <div className="feature-navigation">
             <div className="feature-header">
-                <Title level={2}>功能导航</Title>
+                <Title level={2}>{t("featureNav.title")}</Title>
                 <Paragraph type="secondary">
-                    选择下方功能模块，快速访问系统各项功能
+                    {t("featureNav.subtitle")}
                 </Paragraph>
             </div>
             <Row gutter={[24, 24]}>
@@ -72,12 +74,12 @@ export const FeatureNavigation = () => {
                                 <div className="feature-card-cover">
                                     <img className="feature-card-image"
                                          src={feature.image}
-                                         alt={feature.title}/>
+                                         alt={t(feature.titleKey)}/>
                                 </div>
                             }>
                             <Card.Meta
-                                title={<span>{feature.title}</span>}
-                                description={<span>{feature.description}</span>}/>
+                                title={<span>{t(feature.titleKey)}</span>}
+                                description={<span>{t(feature.descriptionKey)}</span>}/>
                         </Card>
                     </Col>
                 ))}

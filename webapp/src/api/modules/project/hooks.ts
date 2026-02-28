@@ -65,7 +65,7 @@ export const useProjectList = () => {
  * 项目详情 Hook
  */
 export const useProjectDetail = () => {
-  const [project, setProject] = useState<Project | null>(null);
+  const [project, setProject] = useState<Project>();
   const [loading, setLoading] = useState(false);
 
   const fetchProject = useCallback(async (id: string) => {

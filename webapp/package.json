@@ -27,7 +27,7 @@
     "react-redux": "^9.2.0",
     "react-router-dom": "^7.12.0",
     "redux-persist": "6.0.0",
-    "schedulant": "^2.0.7-fixed.1"
+    "schedulant": "^2.0.7-fixed.3"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",

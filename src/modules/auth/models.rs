@@ -1,6 +1,7 @@
 use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
 
+use crate::common::id::Id;
 use crate::modules::user::models::User;
 
 #[derive(Debug, Deserialize)]
@@ -28,7 +29,7 @@ pub struct AuthResponse {
 #[derive(Debug, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct UserInfo {
-    pub id: i64,
+    pub id: Id,
     pub username: String,
     pub full_name: String,
     pub email: String,
@@ -40,7 +41,7 @@ pub struct UserInfo {
 impl From<User> for UserInfo {
     fn from(user: User) -> Self {
         Self {
-            id: user.id.into(),
+            id: user.id,
             username: user.username,
             full_name: user.full_name,
             email: user.email,

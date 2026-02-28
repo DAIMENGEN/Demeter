@@ -1,0 +1,25 @@
+.schedulant-toolbar {
+    &__container {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        width: 100%;
+        flex-wrap: wrap;
+        gap: 12px;
+    }
+
+    &__left {
+        flex: 0 0 auto;
+    }
+
+    &__right {
+        flex: 1 1 auto;
+        justify-content: flex-end;
+    }
+
+    &__project-name {
+        font-size: 14px;
+        font-weight: 500;
+    }
+}
+
