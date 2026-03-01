@@ -1,0 +1,22 @@
+.team-management {
+    padding: 24px;
+    background: #fff;
+    border-radius: 8px;
+    flex: 1;
+    min-height: 0;
+
+    &-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 16px;
+
+        .ant-typography {
+            margin: 0;
+        }
+    }
+
+    &-filters {
+        margin-bottom: 16px;
+    }
+}

@@ -1,7 +1,7 @@
 import React from "react";
 import {useTranslation} from "react-i18next";
-import { DatePicker, Form } from "antd";
-import dayjs, { type Dayjs } from "dayjs";
+import {DatePicker, Form} from "antd";
+import dayjs, {type Dayjs} from "dayjs";
 
 export const DateField: React.FC<{ mode: "date" | "datetime" }> = ({ mode }) => {
     const {t} = useTranslation();

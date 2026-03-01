@@ -1,5 +1,5 @@
 use serde::{de, Deserialize, Deserializer, Serialize, Serializer};
-use sqlx::postgres::{PgArgumentBuffer, PgTypeInfo, PgValueRef};
+use sqlx::postgres::{PgArgumentBuffer, PgHasArrayType, PgTypeInfo, PgValueRef};
 use sqlx::{Decode, Encode, Postgres, Type};
 use std::fmt;
 
@@ -117,5 +117,15 @@ impl<'q> Encode<'q, Postgres> for Id {
 
     fn size_hint(&self) -> usize {
         <i64 as Encode<Postgres>>::size_hint(&self.0)
+    }
+}
+
+impl PgHasArrayType for Id {
+    fn array_type_info() -> PgTypeInfo {
+        <i64 as PgHasArrayType>::array_type_info()
+    }
+
+    fn array_compatible(ty: &PgTypeInfo) -> bool {
+        <i64 as PgHasArrayType>::array_compatible(ty)
     }
 }

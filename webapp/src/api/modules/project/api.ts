@@ -2,23 +2,23 @@
  * 项目模块 API
  */
 
-import { get, post, put, del } from "@Webapp/http";
-import type { PageResponse } from "@Webapp/http";
+import type {PageResponse} from "@Webapp/http";
+import {del, get, post, put} from "@Webapp/http";
 import type {
-  Project,
-  CreateProjectParams,
-  UpdateProjectParams,
-  ProjectQueryParams,
-  BatchDeleteProjectsParams,
-  ReorderProjectsParams,
-  ProjectTaskAttributeConfig,
-  CreateProjectTaskAttributeConfigParams,
-  UpdateProjectTaskAttributeConfigParams,
-  BatchDeleteProjectTaskAttributeConfigsParams,
-  ProjectTask,
-  CreateProjectTaskParams,
-  UpdateProjectTaskParams,
-  ReorderProjectTasksParams,
+    BatchDeleteProjectsParams,
+    BatchDeleteProjectTaskAttributeConfigsParams,
+    CreateProjectParams,
+    CreateProjectTaskAttributeConfigParams,
+    CreateProjectTaskParams,
+    Project,
+    ProjectQueryParams,
+    ProjectTask,
+    ProjectTaskAttributeConfig,
+    ReorderProjectsParams,
+    ReorderProjectTasksParams,
+    UpdateProjectParams,
+    UpdateProjectTaskAttributeConfigParams,
+    UpdateProjectTaskParams,
 } from "./types";
 
 /**

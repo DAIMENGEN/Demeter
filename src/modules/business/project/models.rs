@@ -34,13 +34,24 @@ pub struct CreateProjectParams {
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct UpdateProjectParams {
+    /// NOT NULL 字段，Option<T>：None = 不更新，Some(v) = 更新
     pub project_name: Option<String>,
-    pub description: Option<String>,
+    /// 可空字段，双层 Option：None = 不更新，Some(None) = 清空，Some(Some(v)) = 更新
+    #[serde(default, deserialize_with = "crate::common::serde_helpers::double_option::deserialize")]
+    pub description: Option<Option<String>>,
+    /// NOT NULL 字段
     pub start_date_time: Option<chrono::NaiveDateTime>,
-    pub end_date_time: Option<chrono::NaiveDateTime>,
+    /// 可空字段，双层 Option：None = 不更新，Some(None) = 清空，Some(Some(v)) = 更新
+    #[serde(default, deserialize_with = "crate::common::serde_helpers::double_option::deserialize")]
+    pub end_date_time: Option<Option<chrono::NaiveDateTime>>,
+    /// NOT NULL 字段
     pub project_status: Option<i32>,
-    pub version: Option<i32>,
-    pub order: Option<f64>,
+    /// 可空字段，双层 Option
+    #[serde(default, deserialize_with = "crate::common::serde_helpers::double_option::deserialize")]
+    pub version: Option<Option<i32>>,
+    /// 可空字段，双层 Option
+    #[serde(default, deserialize_with = "crate::common::serde_helpers::double_option::deserialize")]
+    pub order: Option<Option<f64>>,
 }
 
 #[derive(Debug, Deserialize)]

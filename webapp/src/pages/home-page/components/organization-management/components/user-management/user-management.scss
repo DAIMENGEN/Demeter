@@ -1,0 +1,22 @@
+.user-management {
+  padding: 24px;
+  background: #fff;
+  border-radius: 8px;
+  flex: 1;
+  min-height: 0;
+
+  .user-management-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+
+    .ant-typography {
+      margin-bottom: 0;
+    }
+  }
+
+  .user-management-filters {
+    margin-bottom: 16px;
+  }
+}

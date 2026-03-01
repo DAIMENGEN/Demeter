@@ -1,6 +1,6 @@
 import React from "react";
-import {Drawer} from "antd";
 import type {DrawerProps} from "antd";
+import {Drawer} from "antd";
 
 const DEFAULT_WIDTH = 736;
 

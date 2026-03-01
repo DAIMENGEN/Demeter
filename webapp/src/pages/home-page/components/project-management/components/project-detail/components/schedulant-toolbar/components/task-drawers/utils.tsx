@@ -3,9 +3,9 @@ import {DatePicker, Form, Input, InputNumber, Select, Space, Typography} from "a
 import dayjs, {type Dayjs} from "dayjs";
 import type {TFunction} from "i18next";
 import {
-    ProjectTaskAttributeTypeLabelKeys,
     type JsonValue,
     type ProjectTaskAttributeConfig,
+    ProjectTaskAttributeTypeLabelKeys,
     ProjectTaskType,
     TaskTypeLabelKeys
 } from "@Webapp/api/modules/project";

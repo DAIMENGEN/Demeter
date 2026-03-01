@@ -2,6 +2,8 @@
  * 认证模块类型定义
  */
 
+import type {User} from "@Webapp/api/modules/user/types";
+
 /**
  * 登录请求参数
  */
@@ -12,17 +14,10 @@ export interface LoginParams {
 
 /**
  * 认证响应数据（登录、注册、刷新token、获取会话）
+ * 返回完整的 User（含部门 / 团队等组织关系）
  */
 export interface AuthResponse {
-    user: {
-        id: string;  // 后端 Id 类型序列化为 string（避免 JS 数字精度问题）
-        username: string;
-        fullName: string;
-        email: string;
-        phone?: string;
-        isActive: boolean;
-        createDateTime: string;
-    };
+    user: User;
 }
 
 /**

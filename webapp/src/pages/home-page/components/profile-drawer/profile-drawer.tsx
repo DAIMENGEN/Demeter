@@ -1,12 +1,12 @@
-import React, {useState, useEffect, useMemo} from "react";
-import {Drawer, Form, Input, Button, Divider, Typography, Space, Tag, App} from "antd";
-import {UserOutlined, MailOutlined, PhoneOutlined, CalendarOutlined} from "@ant-design/icons";
+import React, {useEffect, useMemo, useState} from "react";
+import {App, Button, Divider, Drawer, Form, Input, Space, Tag, Typography} from "antd";
+import {ApartmentOutlined, CalendarOutlined, MailOutlined, PhoneOutlined, TeamOutlined, UserOutlined} from "@ant-design/icons";
 import dayjs from "@Webapp/config/dayjs";
 import {useTranslation} from "react-i18next";
 import {useAppDispatch, useAppSelector} from "@Webapp/store/hooks.ts";
 import {selectCurrentUser, updateUser} from "@Webapp/store/slices/user-slice.ts";
 import {userApi} from "@Webapp/api/modules/user/api.ts";
-import type {UpdateUserParams} from "@Webapp/api/modules/user/types.ts";
+import type {UpdateProfileParams} from "@Webapp/api/modules/user/types.ts";
 import "./profile-drawer.scss";
 
 const {Text} = Typography;
@@ -51,7 +51,7 @@ export const ProfileDrawer: React.FC<ProfileDrawerProps> = ({open, onClose}) => 
         }
     }, [open, currentUser, form]);
 
-    const handleSubmit = async (values: UpdateUserParams) => {
+    const handleSubmit = async (values: UpdateProfileParams) => {
         if (!currentUser?.id) {
             message.error(t("profile.userInfoNotExist"));
             return;
@@ -59,7 +59,7 @@ export const ProfileDrawer: React.FC<ProfileDrawerProps> = ({open, onClose}) => 
 
         setLoading(true);
         try {
-            await userApi.updateUser(currentUser.id, values);
+            await userApi.updateProfile(values);
 
             // Update Redux store
             dispatch(updateUser({
@@ -197,6 +197,35 @@ export const ProfileDrawer: React.FC<ProfileDrawerProps> = ({open, onClose}) => 
                         />
                     </Form.Item>
                 </Form>
+
+                <Divider />
+
+                {/* Organization Info (read-only) */}
+                <div className="organization-section">
+                    <Form layout="vertical">
+                        <Form.Item label={t("profile.department")}>
+                            <Input
+                                prefix={<ApartmentOutlined />}
+                                value={currentUser?.departmentName || t("profile.noDepartment")}
+                                disabled
+                                variant="filled"
+                            />
+                        </Form.Item>
+                        <Form.Item label={t("profile.team")}>
+                            <div>
+                                {currentUser?.teamNames && currentUser.teamNames.length > 0 ? (
+                                    <Space size={[4, 8]} wrap>
+                                        {currentUser.teamNames.map((name, idx) => (
+                                            <Tag key={idx} icon={<TeamOutlined />} color="blue">{name}</Tag>
+                                        ))}
+                                    </Space>
+                                ) : (
+                                    <Text type="secondary">{t("profile.noTeam")}</Text>
+                                )}
+                            </div>
+                        </Form.Item>
+                    </Form>
+                </div>
             </div>
         </Drawer>
     );

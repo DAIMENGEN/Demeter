@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useRef, useState } from "react";
-import { useDomRef } from "@Webapp/hooks";
-import type { DomRef } from "@Webapp/types";
+import {useCallback, useEffect, useRef, useState} from "react";
+import {useDomRef} from "@Webapp/hooks";
+import type {DomRef} from "@Webapp/types";
 
 export const useSchedulantHeight = (
     cardHeaderRef: DomRef<HTMLDivElement>,

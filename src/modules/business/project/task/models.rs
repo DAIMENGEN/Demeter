@@ -115,12 +115,22 @@ pub struct CreateTaskAttributeConfigParams {
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct UpdateTaskAttributeConfigParams {
+    /// NOT NULL 字段
     pub attribute_label: Option<String>,
+    /// NOT NULL 字段
     pub is_required: Option<bool>,
-    pub default_value: Option<String>,
-    pub options: Option<serde_json::Value>,
-    pub value_color_map: Option<serde_json::Value>,
-    pub order: Option<f64>,
+    /// 可空字段，双层 Option：None = 不更新，Some(None) = 清空，Some(Some(v)) = 更新
+    #[serde(default, deserialize_with = "crate::common::serde_helpers::double_option::deserialize")]
+    pub default_value: Option<Option<String>>,
+    /// 可空字段，双层 Option
+    #[serde(default, deserialize_with = "crate::common::serde_helpers::double_option::deserialize")]
+    pub options: Option<Option<serde_json::Value>>,
+    /// 可空字段，双层 Option
+    #[serde(default, deserialize_with = "crate::common::serde_helpers::double_option::deserialize")]
+    pub value_color_map: Option<Option<serde_json::Value>>,
+    /// 可空字段，双层 Option
+    #[serde(default, deserialize_with = "crate::common::serde_helpers::double_option::deserialize")]
+    pub order: Option<Option<f64>>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -138,12 +148,20 @@ pub struct CreateTaskParams {
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct UpdateTaskParams {
+    /// NOT NULL 字段
     pub task_name: Option<String>,
-    pub parent_id: Option<Id>,
+    /// 可空字段，双层 Option：None = 不更新，Some(None) = 清空，Some(Some(v)) = 更新
+    #[serde(default, deserialize_with = "crate::common::serde_helpers::double_option::deserialize")]
+    pub parent_id: Option<Option<Id>>,
+    /// NOT NULL 字段
     pub order: Option<f64>,
+    /// NOT NULL 字段
     pub start_date_time: Option<chrono::NaiveDateTime>,
+    /// NOT NULL 字段
     pub end_date_time: Option<chrono::NaiveDateTime>,
+    /// NOT NULL 字段
     pub task_type: Option<i32>,
+    /// NOT NULL 字段 (custom_attributes 默认 '{}'::jsonb)
     pub custom_attributes: Option<serde_json::Value>,
 }
 

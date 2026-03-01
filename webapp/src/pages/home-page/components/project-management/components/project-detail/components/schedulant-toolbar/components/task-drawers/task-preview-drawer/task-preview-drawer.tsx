@@ -4,19 +4,14 @@ import {ResizableDrawer} from "@Webapp/components";
 import dayjs from "dayjs";
 import {useTranslation} from "react-i18next";
 import {
-    ProjectTaskAttributeTypeLabelKeys,
     type JsonValue,
     type ProjectTask,
     type ProjectTaskAttributeConfig,
+    ProjectTaskAttributeTypeLabelKeys,
     ProjectTaskType,
     TaskTypeLabelKeys
 } from "@Webapp/api/modules/project";
-import {
-    buildSelectValueLabelMap,
-    buildUserValueLabelMap,
-    toScalarString,
-    toUserIdFromJson
-} from "../index.ts";
+import {buildSelectValueLabelMap, buildUserValueLabelMap, toScalarString, toUserIdFromJson} from "../index.ts";
 
 const {Text} = Typography;
 

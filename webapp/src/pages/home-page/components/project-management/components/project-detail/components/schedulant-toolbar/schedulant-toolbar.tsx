@@ -18,10 +18,7 @@ import {
 } from "@Webapp/pages/home-page/components/project-management/components/project-detail/components/schedulant-config";
 import type {ProjectTaskAttributeConfig} from "@Webapp/api";
 import type {AvailableColumn} from "../../constants.ts";
-import {
-    SCHEDULANT_VIEW_OPTIONS_KEYS,
-    SCHEDULANT_VIEW_PICKER_MAP,
-} from "../../constants.ts";
+import {SCHEDULANT_VIEW_OPTIONS_KEYS, SCHEDULANT_VIEW_PICKER_MAP,} from "../../constants.ts";
 import type {Dayjs} from "dayjs";
 import type {SchedulantViewType} from "schedulant/dist/types/schedulant-view";
 

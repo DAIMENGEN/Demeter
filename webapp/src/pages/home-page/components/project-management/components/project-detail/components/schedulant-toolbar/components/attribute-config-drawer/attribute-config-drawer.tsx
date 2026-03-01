@@ -19,9 +19,9 @@ import {
 } from "antd";
 import {DeleteOutlined, EditOutlined, LoadingOutlined} from "@ant-design/icons";
 import {
-    type ProjectTaskAttributeType,
     type CreateProjectTaskAttributeConfigParams,
     type ProjectTaskAttributeConfig,
+    type ProjectTaskAttributeType,
     useProjectTaskAttributeConfigActions,
 } from "@Webapp/api/modules/project";
 import {userApi, useUserSelectOptions} from "@Webapp/api/modules/user";

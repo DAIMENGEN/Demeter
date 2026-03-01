@@ -10,6 +10,7 @@ pub enum AppError {
     NotFound(String),
     BadRequest(String),
     Unauthorized(String),
+    Forbidden(String),
     InternalError(String),
     DatabaseError(sqlx::Error),
 }
@@ -30,6 +31,10 @@ impl IntoResponse for AppError {
             AppError::Unauthorized(msg) => {
                 tracing::warn!("Unauthorized: {}", msg);
                 (StatusCode::UNAUTHORIZED, msg)
+            }
+            AppError::Forbidden(msg) => {
+                tracing::warn!("Forbidden: {}", msg);
+                (StatusCode::FORBIDDEN, msg)
             }
             AppError::InternalError(msg) => {
                 tracing::error!("Internal error: {}", msg);

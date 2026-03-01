@@ -140,28 +140,54 @@ impl HolidayRepository {
             return Ok(None);
         }
 
-        let holiday = sqlx::query_as::<_, Holiday>(
-            r#"
-            UPDATE holidays
-            SET holiday_name = COALESCE($2, holiday_name),
-                description = COALESCE($3, description),
-                holiday_date = COALESCE($4, holiday_date),
-                holiday_type = COALESCE($5, holiday_type),
-                updater_id = $6,
-                update_date_time = NOW()
-            WHERE id = $1
-            RETURNING id, holiday_name, description, holiday_date, holiday_type,
-                      creator_id, updater_id, create_date_time, update_date_time
-            "#,
-        )
-        .bind(holiday_id)
-        .bind(&params.holiday_name)
-        .bind(&params.description)
-        .bind(params.holiday_date)
-        .bind(params.holiday_type)
-        .bind(updater_id)
-        .fetch_one(pool)
-        .await?;
+        // 动态构建 SET 子句
+        let mut qb: QueryBuilder<sqlx::Postgres> = QueryBuilder::new("UPDATE holidays SET ");
+        let mut has_set = false;
+
+        // NOT NULL 字段
+        if let Some(ref name) = params.holiday_name {
+            qb.push("holiday_name = ");
+            qb.push_bind(name.clone());
+            has_set = true;
+        }
+
+        // 可空字段：双层 Option
+        if let Some(ref desc_opt) = params.description {
+            if has_set { qb.push(", "); }
+            qb.push("description = ");
+            qb.push_bind(desc_opt.clone());
+            has_set = true;
+        }
+
+        // NOT NULL 字段
+        if let Some(ref date) = params.holiday_date {
+            if has_set { qb.push(", "); }
+            qb.push("holiday_date = ");
+            qb.push_bind(*date);
+            has_set = true;
+        }
+
+        if let Some(ref h_type) = params.holiday_type {
+            if has_set { qb.push(", "); }
+            qb.push("holiday_type = ");
+            qb.push_bind(*h_type);
+            has_set = true;
+        }
+
+        if has_set { qb.push(", "); }
+        qb.push("updater_id = ");
+        qb.push_bind(updater_id);
+        qb.push(", update_date_time = NOW() WHERE id = ");
+        qb.push_bind(holiday_id);
+        qb.push(
+            " RETURNING id, holiday_name, description, holiday_date, holiday_type, \
+             creator_id, updater_id, create_date_time, update_date_time",
+        );
+
+        let holiday = qb
+            .build_query_as::<Holiday>()
+            .fetch_one(pool)
+            .await?;
 
         Ok(Some(holiday))
     }

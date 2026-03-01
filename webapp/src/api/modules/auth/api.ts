@@ -2,8 +2,8 @@
  * 认证模块 API
  */
 
-import { get, post } from "@Webapp/http";
-import type { LoginParams, AuthResponse, RegisterParams } from "./types";
+import {get, post} from "@Webapp/http";
+import type {AuthResponse, LoginParams, RegisterParams} from "./types";
 
 /**
  * 认证 API

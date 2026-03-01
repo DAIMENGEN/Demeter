@@ -1,6 +1,6 @@
 import React from "react";
 import {useTranslation} from "react-i18next";
-import { Button, Form, Input, Select, Space } from "antd";
+import {Button, Form, Input, Select, Space} from "antd";
 
 export const SelectField: React.FC = () => {
     const {t} = useTranslation();

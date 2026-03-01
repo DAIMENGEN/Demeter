@@ -4,6 +4,7 @@ use crate::modules::business::project::task::models::{
     UpdateTaskAttributeConfigParams, UpdateTaskParams,
 };
 use sqlx::PgPool;
+use sqlx::QueryBuilder;
 
 pub struct TaskRepository;
 
@@ -90,33 +91,71 @@ impl TaskRepository {
         params: UpdateTaskAttributeConfigParams,
         updater_id: i64,
     ) -> AppResult<TaskAttributeConfig> {
-        let config = sqlx::query_as::<_, TaskAttributeConfig>(
-            r#"UPDATE project_task_attribute_configs
-               SET attribute_label = COALESCE($1, attribute_label),
-                   is_required = COALESCE($2, is_required),
-                   default_value = COALESCE($3, default_value),
-                   options = COALESCE($4, options),
-                   value_color_map = $5,
-                   "order" = COALESCE($6, "order"),
-                   updater_id = $7,
-                   update_date_time = CURRENT_TIMESTAMP
-               WHERE id = $8
-               RETURNING id, project_id, attribute_name, attribute_label, attribute_type,
-                         is_required, default_value,
-                         COALESCE(options, 'null'::jsonb) AS options,
-                         COALESCE(value_color_map, 'null'::jsonb) AS value_color_map,
-                         "order", creator_id, updater_id, create_date_time, update_date_time"#,
-        )
-        .bind(&params.attribute_label)
-        .bind(params.is_required)
-        .bind(&params.default_value)
-        .bind(&params.options)
-        .bind(&params.value_color_map)
-        .bind(params.order)
-        .bind(updater_id)
-        .bind(config_id)
-        .fetch_one(pool)
-        .await?;
+        // 动态构建 SET 子句
+        let mut qb: QueryBuilder<sqlx::Postgres> =
+            QueryBuilder::new("UPDATE project_task_attribute_configs SET ");
+        let mut has_set = false;
+
+        // NOT NULL 字段
+        if let Some(ref label) = params.attribute_label {
+            qb.push("attribute_label = ");
+            qb.push_bind(label.clone());
+            has_set = true;
+        }
+
+        if let Some(ref required) = params.is_required {
+            if has_set { qb.push(", "); }
+            qb.push("is_required = ");
+            qb.push_bind(*required);
+            has_set = true;
+        }
+
+        // 可空字段：双层 Option
+        if let Some(ref dv_opt) = params.default_value {
+            if has_set { qb.push(", "); }
+            qb.push("default_value = ");
+            qb.push_bind(dv_opt.clone());
+            has_set = true;
+        }
+
+        if let Some(ref opts_opt) = params.options {
+            if has_set { qb.push(", "); }
+            qb.push("options = ");
+            qb.push_bind(opts_opt.clone());
+            has_set = true;
+        }
+
+        if let Some(ref vcm_opt) = params.value_color_map {
+            if has_set { qb.push(", "); }
+            qb.push("value_color_map = ");
+            qb.push_bind(vcm_opt.clone());
+            has_set = true;
+        }
+
+        if let Some(ref ord_opt) = params.order {
+            if has_set { qb.push(", "); }
+            qb.push("\"order\" = ");
+            qb.push_bind(*ord_opt);
+            has_set = true;
+        }
+
+        if has_set { qb.push(", "); }
+        qb.push("updater_id = ");
+        qb.push_bind(updater_id);
+        qb.push(", update_date_time = CURRENT_TIMESTAMP WHERE id = ");
+        qb.push_bind(config_id);
+        qb.push(
+            " RETURNING id, project_id, attribute_name, attribute_label, attribute_type, \
+             is_required, default_value, \
+             COALESCE(options, 'null'::jsonb) AS options, \
+             COALESCE(value_color_map, 'null'::jsonb) AS value_color_map, \
+             \"order\", creator_id, updater_id, create_date_time, update_date_time",
+        );
+
+        let config = qb
+            .build_query_as::<TaskAttributeConfig>()
+            .fetch_one(pool)
+            .await?;
 
         Ok(config)
     }
@@ -269,34 +308,78 @@ impl TaskRepository {
         params: UpdateTaskParams,
         updater_id: i64,
     ) -> AppResult<Task> {
-        let task = sqlx::query_as::<_, Task>(
-            r#"UPDATE project_tasks
-               SET task_name = COALESCE($1, task_name),
-                   parent_id = COALESCE($2, parent_id),
-                   "order" = COALESCE($3, "order"),
-                   start_date_time = COALESCE($4, start_date_time),
-                   end_date_time = COALESCE($5, end_date_time),
-                   task_type = COALESCE($6, task_type),
-                   custom_attributes = COALESCE($7, custom_attributes),
-                   updater_id = $8,
-                   update_date_time = CURRENT_TIMESTAMP
-               WHERE id = $9
-               RETURNING id, task_name, parent_id, project_id, "order",
-                         custom_attributes,
-                         start_date_time, end_date_time, task_type,
-                         creator_id, updater_id, create_date_time, update_date_time"#,
-        )
-        .bind(&params.task_name)
-        .bind(params.parent_id)
-        .bind(params.order)
-        .bind(params.start_date_time)
-        .bind(params.end_date_time)
-        .bind(params.task_type)
-        .bind(&params.custom_attributes)
-        .bind(updater_id)
-        .bind(task_id)
-        .fetch_one(pool)
-        .await?;
+        // 动态构建 SET 子句
+        let mut qb: QueryBuilder<sqlx::Postgres> =
+            QueryBuilder::new("UPDATE project_tasks SET ");
+        let mut has_set = false;
+
+        // NOT NULL 字段
+        if let Some(ref name) = params.task_name {
+            qb.push("task_name = ");
+            qb.push_bind(name.clone());
+            has_set = true;
+        }
+
+        // 可空字段：双层 Option
+        if let Some(ref pid_opt) = params.parent_id {
+            if has_set { qb.push(", "); }
+            qb.push("parent_id = ");
+            qb.push_bind(pid_opt.map(|id| id.0));
+            has_set = true;
+        }
+
+        // NOT NULL 字段
+        if let Some(ref ord) = params.order {
+            if has_set { qb.push(", "); }
+            qb.push("\"order\" = ");
+            qb.push_bind(*ord);
+            has_set = true;
+        }
+
+        if let Some(ref sdt) = params.start_date_time {
+            if has_set { qb.push(", "); }
+            qb.push("start_date_time = ");
+            qb.push_bind(*sdt);
+            has_set = true;
+        }
+
+        if let Some(ref edt) = params.end_date_time {
+            if has_set { qb.push(", "); }
+            qb.push("end_date_time = ");
+            qb.push_bind(*edt);
+            has_set = true;
+        }
+
+        if let Some(ref tt) = params.task_type {
+            if has_set { qb.push(", "); }
+            qb.push("task_type = ");
+            qb.push_bind(*tt);
+            has_set = true;
+        }
+
+        if let Some(ref ca) = params.custom_attributes {
+            if has_set { qb.push(", "); }
+            qb.push("custom_attributes = ");
+            qb.push_bind(ca.clone());
+            has_set = true;
+        }
+
+        if has_set { qb.push(", "); }
+        qb.push("updater_id = ");
+        qb.push_bind(updater_id);
+        qb.push(", update_date_time = CURRENT_TIMESTAMP WHERE id = ");
+        qb.push_bind(task_id);
+        qb.push(
+            " RETURNING id, task_name, parent_id, project_id, \"order\", \
+             custom_attributes, \
+             start_date_time, end_date_time, task_type, \
+             creator_id, updater_id, create_date_time, update_date_time",
+        );
+
+        let task = qb
+            .build_query_as::<Task>()
+            .fetch_one(pool)
+            .await?;
 
         Ok(task)
     }

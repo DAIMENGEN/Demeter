@@ -26,10 +26,16 @@ export interface CreateHolidayParams {
 }
 /**
  * 更新假期参数
+ *
+ * 三态语义（与后端 Patch 语义对齐）：
+ * - 字段未传（undefined / 不出现）：保持原值
+ * - 字段传 null：清空（仅允许可空列）
+ * - 字段传具体值：更新为该值
  */
 export interface UpdateHolidayParams {
   holidayName?: string;
-  description?: string;
+  /** 可空字段：传 null 可清空 */
+  description?: string | null;
   holidayDate?: string;
   holidayType?: number;
 }
@@ -55,4 +61,14 @@ export interface BatchDeleteHolidaysParams {
  */
 export interface BatchCreateHolidaysParams {
   holidays: CreateHolidayParams[];
+}
+
+/**
+ * 批量更新假期参数
+ */
+export interface BatchUpdateHolidaysParams {
+  ids: string[];
+  holidayName?: string;
+  description?: string;
+  holidayType?: number;
 }

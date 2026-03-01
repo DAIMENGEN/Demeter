@@ -2,9 +2,9 @@
  * HTTP 客户端配置和实例
  */
 import "@Webapp/logging";
-import axios, { AxiosError } from "axios";
-import type { AxiosInstance, InternalAxiosRequestConfig } from "axios";
-import type { ApiResponse, HttpError } from "./types";
+import type {AxiosInstance, InternalAxiosRequestConfig} from "axios";
+import axios, {AxiosError} from "axios";
+import type {ApiResponse, HttpError} from "./types";
 import {log} from "@Webapp/logging.ts";
 
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || "http://localhost:9000/api";

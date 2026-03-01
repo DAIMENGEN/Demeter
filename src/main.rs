@@ -6,7 +6,7 @@ use axum::http::{header, HeaderValue, Method};
 use axum::Router;
 use common::app_state::AppState;
 use common::snowflake::SnowflakeIdBucket;
-use modules::{business, hr, organization};
+use modules::{business, organization};
 use sqlx::postgres::PgPoolOptions;
 use std::sync::Arc;
 use std::time::Duration;
@@ -87,7 +87,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .merge(organization::department::department_routes(
             app_state.clone(),
         ))
-        .merge(hr::holiday::holiday_routes(app_state.clone()))
+        .merge(modules::holiday::holiday_routes(app_state.clone()))
         .merge(organization::team::team_routes(app_state.clone()))
         .merge(business::project::project_routes(app_state.clone()))
         .merge(business::project::task::task_routes(app_state.clone()))

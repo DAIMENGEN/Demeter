@@ -1,6 +1,5 @@
 use crate::common::error::AppResult;
-use crate::modules::auth::models::{RefreshToken, UserInfo};
-use crate::modules::user::models::User;
+use crate::modules::auth::models::{AuthUser, RefreshToken};
 use sqlx::PgPool;
 
 pub struct AuthRepository;
@@ -9,8 +8,8 @@ impl AuthRepository {
     pub async fn get_user_by_username_for_auth(
         pool: &PgPool,
         username: &str,
-    ) -> AppResult<Option<User>> {
-        let user = sqlx::query_as::<_, User>(
+    ) -> AppResult<Option<AuthUser>> {
+        let user = sqlx::query_as::<_, AuthUser>(
             r#"
             SELECT id, username, password, full_name, email, phone, is_active,
                    creator_id, updater_id, create_date_time, update_date_time
@@ -59,8 +58,8 @@ impl AuthRepository {
         full_name: &str,
         email: &str,
         phone: Option<&str>,
-    ) -> AppResult<User> {
-        let user = sqlx::query_as::<_, User>(
+    ) -> AppResult<AuthUser> {
+        let user = sqlx::query_as::<_, AuthUser>(
             r#"
             INSERT INTO users (id, username, password, full_name, email, phone, is_active, creator_id, create_date_time)
             VALUES ($1, $2, $3, $4, $5, $6, true, $1, NOW())
@@ -161,8 +160,11 @@ impl AuthRepository {
         Ok(result.rows_affected())
     }
 
-    pub async fn get_user_info_by_id(pool: &PgPool, user_id: i64) -> AppResult<Option<UserInfo>> {
-        let user = sqlx::query_as::<_, User>(
+    /// 根据用户 ID 查询内部 AuthUser（仅 users 表，不 JOIN 组织关系）。
+    ///
+    /// 用于 refresh / session 等场景中校验用户是否存在与 is_active 状态。
+    pub async fn get_auth_user_by_id(pool: &PgPool, user_id: i64) -> AppResult<Option<AuthUser>> {
+        let user = sqlx::query_as::<_, AuthUser>(
             r#"
             SELECT id, username, password, full_name, email, phone, is_active,
                    creator_id, updater_id, create_date_time, update_date_time
@@ -174,6 +176,6 @@ impl AuthRepository {
         .fetch_optional(pool)
         .await?;
 
-        Ok(user.map(Into::into))
+        Ok(user)
     }
 }

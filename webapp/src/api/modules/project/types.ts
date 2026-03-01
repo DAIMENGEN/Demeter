@@ -64,15 +64,24 @@ export interface CreateProjectParams {
 
 /**
  * 更新项目参数
+ *
+ * 三态语义（与后端 Patch 语义对齐）：
+ * - 字段未传（undefined / 不出现）：保持原值
+ * - 字段传 null：清空（仅允许可空列）
+ * - 字段传具体值：更新为该值
  */
 export interface UpdateProjectParams {
   projectName?: string;
-  description?: string;
+  /** 可空字段：传 null 可清空 */
+  description?: string | null;
   startDateTime?: string;
-  endDateTime?: string;
+  /** 可空字段：传 null 可清空 */
+  endDateTime?: string | null;
   projectStatus?: ProjectStatus;
-  version?: number;
-  order?: number;
+  /** 可空字段：传 null 可清空 */
+  version?: number | null;
+  /** 可空字段：传 null 可清空 */
+  order?: number | null;
 }
 
 /**
@@ -156,12 +165,24 @@ export interface CreateProjectTaskAttributeConfigParams {
   order?: number | null;
 }
 
+/**
+ * 更新任务字段配置参数
+ *
+ * 三态语义（与后端 Patch 语义对齐）：
+ * - 字段未传（undefined / 不出现）：保持原值
+ * - 字段传 null：清空（仅允许可空列）
+ * - 字段传具体值：更新为该值
+ */
 export interface UpdateProjectTaskAttributeConfigParams {
   attributeLabel?: string;
   isRequired?: boolean;
+  /** 可空字段：传 null 可清空 */
   defaultValue?: string | null;
+  /** 可空字段：传 null 可清空 */
   options?: JsonValue | null;
+  /** 可空字段：传 null 可清空 */
   valueColorMap?: JsonValue | null;
+  /** 可空字段：传 null 可清空 */
   order?: number | null;
 }
 
@@ -216,16 +237,21 @@ export interface CreateProjectTaskParams {
 
 /**
  * 更新 task 参数
- * Mirrors backend UpdateTaskParams (all optional)
+ *
+ * 三态语义（与后端 Patch 语义对齐）：
+ * - 字段未传（undefined / 不出现）：保持原值
+ * - 字段传 null：清空（仅允许可空列）
+ * - 字段传具体值：更新为该值
  */
 export interface UpdateProjectTaskParams {
   taskName?: string;
+  /** 可空字段：传 null 可清空父任务关系 */
   parentId?: string | null;
-  order?: number | null;
+  order?: number;
   startDateTime?: string;
   endDateTime?: string;
   taskType?: number;
-  customAttributes?: JsonValue | null;
+  customAttributes?: JsonValue;
 }
 
 export interface ReorderProjectTasksParams {

@@ -28,9 +28,14 @@ pub struct CreateHolidayParams {
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct UpdateHolidayParams {
+    /// NOT NULL 字段
     pub holiday_name: Option<String>,
-    pub description: Option<String>,
+    /// 可空字段，双层 Option：None = 不更新，Some(None) = 清空，Some(Some(v)) = 更新
+    #[serde(default, deserialize_with = "crate::common::serde_helpers::double_option::deserialize")]
+    pub description: Option<Option<String>>,
+    /// NOT NULL 字段
     pub holiday_date: Option<chrono::NaiveDate>,
+    /// NOT NULL 字段
     pub holiday_type: Option<i32>,
 }
 
