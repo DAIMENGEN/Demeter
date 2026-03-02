@@ -1,6 +1,6 @@
 use crate::common::app_state::AppState;
 use crate::common::middleware::jwt_auth_middleware;
-use crate::modules::hr::holiday::handlers;
+use crate::modules::holiday::handlers;
 use axum::{
     middleware,
     routing::{delete, get, post, put},
@@ -22,6 +22,10 @@ pub fn holiday_routes(state: AppState) -> Router {
         .route(
             "/holidays/batch-create",
             post(handlers::batch_create_holidays),
+        )
+        .route(
+            "/holidays/batch-update",
+            post(handlers::batch_update_holidays),
         )
         .layer(middleware::from_fn_with_state(
             state.jwt_config.clone(),

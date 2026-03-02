@@ -2,7 +2,7 @@
  * HTTP 请求相关的类型定义
  */
 
-import type { AxiosRequestConfig } from "axios";
+import type {AxiosRequestConfig} from "axios";
 
 /**
  * 通用的 API 响应结构

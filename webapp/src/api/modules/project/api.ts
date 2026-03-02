@@ -2,23 +2,23 @@
  * 项目模块 API
  */
 
-import { get, post, put, del } from "@Webapp/http";
-import type { PageResponse } from "@Webapp/http";
+import type {PageResponse} from "@Webapp/http";
+import {del, get, post, put} from "@Webapp/http";
 import type {
-  Project,
-  CreateProjectParams,
-  UpdateProjectParams,
-  ProjectQueryParams,
-  BatchDeleteProjectsParams,
-  ReorderProjectsParams,
-  ProjectTaskAttributeConfig,
-  CreateProjectTaskAttributeConfigParams,
-  UpdateProjectTaskAttributeConfigParams,
-  BatchDeleteProjectTaskAttributeConfigsParams,
-  ProjectTask,
-  CreateProjectTaskParams,
-  UpdateProjectTaskParams,
-  ReorderProjectTasksParams,
+    BatchDeleteProjectsParams,
+    BatchDeleteProjectTaskAttributeConfigsParams,
+    CreateProjectParams,
+    CreateProjectTaskAttributeConfigParams,
+    CreateProjectTaskParams,
+    Project,
+    ProjectQueryParams,
+    ProjectTask,
+    ProjectTaskAttributeConfig,
+    ReorderProjectsParams,
+    ReorderProjectTasksParams,
+    UpdateProjectParams,
+    UpdateProjectTaskAttributeConfigParams,
+    UpdateProjectTaskParams,
 } from "./types";
 
 /**
@@ -166,14 +166,28 @@ export const projectApi = {
   },
 
   /**
-   * 删除项目任务自定义字段配置
+   * 删除（归档）项目任务自定义字段配置
    */
   deleteProjectTaskAttributeConfig: (projectId: string, id: string) => {
     return del<void>(`/projects/${projectId}/task-attribute-configs/${id}`);
   },
 
   /**
-   * 批量删除项目任务自定义字段配置
+   * 恢复已归档的项目任务自定义字段配置
+   */
+  restoreProjectTaskAttributeConfig: (projectId: string, id: string) => {
+    return post<void>(`/projects/${projectId}/task-attribute-configs/${id}/restore`);
+  },
+
+  /**
+   * 永久删除项目任务自定义字段配置（硬删除）
+   */
+  hardDeleteProjectTaskAttributeConfig: (projectId: string, id: string) => {
+    return del<void>(`/projects/${projectId}/task-attribute-configs/${id}/hard-delete`);
+  },
+
+  /**
+   * 批量删除（归档）项目任务自定义字段配置
    */
   batchDeleteProjectTaskAttributeConfigs: (
     projectId: string,

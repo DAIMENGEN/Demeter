@@ -81,13 +81,45 @@ pub async fn update_attribute_config(
 
 pub async fn delete_attribute_config(
     State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
+    Path((_project_id, config_id)): Path<(Id, Id)>,
+) -> AppResult<StatusCode> {
+    let updater_id = claims.sub;
+    TaskRepository::archive_attribute_config(&state.pool, config_id.0, updater_id).await?;
+    Ok(StatusCode::NO_CONTENT)
+}
+
+pub async fn batch_delete_attribute_configs(
+    State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
+    Path(_project_id): Path<Id>,
+    Json(params): Json<BatchDeleteTaskAttributeConfigsParams>,
+) -> AppResult<StatusCode> {
+    let updater_id = claims.sub;
+    let ids: Vec<i64> = params.ids.into_iter().map(|id| id.0).collect();
+    TaskRepository::batch_archive_attribute_configs(&state.pool, ids, updater_id).await?;
+    Ok(StatusCode::NO_CONTENT)
+}
+
+pub async fn restore_attribute_config(
+    State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
+    Path((_project_id, config_id)): Path<(Id, Id)>,
+) -> AppResult<StatusCode> {
+    let updater_id = claims.sub;
+    TaskRepository::restore_attribute_config(&state.pool, config_id.0, updater_id).await?;
+    Ok(StatusCode::NO_CONTENT)
+}
+
+pub async fn hard_delete_attribute_config(
+    State(state): State<AppState>,
     Path((_project_id, config_id)): Path<(Id, Id)>,
 ) -> AppResult<StatusCode> {
     TaskRepository::delete_attribute_config(&state.pool, config_id.0).await?;
     Ok(StatusCode::NO_CONTENT)
 }
 
-pub async fn batch_delete_attribute_configs(
+pub async fn batch_hard_delete_attribute_configs(
     State(state): State<AppState>,
     Path(_project_id): Path<Id>,
     Json(params): Json<BatchDeleteTaskAttributeConfigsParams>,

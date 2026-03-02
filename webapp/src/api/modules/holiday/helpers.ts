@@ -2,7 +2,7 @@
  * 假期模块辅助函数
  */
 
-import type { Holiday } from "./types";
+import type {Holiday} from "./types";
 import dayjs from "@Webapp/config/dayjs";
 
 /**

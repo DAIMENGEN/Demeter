@@ -3,6 +3,7 @@ use crate::modules::organization::department::models::{
     CreateDepartmentParams, Department, DepartmentQueryParams, UpdateDepartmentParams,
 };
 use sqlx::PgPool;
+use sqlx::QueryBuilder;
 
 pub struct DepartmentRepository;
 
@@ -135,23 +136,39 @@ impl DepartmentRepository {
             return Ok(None);
         }
 
-        let department = sqlx::query_as::<_, Department>(
-            r#"
-            UPDATE departments
-            SET department_name = COALESCE($2, department_name),
-                description = COALESCE($3, description),
-                updater_id = $4,
-                update_date_time = NOW()
-            WHERE id = $1
-            RETURNING id, department_name, description, creator_id, updater_id, create_date_time, update_date_time
-            "#
-        )
-        .bind(department_id)
-        .bind(&params.department_name)
-        .bind(&params.description)
-        .bind(updater_id)
-        .fetch_one(pool)
-        .await?;
+        // 动态构建 SET 子句
+        let mut qb: QueryBuilder<sqlx::Postgres> = QueryBuilder::new("UPDATE departments SET ");
+        let mut has_set = false;
+
+        // NOT NULL 字段
+        if let Some(ref name) = params.department_name {
+            qb.push("department_name = ");
+            qb.push_bind(name.clone());
+            has_set = true;
+        }
+
+        // 可空字段：双层 Option
+        if let Some(ref desc_opt) = params.description {
+            if has_set { qb.push(", "); }
+            qb.push("description = ");
+            qb.push_bind(desc_opt.clone());
+            has_set = true;
+        }
+
+        if has_set { qb.push(", "); }
+        qb.push("updater_id = ");
+        qb.push_bind(updater_id);
+        qb.push(", update_date_time = NOW() WHERE id = ");
+        qb.push_bind(department_id);
+        qb.push(
+            " RETURNING id, department_name, description, creator_id, updater_id, \
+             create_date_time, update_date_time",
+        );
+
+        let department = qb
+            .build_query_as::<Department>()
+            .fetch_one(pool)
+            .await?;
 
         Ok(Some(department))
     }

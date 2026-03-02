@@ -1,18 +1,8 @@
 ﻿import {createSlice, type PayloadAction} from "@reduxjs/toolkit";
+import type {User} from "@Webapp/api/modules/user/types";
 
-/**
- * 用户接口定义
- * 定义用户对象的数据结构
- */
-export interface User {
-    id: string;              // 用户唯一标识符
-    username: string;        // 用户名
-    fullName: string;        // 完整姓名
-    email: string;           // 邮箱地址
-    phone?: string;          // 手机号(可选)
-    isActive: boolean;       // 用户是否激活
-    createDateTime: string;  // 创建时间(可选)
-}
+// 复用 api 层已定义的 User 类型，不再重复定义
+export type {User} from "@Webapp/api/modules/user/types";
 
 /**
  * 用户状态接口

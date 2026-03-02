@@ -14,6 +14,20 @@ async function request<T = unknown>(
 ): Promise<ApiResponse<T>> {
     try {
         const response: AxiosResponse<ApiResponse<T>> = await httpClient.request(config);
+
+        const rawData = response.data as unknown;
+        if (
+            response.status === 204
+            || rawData == null
+            || (typeof rawData === "string" && rawData.length === 0)
+        ) {
+            return {
+                code: response.status,
+                data: undefined as T,
+                message: "No Content",
+            };
+        }
+
         return response.data;
     } catch (error) {
         // 如果有自定义错误处理，则调用

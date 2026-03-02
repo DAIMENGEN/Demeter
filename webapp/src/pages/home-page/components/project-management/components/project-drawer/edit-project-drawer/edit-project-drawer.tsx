@@ -55,7 +55,7 @@ export const EditProjectDrawer: React.FC<EditProjectDrawerProps> = ({
                 projectName: values.projectName,
                 description: values.description,
                 startDateTime: startDate ? toNaiveDateTimeString(startDate) : undefined,
-                endDateTime: endDate ? toNaiveDateTimeString(endDate) : undefined,
+                endDateTime: endDate ? toNaiveDateTimeString(endDate) : null,
                 projectStatus: values.projectStatus
             };
 

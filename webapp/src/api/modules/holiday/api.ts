@@ -2,15 +2,16 @@
  * 假期模块 API
  */
 
-import { get, post, put, del } from "@Webapp/http";
-import type { PageResponse } from "@Webapp/http";
+import type {PageResponse} from "@Webapp/http";
+import {del, get, post, put} from "@Webapp/http";
 import type {
-  Holiday,
-  CreateHolidayParams,
-  UpdateHolidayParams,
-  HolidayQueryParams,
+  BatchCreateHolidaysParams,
   BatchDeleteHolidaysParams,
-  BatchCreateHolidaysParams
+  BatchUpdateHolidaysParams,
+  CreateHolidayParams,
+  Holiday,
+  HolidayQueryParams,
+  UpdateHolidayParams
 } from "./types";
 
 /**
@@ -72,6 +73,13 @@ export const holidayApi = {
    */
   batchCreateHolidays: (params: BatchCreateHolidaysParams) => {
     return post<Holiday[]>("/holidays/batch-create", params);
+  },
+
+  /**
+   * 批量更新假期
+   */
+  batchUpdateHolidays: (params: BatchUpdateHolidaysParams) => {
+    return post<Holiday[]>("/holidays/batch-update", params);
   }
 };
 

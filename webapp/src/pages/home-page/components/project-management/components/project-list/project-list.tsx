@@ -6,19 +6,19 @@ import "./project-list.scss";
 import React, {useState} from "react";
 import {ProjectCard} from "../project-card";
 import {
-    DndContext,
     closestCenter,
+    DndContext,
+    type DragEndEvent,
     KeyboardSensor,
     PointerSensor,
     useSensor,
     useSensors,
-    type DragEndEvent,
 } from "@dnd-kit/core";
 import {
     arrayMove,
+    rectSortingStrategy,
     SortableContext,
     sortableKeyboardCoordinates,
-    rectSortingStrategy,
     useSortable,
 } from "@dnd-kit/sortable";
 import {CSS} from "@dnd-kit/utilities";

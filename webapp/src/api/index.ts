@@ -17,3 +17,6 @@ export * from "./modules/project";
 // 假期模块
 export * from "./modules/holiday";
 
+// 组织模块（部门 + 团队）
+export * from "./modules/organization";
+

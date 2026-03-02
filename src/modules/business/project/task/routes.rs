@@ -33,6 +33,18 @@ pub fn task_routes(state: AppState) -> Router {
             "/projects/{project_id}/task-attribute-configs/batch-delete",
             post(handlers::batch_delete_attribute_configs),
         )
+        .route(
+            "/projects/{project_id}/task-attribute-configs/{config_id}/restore",
+            post(handlers::restore_attribute_config),
+        )
+        .route(
+            "/projects/{project_id}/task-attribute-configs/{config_id}/hard-delete",
+            delete(handlers::hard_delete_attribute_config),
+        )
+        .route(
+            "/projects/{project_id}/task-attribute-configs/batch-hard-delete",
+            post(handlers::batch_hard_delete_attribute_configs),
+        )
         // 任务路由
         .route("/projects/{project_id}/tasks", get(handlers::get_task_list))
         .route(

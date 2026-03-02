@@ -13,15 +13,16 @@ import {
     Spin,
     Switch,
     Table,
+    Tag,
     type TableColumnsType,
     Tooltip,
     Typography
 } from "antd";
-import {DeleteOutlined, EditOutlined, LoadingOutlined} from "@ant-design/icons";
+import {DeleteOutlined, EditOutlined, LoadingOutlined, UndoOutlined} from "@ant-design/icons";
 import {
-    type ProjectTaskAttributeType,
     type CreateProjectTaskAttributeConfigParams,
     type ProjectTaskAttributeConfig,
+    type ProjectTaskAttributeType,
     useProjectTaskAttributeConfigActions,
 } from "@Webapp/api/modules/project";
 import {userApi, useUserSelectOptions} from "@Webapp/api/modules/user";
@@ -72,7 +73,8 @@ export const AttributeConfigDrawer: React.FC<TaskAttributeConfigDrawerProps> = (
         loading: actionLoading,
         createConfig,
         updateConfig,
-        deleteConfig
+        deleteConfig,
+        restoreConfig
     } = useProjectTaskAttributeConfigActions();
     const userPicker = useUserSelectOptions({pageSize: 20, activeOnly: true});
 
@@ -128,7 +130,21 @@ export const AttributeConfigDrawer: React.FC<TaskAttributeConfigDrawerProps> = (
 
     // ─── 表格列 ──────────────────────────────────────
     const columns: TableColumnsType<ProjectTaskAttributeConfig> = [
-        {title: t("attributeConfig.columnLabel"), dataIndex: "attributeLabel", width: 160},
+        {
+            title: t("attributeConfig.columnLabel"),
+            dataIndex: "attributeLabel",
+            width: 160,
+            render: (v: string, record) => (
+                <Space size={4}>
+                    <span style={record.isArchived ? {opacity: 0.5, textDecoration: "line-through"} : undefined}>{v}</span>
+                    {record.isArchived ? (
+                        <Tag color="orange">
+                            {t("attributeConfig.archivedTag")}
+                        </Tag>
+                    ) : null}
+                </Space>
+            )
+        },
         {
             title: t("attributeConfig.columnType"),
             dataIndex: "attributeType",
@@ -150,14 +166,41 @@ export const AttributeConfigDrawer: React.FC<TaskAttributeConfigDrawerProps> = (
         {
             title: t("attributeConfig.columnActions"),
             key: "actions",
-            width: 120,
+            width: 140,
             render: (_, record) => {
                 const isEditingRow = Boolean(editing && record.id === editing.id);
                 const isEditingOtherRow = Boolean(editing && record.id !== editing.id);
                 const isEditingAny = Boolean(editing);
 
-                const editDisabled = isSubmitting || isEditingRow || isEditingOtherRow;
+                const editDisabled = isSubmitting || isEditingRow || isEditingOtherRow || record.isArchived;
                 const deleteDisabled = isSubmitting || isEditingAny;
+
+                if (record.isArchived) {
+                    return (
+                        <Space>
+                            <Tooltip title={t("attributeConfig.restore")}>
+                                <Button
+                                    size="small"
+                                    type="default"
+                                    aria-label={t("attributeConfig.restore")}
+                                    icon={<UndoOutlined/>}
+                                    loading={actionLoading}
+                                    disabled={isSubmitting || isEditingAny}
+                                    onClick={async () => {
+                                        try {
+                                            await restoreConfig(projectId, record.id);
+                                            message.success(t("attributeConfig.restoreSuccess"));
+                                            await refetchConfigs();
+                                        } catch (e: unknown) {
+                                            const err = e as {message?: string};
+                                            message.error(err?.message || t("attributeConfig.operationFailed"));
+                                        }
+                                    }}
+                                />
+                            </Tooltip>
+                        </Space>
+                    );
+                }
 
                 return (
                     <Space>
@@ -444,8 +487,10 @@ export const AttributeConfigDrawer: React.FC<TaskAttributeConfigDrawerProps> = (
                         loading={configsLoading}
                         pagination={false}
                         rowClassName={(record) => {
-                            if (!editing) return "";
-                            return record.id === editing.id ? "task-attr-config-editing-row" : "";
+                            const classes: string[] = [];
+                            if (editing && record.id === editing.id) classes.push("task-attr-config-editing-row");
+                            if (record.isArchived) classes.push("task-attr-config-archived-row");
+                            return classes.join(" ");
                         }}
                     />
 
@@ -576,6 +621,12 @@ export const AttributeConfigDrawer: React.FC<TaskAttributeConfigDrawerProps> = (
                 }
                 .task-attr-config-editing-row:hover > td {
                     background: rgba(22, 119, 255, 0.12) !important;
+                }
+                .task-attr-config-archived-row > td {
+                    background: rgba(0, 0, 0, 0.03) !important;
+                }
+                .task-attr-config-archived-row:hover > td {
+                    background: rgba(0, 0, 0, 0.06) !important;
                 }
             `}</style>
         </Drawer>

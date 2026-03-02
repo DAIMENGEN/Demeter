@@ -254,6 +254,10 @@ export const useSchedulantData = (projectId: string) => {
         if (!colorRenderAttributeName) return;
         const cfg = attributeConfigs.find((c) => c.attributeName === colorRenderAttributeName);
         if (!cfg) return; // 配置还未加载完毕，不做处理
+        if (cfg.isArchived) {
+            setColorRenderAttributeName(null);
+            return;
+        }
         const vcm = cfg.valueColorMap;
         if (!vcm || typeof vcm !== "object" || Array.isArray(vcm) || !Object.keys(vcm).length) {
             setColorRenderAttributeName(null);
@@ -303,7 +307,7 @@ export const useSchedulantData = (projectId: string) => {
             {key: "taskType", label: t("task.columnTaskType"), defaultVisible: false},
         ];
         const custom: AvailableColumn[] = attributeConfigs
-            .filter((c) => c.attributeName)
+            .filter((c) => c.attributeName && !c.isArchived)
             .map((c) => ({
                 key: `${CUSTOM_ATTRIBUTE_PREFIX}${c.attributeName}`,
                 label: c.attributeLabel || c.attributeName,

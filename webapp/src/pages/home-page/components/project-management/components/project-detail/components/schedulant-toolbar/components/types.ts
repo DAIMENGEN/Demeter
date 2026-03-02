@@ -1,4 +1,4 @@
-import type { ProjectTaskAttributeType } from "@Webapp/api/modules/project";
+import type {ProjectTaskAttributeType} from "@Webapp/api/modules/project";
 import React from "react";
 
 export type SelectOptionRow = {

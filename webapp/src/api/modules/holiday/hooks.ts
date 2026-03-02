@@ -2,18 +2,19 @@
  * 假期模块 Hooks
  */
 
-import { useCallback, useState } from "react";
-import { holidayApi } from "./api";
+import {useCallback, useState} from "react";
+import {holidayApi} from "./api";
 import type {
+  BatchCreateHolidaysParams,
+  BatchDeleteHolidaysParams,
+  BatchUpdateHolidaysParams,
+  CreateHolidayParams,
   Holiday,
   HolidayQueryParams,
-  CreateHolidayParams,
-  UpdateHolidayParams,
-  BatchDeleteHolidaysParams,
-  BatchCreateHolidaysParams
+  UpdateHolidayParams
 } from "./types";
-import { assertApiOk } from "@Webapp/api/common/response.ts";
-import { DEFAULT_PAGINATION, type Pagination } from "@Webapp/api/common/pagination.ts";
+import {assertApiOk} from "@Webapp/api/common/response.ts";
+import {DEFAULT_PAGINATION, type Pagination} from "@Webapp/api/common/pagination.ts";
 
 /**
  * 假期列表 Hook
@@ -133,13 +134,24 @@ export const useHolidayActions = () => {
     }
   }, []);
 
+  const batchUpdateHolidays = useCallback(async (params: BatchUpdateHolidaysParams) => {
+    try {
+      setLoading(true);
+      const response = await holidayApi.batchUpdateHolidays(params);
+      return assertApiOk(response);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
   return {
     loading,
     createHoliday,
     updateHoliday,
     deleteHoliday,
     batchDeleteHolidays,
-    batchCreateHolidays
+    batchCreateHolidays,
+    batchUpdateHolidays
   };
 };
 

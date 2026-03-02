@@ -4,19 +4,14 @@ import {ResizableDrawer} from "@Webapp/components";
 import dayjs from "dayjs";
 import {useTranslation} from "react-i18next";
 import {
-    ProjectTaskAttributeTypeLabelKeys,
     type JsonValue,
     type ProjectTask,
     type ProjectTaskAttributeConfig,
+    ProjectTaskAttributeTypeLabelKeys,
     ProjectTaskType,
     TaskTypeLabelKeys
 } from "@Webapp/api/modules/project";
-import {
-    buildSelectValueLabelMap,
-    buildUserValueLabelMap,
-    toScalarString,
-    toUserIdFromJson
-} from "../index.ts";
+import {buildSelectValueLabelMap, buildUserValueLabelMap, toScalarString, toUserIdFromJson} from "../index.ts";
 
 const {Text} = Typography;
 
@@ -106,34 +101,52 @@ export const TaskPreviewDrawer: React.FC<TaskPreviewDrawerProps> = ({
     const configsSorted = useMemo(() => {
         return attributeConfigs
             .slice()
-            .filter((c) => Boolean(c.attributeName))
+            .filter((c) => Boolean(c.attributeName) && !c.isArchived)
+            .sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+    }, [attributeConfigs]);
+
+    const archivedConfigs = useMemo(() => {
+        return attributeConfigs
+            .slice()
+            .filter((c) => Boolean(c.attributeName) && c.isArchived)
             .sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
     }, [attributeConfigs]);
 
     const selectLabelMaps = useMemo(() => {
         const m = new Map<string, ReadonlyMap<string, string>>();
-        for (const cfg of configsSorted) {
+        for (const cfg of [...configsSorted, ...archivedConfigs]) {
             if (!cfg.attributeName) continue;
             if (cfg.attributeType !== "select") continue;
             m.set(cfg.attributeName, buildSelectValueLabelMap(cfg.options));
         }
         return m;
-    }, [configsSorted]);
+    }, [configsSorted, archivedConfigs]);
 
     const userLabelMaps = useMemo(() => {
         const m = new Map<string, ReadonlyMap<string, string>>();
-        for (const cfg of configsSorted) {
+        for (const cfg of [...configsSorted, ...archivedConfigs]) {
             if (!cfg.attributeName) continue;
             if (cfg.attributeType !== "user") continue;
             m.set(cfg.attributeName, buildUserValueLabelMap(cfg.options));
         }
         return m;
-    }, [configsSorted]);
+    }, [configsSorted, archivedConfigs]);
 
     const unknownKeys = useMemo(() => {
-        const allowed = new Set(configsSorted.map((c) => c.attributeName));
+        if (attributeConfigsLoading) return [];
+        const allowed = new Set([
+            ...configsSorted.map((c) => c.attributeName),
+            ...archivedConfigs.map((c) => c.attributeName),
+        ]);
         return Object.keys(customAttributes).filter((k) => !allowed.has(k)).sort((a, b) => a.localeCompare(b));
-    }, [configsSorted, customAttributes]);
+    }, [configsSorted, archivedConfigs, customAttributes, attributeConfigsLoading]);
+
+    const archivedWithValues = useMemo(() => {
+        return archivedConfigs.filter((c) => {
+            const v = customAttributes[c.attributeName];
+            return v != null && v !== "";
+        });
+    }, [archivedConfigs, customAttributes]);
 
     const footer = useMemo(() => (
         <div className="drawer-footer" style={{display: "flex", justifyContent: "space-between"}}>
@@ -170,7 +183,7 @@ export const TaskPreviewDrawer: React.FC<TaskPreviewDrawerProps> = ({
                         bordered
                         size="small"
                         column={1}
-                        labelStyle={{width: 120}}
+                        styles={{label: {width: 120}}}
                     >
                         <Descriptions.Item label={t("task.taskName")}>{task.taskName || EMPTY_DISPLAY}</Descriptions.Item>
                         <Descriptions.Item label={t("task.taskType")}>
@@ -197,7 +210,7 @@ export const TaskPreviewDrawer: React.FC<TaskPreviewDrawerProps> = ({
 
                     <Spin spinning={Boolean(attributeConfigsLoading)}>
                         {configsSorted.length ? (
-                            <Descriptions bordered size="small" column={1} labelStyle={{width: 180}}>
+                            <Descriptions bordered size="small" column={1} styles={{label: {width: 180}}}>
                                 {configsSorted.map((cfg) => {
                                     const name = cfg.attributeName;
                                     if (!name) return null;
@@ -234,6 +247,44 @@ export const TaskPreviewDrawer: React.FC<TaskPreviewDrawerProps> = ({
                             <Text type="secondary">{t("task.noCustomAttributes")}</Text>
                         )}
 
+                        {archivedWithValues.length ? (
+                            <>
+                                <Divider style={{marginTop: 16, marginBottom: 12}}/>
+                                <Text strong>{t("task.archivedFields")}</Text>
+                                <Descriptions
+                                    bordered
+                                    size="small"
+                                    column={1}
+                                    styles={{label: {width: 180}}}
+                                    style={{marginTop: 8}}
+                                >
+                                    {archivedWithValues.map((cfg) => {
+                                        const name = cfg.attributeName;
+                                        const label = (
+                                            <Space size={6}>
+                                                <span style={{opacity: 0.6}}>{cfg.attributeLabel || name}</span>
+                                                <Tag color="orange">
+                                                    {t("task.archivedTag")}
+                                                </Tag>
+                                            </Space>
+                                        );
+                                        const v = customAttributes[name];
+                                        const valueText = formatCustomValue(
+                                            v,
+                                            cfg,
+                                            selectLabelMaps.get(name),
+                                            userLabelMaps.get(name)
+                                        );
+                                        return (
+                                            <Descriptions.Item key={cfg.id} label={label}>
+                                                {valueText}
+                                            </Descriptions.Item>
+                                        );
+                                    })}
+                                </Descriptions>
+                            </>
+                        ) : null}
+
                         {unknownKeys.length ? (
                             <>
                                 <Divider style={{marginTop: 16, marginBottom: 12}}/>
@@ -242,7 +293,7 @@ export const TaskPreviewDrawer: React.FC<TaskPreviewDrawerProps> = ({
                                     bordered
                                     size="small"
                                     column={1}
-                                    labelStyle={{width: 180}}
+                                    styles={{label: {width: 180}}}
                                     style={{marginTop: 8}}
                                 >
                                     {unknownKeys.map((k) => (

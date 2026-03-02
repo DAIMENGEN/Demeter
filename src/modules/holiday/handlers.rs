@@ -3,11 +3,11 @@ use crate::common::error::{AppError, AppResult};
 use crate::common::id::Id;
 use crate::common::jwt::Claims;
 use crate::common::response::{ApiResponse, PageResponse};
-use crate::modules::hr::holiday::models::{
-    BatchCreateHolidaysParams, BatchDeleteHolidaysParams, CreateHolidayParams, Holiday,
-    HolidayQueryParams, UpdateHolidayParams,
+use crate::modules::holiday::models::{
+    BatchCreateHolidaysParams, BatchDeleteHolidaysParams, BatchUpdateHolidaysParams,
+    CreateHolidayParams, Holiday, HolidayQueryParams, UpdateHolidayParams,
 };
-use crate::modules::hr::holiday::repository::HolidayRepository;
+use crate::modules::holiday::repository::HolidayRepository;
 use axum::{
     extract::{Path, Query, State},
     http::StatusCode,
@@ -112,4 +112,23 @@ pub async fn batch_create_holidays(
     )
     .await?;
     Ok((StatusCode::CREATED, Json(ApiResponse::success(holidays))))
+}
+
+pub async fn batch_update_holidays(
+    State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
+    Json(params): Json<BatchUpdateHolidaysParams>,
+) -> AppResult<Json<ApiResponse<Vec<Holiday>>>> {
+    let updater_id = claims.sub;
+    let holiday_ids: Vec<i64> = params.ids.into_iter().map(|id| id.0).collect();
+    let holidays = HolidayRepository::batch_update_holidays(
+        &state.pool,
+        holiday_ids,
+        params.holiday_name,
+        params.description,
+        params.holiday_type,
+        updater_id,
+    )
+    .await?;
+    Ok(Json(ApiResponse::success(holidays)))
 }

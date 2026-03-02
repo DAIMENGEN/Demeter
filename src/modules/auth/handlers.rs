@@ -5,6 +5,7 @@ use crate::common::middleware::get_current_user;
 use crate::common::response::ApiResponse;
 use crate::modules::auth::models::{AuthResponse, LoginRequest, RegisterRequest};
 use crate::modules::auth::repository::AuthRepository;
+use crate::modules::user::repository::UserRepository;
 use axum::{extract::State, http::StatusCode, response::IntoResponse, Json};
 use cookie::{time::Duration as CookieDuration, Cookie, SameSite};
 
@@ -156,7 +157,11 @@ pub async fn register(
         JwtUtil::generate_refresh_token(user.id.into(), &user.username, &state.jwt_config)?;
     persist_refresh_token(&state, user.id.into(), &refresh_token).await?;
 
-    let response = AuthResponse { user: user.into() };
+    let full_user = UserRepository::get_user_by_id(&state.pool, user.id.into())
+        .await?
+        .ok_or_else(|| AppError::InternalError("Failed to load user after registration".to_string()))?;
+
+    let response = AuthResponse { user: full_user };
 
     let headers = auth_set_cookie_headers(&state, access_token, refresh_token);
 
@@ -205,7 +210,11 @@ pub async fn login(
         JwtUtil::generate_refresh_token(user.id.into(), &user.username, &state.jwt_config)?;
     persist_refresh_token(&state, user.id.into(), &refresh_token).await?;
 
-    let response = AuthResponse { user: user.into() };
+    let full_user = UserRepository::get_user_by_id(&state.pool, user.id.into())
+        .await?
+        .ok_or_else(|| AppError::InternalError("Failed to load user info".to_string()))?;
+
+    let response = AuthResponse { user: full_user };
 
     let headers = auth_set_cookie_headers(&state, access_token, refresh_token);
 
@@ -233,7 +242,7 @@ pub async fn refresh_token(
         "refresh_token: db_token info, refresh event occurred"
     );
 
-    let user = AuthRepository::get_user_info_by_id(&state.pool, db_token.user_id)
+    let user = AuthRepository::get_auth_user_by_id(&state.pool, db_token.user_id)
         .await?
         .ok_or_else(|| AppError::NotFound("User does not exist".to_string()))?;
 
@@ -250,7 +259,11 @@ pub async fn refresh_token(
 
     persist_refresh_token(&state, user.id.into(), &new_refresh_token).await?;
 
-    let response = AuthResponse { user };
+    let full_user = UserRepository::get_user_by_id(&state.pool, user.id.into())
+        .await?
+        .ok_or_else(|| AppError::InternalError("Failed to load user info".to_string()))?;
+
+    let response = AuthResponse { user: full_user };
     let headers = auth_set_cookie_headers(&state, new_access_token, new_refresh_token);
 
     Ok((headers, Json(ApiResponse::success(response))))
@@ -296,13 +309,17 @@ pub async fn session(
 ) -> AppResult<Json<ApiResponse<AuthResponse>>> {
     let claims = get_current_user(&request)?;
 
-    let user = AuthRepository::get_user_info_by_id(&state.pool, claims.sub)
+    let auth_user = AuthRepository::get_auth_user_by_id(&state.pool, claims.sub)
         .await?
         .ok_or_else(|| AppError::NotFound("User does not exist".to_string()))?;
 
-    if !user.is_active {
+    if !auth_user.is_active {
         return Err(AppError::Unauthorized("User has been disabled".to_string()));
     }
+
+    let user = UserRepository::get_user_by_id(&state.pool, claims.sub)
+        .await?
+        .ok_or_else(|| AppError::InternalError("Failed to load user info".to_string()))?;
 
     Ok(Json(ApiResponse::success(AuthResponse { user })))
 }

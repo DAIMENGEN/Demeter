@@ -2,15 +2,17 @@
  * 用户模块 API
  */
 
-import { get, post, put, del } from "@Webapp/http";
-import type { PageResponse } from "@Webapp/http";
+import type {PageResponse} from "@Webapp/http";
+import {del, get, post, put} from "@Webapp/http";
 import type {
-  User,
-  CreateUserParams,
-  UpdateUserParams,
-  UserQueryParams,
   BatchDeleteUsersParams,
-  ToggleUserStatusParams
+  CreateUserParams,
+  ResetPasswordResponse,
+  ToggleUserStatusParams,
+  UpdateProfileParams,
+  UpdateUserParams,
+  User,
+  UserQueryParams
 } from "./types";
 
 /**
@@ -78,5 +80,19 @@ export const userApi = {
    */
   toggleUserStatus: (id: string, params: ToggleUserStatusParams) => {
     return put<User>(`/users/${id}/status`, params);
+  },
+
+  /**
+   * 重置用户密码（管理员）
+   */
+  resetPassword: (id: string) => {
+    return post<ResetPasswordResponse>(`/users/${id}/reset-password`);
+  },
+
+  /**
+   * 修改当前用户个人资料
+   */
+  updateProfile: (data: UpdateProfileParams) => {
+    return put<User>("/users/me", data);
   },
 };

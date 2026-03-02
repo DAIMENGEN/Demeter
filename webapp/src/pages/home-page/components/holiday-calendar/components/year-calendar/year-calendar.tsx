@@ -1,16 +1,17 @@
 import "./year-calendar.scss";
-import React, { useState, useMemo } from "react";
-import { Popconfirm, Tooltip, Button } from "antd";
-import { DeleteOutlined } from "@ant-design/icons";
+import React, {useMemo, useState} from "react";
+import {Button, Popconfirm, Tooltip} from "antd";
+import {DeleteOutlined} from "@ant-design/icons";
 import dayjs from "@Webapp/config/dayjs";
 import {useTranslation} from "react-i18next";
-import type { Holiday } from "@Webapp/api/modules/holiday/types";
+import type {Holiday} from "@Webapp/api/modules/holiday/types";
 
 interface YearCalendarProps {
   year: number;
   holidays: Holiday[];
   onDateClick: (date: string, holiday?: Holiday) => void;
   onBatchAdd: (dates: string[]) => void;
+  onBatchEdit: (holidays: Holiday[]) => void;
   onDelete: (holidayId: string) => void;
 }
 
@@ -95,6 +96,7 @@ export const YearCalendar: React.FC<YearCalendarProps> = ({
   holidays,
   onDateClick,
   onBatchAdd,
+  onBatchEdit,
   onDelete,
 }) => {
   const {t} = useTranslation();
@@ -171,12 +173,38 @@ export const YearCalendar: React.FC<YearCalendarProps> = ({
   };
 
   const handleToggleSelectionMode = () => {
-    if (isSelecting && selectedDates.size > 0) {
-      // Confirm batch add
-      onBatchAdd(Array.from(selectedDates));
+    if (isSelecting) {
+      // Exit selection mode without action
       setSelectedDates(new Set());
     }
     setIsSelecting(!isSelecting);
+  };
+
+  // Compute selected holidays (dates that already have a holiday) and new dates
+  const selectedHolidays = useMemo(() => {
+    return Array.from(selectedDates)
+      .map(date => holidayMap.get(date))
+      .filter((h): h is Holiday => !!h);
+  }, [selectedDates, holidayMap]);
+
+  const selectedNewDates = useMemo(() => {
+    return Array.from(selectedDates).filter(date => !holidayMap.has(date));
+  }, [selectedDates, holidayMap]);
+
+  const handleBatchAdd = () => {
+    if (selectedNewDates.length > 0) {
+      onBatchAdd(selectedNewDates);
+      setSelectedDates(new Set());
+      setIsSelecting(false);
+    }
+  };
+
+  const handleBatchEdit = () => {
+    if (selectedHolidays.length > 0) {
+      onBatchEdit(selectedHolidays);
+      setSelectedDates(new Set());
+      setIsSelecting(false);
+    }
   };
 
   const handleCancelSelection = () => {
@@ -231,13 +259,22 @@ export const YearCalendar: React.FC<YearCalendarProps> = ({
               <Button onClick={handleCancelSelection}>
                 {t("common.cancel")}
               </Button>
-              <Button
-                type="primary"
-                onClick={handleToggleSelectionMode}
-                disabled={selectedDates.size === 0}
-              >
-                {t("holiday.batchAddButton", {count: selectedDates.size})}
-              </Button>
+              {selectedNewDates.length > 0 && (
+                <Button
+                  type="primary"
+                  onClick={handleBatchAdd}
+                >
+                  {t("holiday.batchAddButton", {count: selectedNewDates.length})}
+                </Button>
+              )}
+              {selectedHolidays.length > 0 && (
+                <Button
+                  type="primary"
+                  onClick={handleBatchEdit}
+                >
+                  {t("holiday.batchEditButton", {count: selectedHolidays.length})}
+                </Button>
+              )}
             </>
           ) : (
             <Button

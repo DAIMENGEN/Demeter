@@ -3,6 +3,7 @@ use crate::modules::organization::team::models::{
     CreateTeamParams, Team, TeamQueryParams, UpdateTeamParams,
 };
 use sqlx::PgPool;
+use sqlx::QueryBuilder;
 
 pub struct TeamRepository;
 
@@ -129,23 +130,41 @@ impl TeamRepository {
         if existing.is_none() {
             return Ok(None);
         }
-        let team = sqlx::query_as::<_, Team>(
-            r#"
-            UPDATE teams
-            SET team_name = COALESCE($2, team_name),
-                description = COALESCE($3, description),
-                updater_id = $4,
-                update_date_time = NOW()
-            WHERE id = $1
-            RETURNING id, team_name, description, creator_id, updater_id, create_date_time, update_date_time
-            "#
-        )
-        .bind(team_id)
-        .bind(&params.team_name)
-        .bind(&params.description)
-        .bind(updater_id)
-        .fetch_one(pool)
-        .await?;
+
+        // 动态构建 SET 子句
+        let mut qb: QueryBuilder<sqlx::Postgres> = QueryBuilder::new("UPDATE teams SET ");
+        let mut has_set = false;
+
+        // NOT NULL 字段
+        if let Some(ref name) = params.team_name {
+            qb.push("team_name = ");
+            qb.push_bind(name.clone());
+            has_set = true;
+        }
+
+        // 可空字段：双层 Option
+        if let Some(ref desc_opt) = params.description {
+            if has_set { qb.push(", "); }
+            qb.push("description = ");
+            qb.push_bind(desc_opt.clone());
+            has_set = true;
+        }
+
+        if has_set { qb.push(", "); }
+        qb.push("updater_id = ");
+        qb.push_bind(updater_id);
+        qb.push(", update_date_time = NOW() WHERE id = ");
+        qb.push_bind(team_id);
+        qb.push(
+            " RETURNING id, team_name, description, creator_id, updater_id, \
+             create_date_time, update_date_time",
+        );
+
+        let team = qb
+            .build_query_as::<Team>()
+            .fetch_one(pool)
+            .await?;
+
         Ok(Some(team))
     }
 

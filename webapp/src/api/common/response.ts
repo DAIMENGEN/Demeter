@@ -37,7 +37,7 @@ const isOk = (code: number, okCode: ApiOkCode) => {
  */
 export const assertApiOk = <T>(
     response: ApiResponse<T>,
-    okCode: ApiOkCode = 200
+    okCode: ApiOkCode = [200, 204]
 ): T => {
     if (!isOk(response.code, okCode)) {
         throw new ApiError(response.code, response.message, response.data);

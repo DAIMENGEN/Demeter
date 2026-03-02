@@ -4,6 +4,9 @@ import {useTranslation} from "react-i18next";
 import "./feature-navigation.scss";
 import projectManagementImage from "@Webapp/assets/nv/project-management-nv.gif";
 import calendarImage from "@Webapp/assets/nv/calendar-nv.gif";
+import {useAppSelector} from "@Webapp/store/hooks";
+import {selectCurrentUser} from "@Webapp/store/slices/user-slice";
+import {useMemo} from "react";
 
 const {Title, Paragraph} = Typography;
 
@@ -13,6 +16,7 @@ interface FeatureItem {
     descriptionKey: string;
     path: string;
     image: string;
+    adminOnly?: boolean;
 }
 
 const features: FeatureItem[] = [
@@ -36,12 +40,27 @@ const features: FeatureItem[] = [
         descriptionKey: "featureNav.holidayDesc",
         path: "/home/holiday",
         image: calendarImage,
-    }
+    },
+    {
+        key: "organization-management",
+        titleKey: "featureNav.organization",
+        descriptionKey: "featureNav.organizationDesc",
+        path: "/home/organization-management",
+        image: calendarImage,
+        adminOnly: true,
+    },
 ];
 
 export const FeatureNavigation = () => {
     const navigate = useNavigate();
     const {t} = useTranslation();
+    const currentUser = useAppSelector(selectCurrentUser);
+    const isAdmin = currentUser?.username === "admin";
+
+    const visibleFeatures = useMemo(
+        () => features.filter((f) => !f.adminOnly || isAdmin),
+        [isAdmin]
+    );
 
     const handleCardClick = (path: string) => {
         navigate(path);
@@ -56,7 +75,7 @@ export const FeatureNavigation = () => {
                 </Paragraph>
             </div>
             <Row gutter={[24, 24]}>
-                {features.map((feature) => (
+                {visibleFeatures.map((feature) => (
                     <Col
                         key={feature.key}
                         xs={24}

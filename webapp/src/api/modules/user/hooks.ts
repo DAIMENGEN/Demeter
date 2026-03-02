@@ -119,12 +119,23 @@ export const useUserActions = () => {
         }
     }, []);
 
+    const resetPassword = useCallback(async (id: string) => {
+        try {
+            setLoading(true);
+            const response = await userApi.resetPassword(id);
+            return assertApiOk(response);
+        } finally {
+            setLoading(false);
+        }
+    }, []);
+
     return {
         loading,
         createUser,
         updateUser,
         deleteUser,
         toggleUserStatus,
+        resetPassword,
     };
 };
 

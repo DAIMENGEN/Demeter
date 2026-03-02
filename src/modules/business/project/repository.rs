@@ -3,6 +3,7 @@ use crate::modules::business::project::models::{
     CreateProjectParams, Project, ProjectQueryParams, UpdateProjectParams,
 };
 use sqlx::PgPool;
+use sqlx::QueryBuilder;
 
 pub struct ProjectRepository;
 
@@ -230,35 +231,76 @@ impl ProjectRepository {
         params: UpdateProjectParams,
         updater_id: i64,
     ) -> AppResult<Option<Project>> {
-        let project = sqlx::query_as::<_, Project>(
-            r#"
-            UPDATE projects
-            SET project_name = COALESCE($1, project_name),
-                description = COALESCE($2, description),
-                start_date_time = COALESCE($3, start_date_time),
-                end_date_time = $4,
-                project_status = COALESCE($5, project_status),
-                version = COALESCE($6, version),
-                "order" = COALESCE($7, "order"),
-                updater_id = $8,
-                update_date_time = CURRENT_TIMESTAMP
-            WHERE id = $9
-            RETURNING id, project_name, description, start_date_time, end_date_time,
-                      project_status, version, "order", creator_id, updater_id,
-                      create_date_time, update_date_time
-            "#,
-        )
-        .bind(&params.project_name)
-        .bind(&params.description)
-        .bind(params.start_date_time)
-        .bind(params.end_date_time)
-        .bind(params.project_status)
-        .bind(params.version)
-        .bind(params.order)
-        .bind(updater_id)
-        .bind(project_id)
-        .fetch_optional(pool)
-        .await?;
+        // 动态构建 SET 子句，仅出现的字段才进入 SQL
+        let mut qb: QueryBuilder<sqlx::Postgres> = QueryBuilder::new("UPDATE projects SET ");
+        let mut has_set = false;
+
+        // NOT NULL 字段：Option<T>，None = 不更新，Some(v) = 更新
+        if let Some(ref name) = params.project_name {
+            qb.push("project_name = ");
+            qb.push_bind(name.clone());
+            has_set = true;
+        }
+
+        // 可空字段：Option<Option<T>>，None = 不更新，Some(None) = 清空，Some(Some(v)) = 更新
+        if let Some(ref desc_opt) = params.description {
+            if has_set { qb.push(", "); }
+            qb.push("description = ");
+            qb.push_bind(desc_opt.clone());
+            has_set = true;
+        }
+
+        if let Some(ref sdt) = params.start_date_time {
+            if has_set { qb.push(", "); }
+            qb.push("start_date_time = ");
+            qb.push_bind(*sdt);
+            has_set = true;
+        }
+
+        if let Some(ref edt_opt) = params.end_date_time {
+            if has_set { qb.push(", "); }
+            qb.push("end_date_time = ");
+            qb.push_bind(*edt_opt);
+            has_set = true;
+        }
+
+        if let Some(ref status) = params.project_status {
+            if has_set { qb.push(", "); }
+            qb.push("project_status = ");
+            qb.push_bind(*status);
+            has_set = true;
+        }
+
+        if let Some(ref ver_opt) = params.version {
+            if has_set { qb.push(", "); }
+            qb.push("version = ");
+            qb.push_bind(*ver_opt);
+            has_set = true;
+        }
+
+        if let Some(ref ord_opt) = params.order {
+            if has_set { qb.push(", "); }
+            qb.push("\"order\" = ");
+            qb.push_bind(*ord_opt);
+            has_set = true;
+        }
+
+        // 若没有任何业务字段出现，仅更新 updater_id + update_date_time
+        if has_set { qb.push(", "); }
+        qb.push("updater_id = ");
+        qb.push_bind(updater_id);
+        qb.push(", update_date_time = CURRENT_TIMESTAMP WHERE id = ");
+        qb.push_bind(project_id);
+        qb.push(
+            " RETURNING id, project_name, description, start_date_time, end_date_time, \
+             project_status, version, \"order\", creator_id, updater_id, \
+             create_date_time, update_date_time",
+        );
+
+        let project = qb
+            .build_query_as::<Project>()
+            .fetch_optional(pool)
+            .await?;
 
         Ok(project)
     }

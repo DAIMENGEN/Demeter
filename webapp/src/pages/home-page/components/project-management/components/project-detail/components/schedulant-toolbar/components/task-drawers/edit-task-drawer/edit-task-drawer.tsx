@@ -14,8 +14,8 @@ import {
     mapServerCustomAttrsToForm,
     normalizeCustomAttributesToStrings,
     renderCustomAttributeItems,
-    toNaiveDateTimeString,
-    type TaskDrawerFormValues
+    type TaskDrawerFormValues,
+    toNaiveDateTimeString
 } from "../index.ts";
 import {FormFields} from "../form-fields.tsx";
 import "./edit-task-drawer.scss";

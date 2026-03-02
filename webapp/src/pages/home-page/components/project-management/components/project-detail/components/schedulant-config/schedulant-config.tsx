@@ -55,6 +55,7 @@ export const SchedulantConfig: React.FC<SchedulantConfigProps> = ({
         const renderable = configs
             .filter((c) => {
                 if (!c.attributeName) return false;
+                if (c.isArchived) return false;
                 if (c.attributeType !== "select" && c.attributeType !== "user") return false;
                 // 只展示已配置颜色映射的字段
                 const vcm = c.valueColorMap;
@@ -64,6 +65,10 @@ export const SchedulantConfig: React.FC<SchedulantConfigProps> = ({
             .slice()
             .sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
 
+        if (!renderable.length) {
+            return [{label: t("displayConfig.colorRenderNoAvailableFields"), value: "__no_available__", disabled: true}];
+        }
+
         return [
             {label: t("displayConfig.colorRenderNone"), value: ""},
             ...renderable.map((c) => ({
@@ -72,6 +77,8 @@ export const SchedulantConfig: React.FC<SchedulantConfigProps> = ({
             })),
         ];
     }, [attributeConfigs]);
+
+    const hasRenderableColorFields = colorRenderFieldOptions.some((o) => o.value !== "__no_available__");
 
     const hideColorRender = !onColorRenderAttributeNameChange;
 
@@ -118,8 +125,11 @@ export const SchedulantConfig: React.FC<SchedulantConfigProps> = ({
                                 {t("displayConfig.colorRenderTitle")}
                             </div>
                             <Select
-                                value={colorRenderAttributeName ?? ""}
-                                onChange={(v) => onColorRenderAttributeNameChange!(v ? String(v) : null)}
+                                value={hasRenderableColorFields ? (colorRenderAttributeName ?? "") : "__no_available__"}
+                                onChange={(v) => {
+                                    if (!hasRenderableColorFields) return;
+                                    onColorRenderAttributeNameChange!(v ? String(v) : null);
+                                }}
                                 options={colorRenderFieldOptions}
                                 style={{width: "100%"}}
                                 placeholder={t("displayConfig.colorRenderPlaceholder")}

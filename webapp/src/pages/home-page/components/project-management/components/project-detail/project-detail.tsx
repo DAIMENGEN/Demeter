@@ -19,11 +19,7 @@ import type {
 } from "schedulant";
 import {Schedulant} from "schedulant";
 import dayjs, {type Dayjs} from "dayjs";
-import {
-    ProjectTaskType,
-    type UpdateProjectTaskParams,
-    useProjectTaskActions,
-} from "@Webapp/api";
+import {ProjectTaskType, type UpdateProjectTaskParams, useProjectTaskActions,} from "@Webapp/api";
 import {
     DEFAULT_CUSTOM_LINE_HEIGHT,
     DEFAULT_CUSTOM_SLOT_MIN_WIDTH,
@@ -44,9 +40,7 @@ import {
     EditTaskDrawer,
     TaskPreviewDrawer
 } from "./components/schedulant-toolbar/components/task-drawers/index.ts";
-import {
-    SchedulantToolbar,
-} from "./components/schedulant-toolbar/schedulant-toolbar";
+import {SchedulantToolbar,} from "./components/schedulant-toolbar/schedulant-toolbar";
 import {SchedulantLegend} from "./components/schedulant-legend";
 import {SchedulantCaption} from "./components/schedulant-caption";
 import type {SchedulantViewType} from "schedulant/dist/types/schedulant-view";

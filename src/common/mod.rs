@@ -4,4 +4,5 @@ pub mod id;
 pub mod jwt;
 pub mod middleware;
 pub mod response;
+pub mod serde_helpers;
 pub mod snowflake;

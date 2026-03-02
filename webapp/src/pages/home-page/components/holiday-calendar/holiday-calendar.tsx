@@ -21,6 +21,7 @@ export const HolidayCalendar: React.FC = () => {
     const [modalVisible, setModalVisible] = useState(false);
     const [selectedDates, setSelectedDates] = useState<string[]>([]);
     const [editingHoliday, setEditingHoliday] = useState<Holiday | null>(null);
+    const [editingHolidays, setEditingHolidays] = useState<Holiday[]>([]);
 
     // Generate year options (current year and past 4 years)
     const yearOptions = useMemo(() => {
@@ -71,11 +72,13 @@ export const HolidayCalendar: React.FC = () => {
         if (holiday) {
             // Edit existing holiday
             setEditingHoliday(holiday);
+            setEditingHolidays([]);
             setSelectedDates([date]);
             setModalVisible(true);
         } else {
             // Add new holiday
             setEditingHoliday(null);
+            setEditingHolidays([]);
             setSelectedDates([date]);
             setModalVisible(true);
         }
@@ -83,19 +86,29 @@ export const HolidayCalendar: React.FC = () => {
 
     const handleBatchAdd = (dates: string[]) => {
         setEditingHoliday(null);
+        setEditingHolidays([]);
         setSelectedDates(dates);
+        setModalVisible(true);
+    };
+
+    const handleBatchEdit = (holidaysToEdit: Holiday[]) => {
+        setEditingHoliday(null);
+        setEditingHolidays(holidaysToEdit);
+        setSelectedDates([]);
         setModalVisible(true);
     };
 
     const handleModalClose = () => {
         setModalVisible(false);
         setEditingHoliday(null);
+        setEditingHolidays([]);
         setSelectedDates([]);
     };
 
     const handleModalSuccess = () => {
         setModalVisible(false);
         setEditingHoliday(null);
+        setEditingHolidays([]);
         setSelectedDates([]);
         loadHolidays().catch(error => {
             log.error("Failed to reload holidays after modal success:", error);
@@ -152,6 +165,7 @@ export const HolidayCalendar: React.FC = () => {
                         holidays={holidays}
                         onDateClick={handleDateClick}
                         onBatchAdd={handleBatchAdd}
+                        onBatchEdit={handleBatchEdit}
                         onDelete={handleDelete}
                     />
                 </Spin>
@@ -160,6 +174,7 @@ export const HolidayCalendar: React.FC = () => {
             <HolidayModal visible={modalVisible}
                           dates={selectedDates}
                           editingHoliday={editingHoliday}
+                          editingHolidays={editingHolidays}
                           onClose={handleModalClose}
                           onSuccess={handleModalSuccess}/>
         </div>

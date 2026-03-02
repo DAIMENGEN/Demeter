@@ -65,3 +65,24 @@ pub fn get_current_user(request: &Request) -> Result<Claims, AppError> {
         .cloned()
         .ok_or_else(|| AppError::Unauthorized("Not authenticated".to_string()))
 }
+
+const ADMIN_USERNAME: &str = "admin";
+
+pub async fn admin_auth_middleware(
+    request: Request,
+    next: Next,
+) -> Result<Response, AppError> {
+    let claims = request
+        .extensions()
+        .get::<Claims>()
+        .cloned()
+        .ok_or_else(|| AppError::Unauthorized("Not authenticated".to_string()))?;
+
+    if claims.username != ADMIN_USERNAME {
+        return Err(AppError::Forbidden(
+            "Admin access required".to_string(),
+        ));
+    }
+
+    Ok(next.run(request).await)
+}

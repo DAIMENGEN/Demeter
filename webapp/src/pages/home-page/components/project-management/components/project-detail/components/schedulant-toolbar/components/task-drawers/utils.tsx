@@ -3,9 +3,9 @@ import {DatePicker, Form, Input, InputNumber, Select, Space, Typography} from "a
 import dayjs, {type Dayjs} from "dayjs";
 import type {TFunction} from "i18next";
 import {
-    ProjectTaskAttributeTypeLabelKeys,
     type JsonValue,
     type ProjectTaskAttributeConfig,
+    ProjectTaskAttributeTypeLabelKeys,
     ProjectTaskType,
     TaskTypeLabelKeys
 } from "@Webapp/api/modules/project";
@@ -241,6 +241,7 @@ export const buildDefaultCustomAttrsFromConfigs = (
     const defaults: Record<string, CustomAttributeFormValue> = {};
 
     for (const cfg of configs) {
+        if (cfg.isArchived) continue;
         const key = cfg.attributeName;
         if (!key) continue;
         if (cfg.defaultValue == null || cfg.defaultValue === "") continue;
@@ -266,6 +267,7 @@ export const renderCustomAttributeItems = (
 ) => {
     return attributeConfigs
         .slice()
+        .filter((c) => !c.isArchived)
         .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
         .map((cfg) => {
             const name = cfg.attributeName;
