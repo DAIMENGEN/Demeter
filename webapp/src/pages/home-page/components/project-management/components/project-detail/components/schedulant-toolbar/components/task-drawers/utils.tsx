@@ -54,7 +54,7 @@ export const buildTaskTypeOptions = (t: TFunction) => {
 /*  Select / user option helpers (shared between form & preview)       */
 /* ------------------------------------------------------------------ */
 
-const toSelectOptions = (raw: JsonValue | undefined): SelectOption[] => {
+export const toSelectOptions = (raw: JsonValue | undefined): SelectOption[] => {
     if (!Array.isArray(raw)) return [];
     return raw
         .map((x) => {

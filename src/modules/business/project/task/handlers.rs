@@ -4,9 +4,9 @@ use crate::common::id::Id;
 use crate::common::jwt::Claims;
 use crate::common::response::{ApiResponse, PageResponse};
 use crate::modules::business::project::task::models::{
-    BatchDeleteTaskAttributeConfigsParams, BatchDeleteTasksParams, CreateTaskAttributeConfigParams,
-    CreateTaskParams, Task, TaskAttributeConfig, TaskQueryParams, UpdateTaskAttributeConfigParams,
-    UpdateTaskParams,
+    BatchCreateTasksParams, BatchDeleteTaskAttributeConfigsParams, BatchDeleteTasksParams,
+    CreateTaskAttributeConfigParams, CreateTaskParams, Task, TaskAttributeConfig, TaskQueryParams,
+    UpdateTaskAttributeConfigParams, UpdateTaskParams,
 };
 use crate::modules::business::project::task::repository::TaskRepository;
 use axum::{
@@ -177,6 +177,39 @@ pub async fn create_task(
         TaskRepository::create_task(&state.pool, task_id, project_id.0, params, creator_id).await?;
 
     Ok((StatusCode::CREATED, Json(ApiResponse::success(task))))
+}
+
+pub async fn batch_create_tasks(
+    State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
+    Path(project_id): Path<Id>,
+    Json(params): Json<BatchCreateTasksParams>,
+) -> AppResult<(StatusCode, Json<ApiResponse<Vec<Task>>>)> {
+    let creator_id = claims.sub;
+
+    if params.tasks.is_empty() {
+        return Err(AppError::BadRequest(
+            "Tasks list cannot be empty".to_string(),
+        ));
+    }
+
+    let mut tasks_with_ids = Vec::with_capacity(params.tasks.len());
+    for task_param in params.tasks {
+        let task_id = state
+            .generate_id()
+            .map_err(|e| AppError::InternalError(format!("Failed to generate task ID: {}", e)))?;
+        tasks_with_ids.push((task_id, task_param));
+    }
+
+    let tasks = TaskRepository::batch_create_tasks(
+        &state.pool,
+        tasks_with_ids,
+        project_id.0,
+        creator_id,
+    )
+    .await?;
+
+    Ok((StatusCode::CREATED, Json(ApiResponse::success(tasks))))
 }
 
 pub async fn update_task(

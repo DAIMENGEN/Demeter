@@ -7,6 +7,12 @@ use sqlx::QueryBuilder;
 
 pub struct DepartmentRepository;
 
+/// departments 表 SELECT 列
+const DEPT_COLUMNS: &str = "id, department_name, description, creator_id, updater_id, create_date_time, update_date_time";
+
+/// departments 表 RETURNING 列
+const DEPT_RETURNING: &str = " RETURNING id, department_name, description, creator_id, updater_id, create_date_time, update_date_time";
+
 impl DepartmentRepository {
     pub async fn get_department_list(
         pool: &PgPool,
@@ -17,13 +23,16 @@ impl DepartmentRepository {
         let offset = (page - 1) * page_size;
         let department_name_pattern = params.department_name.as_ref().map(|d| format!("%{}%", d));
         let departments = sqlx::query_as::<_, Department>(
-            r#"
-            SELECT id, department_name, description, creator_id, updater_id, create_date_time, update_date_time
-            FROM departments
-            WHERE ($1::TEXT IS NULL OR department_name ILIKE $1)
-            ORDER BY create_date_time DESC
-            LIMIT $2 OFFSET $3
-            "#,
+            &format!(
+                r#"
+                SELECT {}
+                FROM departments
+                WHERE ($1::TEXT IS NULL OR department_name ILIKE $1)
+                ORDER BY create_date_time DESC
+                LIMIT $2 OFFSET $3
+                "#,
+                DEPT_COLUMNS,
+            ),
         )
         .bind(&department_name_pattern)
         .bind(page_size)
@@ -52,12 +61,15 @@ impl DepartmentRepository {
         let department_name_pattern = params.department_name.as_ref().map(|d| format!("%{}%", d));
 
         let departments = sqlx::query_as::<_, Department>(
-            r#"
-            SELECT id, department_name, description, creator_id, updater_id, create_date_time, update_date_time
-            FROM departments
-            WHERE ($1::TEXT IS NULL OR department_name ILIKE $1)
-            ORDER BY create_date_time DESC
-            "#,
+            &format!(
+                r#"
+                SELECT {}
+                FROM departments
+                WHERE ($1::TEXT IS NULL OR department_name ILIKE $1)
+                ORDER BY create_date_time DESC
+                "#,
+                DEPT_COLUMNS,
+            ),
         )
         .bind(&department_name_pattern)
         .fetch_all(pool)
@@ -71,11 +83,7 @@ impl DepartmentRepository {
         department_id: i64,
     ) -> AppResult<Option<Department>> {
         let department = sqlx::query_as::<_, Department>(
-            r#"
-            SELECT id, department_name, description, creator_id, updater_id, create_date_time, update_date_time
-            FROM departments
-            WHERE id = $1
-            "#,
+            &format!("SELECT {} FROM departments WHERE id = $1", DEPT_COLUMNS),
         )
         .bind(department_id)
         .fetch_optional(pool)
@@ -89,11 +97,7 @@ impl DepartmentRepository {
         department_name: &str,
     ) -> AppResult<Option<Department>> {
         let department = sqlx::query_as::<_, Department>(
-            r#"
-            SELECT id, department_name, description, creator_id, updater_id, create_date_time, update_date_time
-            FROM departments
-            WHERE department_name = $1
-            "#,
+            &format!("SELECT {} FROM departments WHERE department_name = $1", DEPT_COLUMNS),
         )
         .bind(department_name)
         .fetch_optional(pool)
@@ -108,13 +112,12 @@ impl DepartmentRepository {
         params: CreateDepartmentParams,
         creator_id: i64,
     ) -> AppResult<Department> {
-        let department = sqlx::query_as::<_, Department>(
-            r#"
-            INSERT INTO departments (id, department_name, description, creator_id, create_date_time)
-            VALUES ($1, $2, $3, $4, NOW())
-            RETURNING id, department_name, description, creator_id, updater_id, create_date_time, update_date_time
-            "#
-        )
+        let sql = format!(
+            "INSERT INTO departments (id, department_name, description, creator_id, create_date_time) \
+             VALUES ($1, $2, $3, $4, NOW()){}",
+            DEPT_RETURNING,
+        );
+        let department = sqlx::query_as::<_, Department>(&sql)
         .bind(department_id)
         .bind(&params.department_name)
         .bind(&params.description)
@@ -131,11 +134,6 @@ impl DepartmentRepository {
         params: UpdateDepartmentParams,
         updater_id: i64,
     ) -> AppResult<Option<Department>> {
-        let existing = Self::get_department_by_id(pool, department_id).await?;
-        if existing.is_none() {
-            return Ok(None);
-        }
-
         // 动态构建 SET 子句
         let mut qb: QueryBuilder<sqlx::Postgres> = QueryBuilder::new("UPDATE departments SET ");
         let mut has_set = false;
@@ -160,17 +158,14 @@ impl DepartmentRepository {
         qb.push_bind(updater_id);
         qb.push(", update_date_time = NOW() WHERE id = ");
         qb.push_bind(department_id);
-        qb.push(
-            " RETURNING id, department_name, description, creator_id, updater_id, \
-             create_date_time, update_date_time",
-        );
+        qb.push(DEPT_RETURNING);
 
         let department = qb
             .build_query_as::<Department>()
-            .fetch_one(pool)
+            .fetch_optional(pool)
             .await?;
 
-        Ok(Some(department))
+        Ok(department)
     }
 
     pub async fn delete_department(pool: &PgPool, department_id: i64) -> AppResult<bool> {

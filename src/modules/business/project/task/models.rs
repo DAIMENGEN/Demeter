@@ -176,6 +176,12 @@ pub struct TaskQueryParams {
 }
 
 #[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct BatchCreateTasksParams {
+    pub tasks: Vec<CreateTaskParams>,
+}
+
+#[derive(Debug, Deserialize)]
 pub struct BatchDeleteTasksParams {
     pub ids: Vec<Id>,
 }

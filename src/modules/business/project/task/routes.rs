@@ -65,6 +65,10 @@ pub fn task_routes(state: AppState) -> Router {
             delete(handlers::delete_task),
         )
         .route(
+            "/projects/{project_id}/tasks/batch-create",
+            post(handlers::batch_create_tasks),
+        )
+        .route(
             "/projects/{project_id}/tasks/batch-delete",
             post(handlers::batch_delete_tasks),
         )

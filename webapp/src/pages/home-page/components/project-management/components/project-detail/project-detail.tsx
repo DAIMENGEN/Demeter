@@ -36,6 +36,7 @@ import "schedulant/dist/schedulant.css";
 import "./project-detail.scss";
 import {toNaiveDateTimeString} from "../project-drawer/utils.ts";
 import {
+    BatchCreateTaskDrawer,
     CreateTaskDrawer,
     EditTaskDrawer,
     TaskPreviewDrawer
@@ -110,6 +111,9 @@ export const ProjectDetail: React.FC = () => {
         return SLOT_MIN_WIDTH_PRESETS[slotMinWidthMode];
     }, [slotMinWidthMode, customSlotMinWidth]);
 
+    // 批量创建任务 Drawer 状态
+    const [batchCreateTaskDrawerOpen, setBatchCreateTaskDrawerOpen] = useState(false);
+
     // 创建任务 Drawer 状态
     const [createTaskDrawerOpen, setCreateTaskDrawerOpen] = useState(false);
     const [createTaskDefaultParentId, setCreateTaskDefaultParentId] = useState<string | undefined>(undefined);
@@ -152,16 +156,14 @@ export const ProjectDetail: React.FC = () => {
 
     const handleShiftLeft = useCallback(() => {
         const unit = SCHEDULANT_VIEW_UNIT_MAP[schedulantViewType];
-        const range = SCHEDULANT_VIEW_DEFAULT_RANGE_MAP[schedulantViewType];
-        setSchedulantStartDate((prev) => prev.subtract(range, unit as dayjs.ManipulateType));
-        setSchedulantEndDate((prev) => prev.subtract(range, unit as dayjs.ManipulateType));
+        setSchedulantStartDate((prev) => prev.subtract(1, unit as dayjs.ManipulateType));
+        setSchedulantEndDate((prev) => prev.subtract(1, unit as dayjs.ManipulateType));
     }, [schedulantViewType]);
 
     const handleShiftRight = useCallback(() => {
         const unit = SCHEDULANT_VIEW_UNIT_MAP[schedulantViewType];
-        const range = SCHEDULANT_VIEW_DEFAULT_RANGE_MAP[schedulantViewType];
-        setSchedulantStartDate((prev) => prev.add(range, unit as dayjs.ManipulateType));
-        setSchedulantEndDate((prev) => prev.add(range, unit as dayjs.ManipulateType));
+        setSchedulantStartDate((prev) => prev.add(1, unit as dayjs.ManipulateType));
+        setSchedulantEndDate((prev) => prev.add(1, unit as dayjs.ManipulateType));
     }, [schedulantViewType]);
 
     const handleJumpToToday = useCallback(() => {
@@ -180,6 +182,11 @@ export const ProjectDetail: React.FC = () => {
         setCreateTaskDefaultOrder(maxOrder + 1);
         setCreateTaskDrawerOpen(true);
     }, [tasks]);
+
+    // ---- 打开批量创建任务 Drawer ----
+    const handleOpenBatchCreateTask = useCallback(() => {
+        setBatchCreateTaskDrawerOpen(true);
+    }, []);
 
     // ---- 任务更新辅助 ----
     const doUpdateTask = useCallback(async (taskId: string, params: UpdateProjectTaskParams) => {
@@ -362,6 +369,7 @@ export const ProjectDetail: React.FC = () => {
                                                 onShiftRight={handleShiftRight}
                                                 onJumpToToday={handleJumpToToday}
                                                 onOpenCreateTask={handleOpenCreateTask}
+                                                onOpenBatchCreateTask={handleOpenBatchCreateTask}
                                                 onBack={() => navigate("/home/project-management")}
                                                 lineHeightMode={lineHeightMode}
                                                 customLineHeight={customLineHeight}
@@ -441,6 +449,22 @@ export const ProjectDetail: React.FC = () => {
                     message.success(t("task.createSuccess"));
                 }}
                 onClose={() => setCreateTaskDrawerOpen(false)}
+            />
+
+            <BatchCreateTaskDrawer
+                open={batchCreateTaskDrawerOpen}
+                projectId={projectId}
+                parentOptions={parentOptions}
+                defaultOrder={tasks.length > 0 ? Math.max(...tasks.map((t) => t.order)) + 1 : 1}
+                defaultRange={{
+                    start: schedulantStartDate.startOf("day"),
+                    end: schedulantStartDate.startOf("day").add(7, "day"),
+                }}
+                onSuccess={() => {
+                    refetchTasks();
+                    message.success(t("task.batchCreateSuccess"));
+                }}
+                onClose={() => setBatchCreateTaskDrawerOpen(false)}
             />
 
             <EditTaskDrawer

@@ -7,6 +7,14 @@ use sqlx::QueryBuilder;
 
 pub struct HolidayRepository;
 
+/// holidays 表 SELECT 列
+const HOLIDAY_COLUMNS: &str = "id, holiday_name, description, holiday_date, holiday_type, \
+    creator_id, updater_id, create_date_time, update_date_time";
+
+/// holidays 表 RETURNING 列
+const HOLIDAY_RETURNING: &str = " RETURNING id, holiday_name, description, holiday_date, holiday_type, \
+    creator_id, updater_id, create_date_time, update_date_time";
+
 impl HolidayRepository {
     pub async fn get_holiday_list(
         pool: &PgPool,
@@ -17,17 +25,19 @@ impl HolidayRepository {
         let offset = (page - 1) * page_size;
         let holiday_name_pattern = params.holiday_name.as_ref().map(|h| format!("%{}%", h));
         let holidays = sqlx::query_as::<_, Holiday>(
-            r#"
-            SELECT id, holiday_name, description, holiday_date, holiday_type,
-                   creator_id, updater_id, create_date_time, update_date_time
-            FROM holidays
-            WHERE ($1::TEXT IS NULL OR holiday_name ILIKE $1)
-              AND ($2::SMALLINT IS NULL OR holiday_type = $2)
-              AND ($3::DATE IS NULL OR holiday_date >= $3)
-              AND ($4::DATE IS NULL OR holiday_date <= $4)
-            ORDER BY holiday_date DESC
-            LIMIT $5 OFFSET $6
-            "#,
+            &format!(
+                r#"
+                SELECT {}
+                FROM holidays
+                WHERE ($1::TEXT IS NULL OR holiday_name ILIKE $1)
+                  AND ($2::SMALLINT IS NULL OR holiday_type = $2)
+                  AND ($3::DATE IS NULL OR holiday_date >= $3)
+                  AND ($4::DATE IS NULL OR holiday_date <= $4)
+                ORDER BY holiday_date DESC
+                LIMIT $5 OFFSET $6
+                "#,
+                HOLIDAY_COLUMNS,
+            ),
         )
         .bind(&holiday_name_pattern)
         .bind(params.holiday_type)
@@ -65,16 +75,18 @@ impl HolidayRepository {
         let holiday_name_pattern = params.holiday_name.as_ref().map(|h| format!("%{}%", h));
 
         let holidays = sqlx::query_as::<_, Holiday>(
-            r#"
-            SELECT id, holiday_name, description, holiday_date, holiday_type,
-                   creator_id, updater_id, create_date_time, update_date_time
-            FROM holidays
-            WHERE ($1::TEXT IS NULL OR holiday_name ILIKE $1)
-              AND ($2::SMALLINT IS NULL OR holiday_type = $2)
-              AND ($3::DATE IS NULL OR holiday_date >= $3)
-              AND ($4::DATE IS NULL OR holiday_date <= $4)
-            ORDER BY holiday_date DESC
-            "#,
+            &format!(
+                r#"
+                SELECT {}
+                FROM holidays
+                WHERE ($1::TEXT IS NULL OR holiday_name ILIKE $1)
+                  AND ($2::SMALLINT IS NULL OR holiday_type = $2)
+                  AND ($3::DATE IS NULL OR holiday_date >= $3)
+                  AND ($4::DATE IS NULL OR holiday_date <= $4)
+                ORDER BY holiday_date DESC
+                "#,
+                HOLIDAY_COLUMNS,
+            ),
         )
         .bind(&holiday_name_pattern)
         .bind(params.holiday_type)
@@ -88,12 +100,10 @@ impl HolidayRepository {
 
     pub async fn get_holiday_by_id(pool: &PgPool, holiday_id: i64) -> AppResult<Option<Holiday>> {
         let holiday = sqlx::query_as::<_, Holiday>(
-            r#"
-            SELECT id, holiday_name, description, holiday_date, holiday_type,
-                   creator_id, updater_id, create_date_time, update_date_time
-            FROM holidays
-            WHERE id = $1
-            "#,
+            &format!(
+                "SELECT {} FROM holidays WHERE id = $1",
+                HOLIDAY_COLUMNS,
+            ),
         )
         .bind(holiday_id)
         .fetch_optional(pool)
@@ -108,15 +118,13 @@ impl HolidayRepository {
         params: CreateHolidayParams,
         creator_id: i64,
     ) -> AppResult<Holiday> {
-        let holiday = sqlx::query_as::<_, Holiday>(
-            r#"
-            INSERT INTO holidays (id, holiday_name, description, holiday_date, holiday_type,
-                                creator_id, create_date_time)
-            VALUES ($1, $2, $3, $4, $5, $6, NOW())
-            RETURNING id, holiday_name, description, holiday_date, holiday_type,
-                      creator_id, updater_id, create_date_time, update_date_time
-            "#,
-        )
+        let sql = format!(
+            "INSERT INTO holidays (id, holiday_name, description, holiday_date, holiday_type, \
+             creator_id, create_date_time) \
+             VALUES ($1, $2, $3, $4, $5, $6, NOW()){}",
+            HOLIDAY_RETURNING,
+        );
+        let holiday = sqlx::query_as::<_, Holiday>(&sql)
         .bind(holiday_id)
         .bind(&params.holiday_name)
         .bind(&params.description)
@@ -135,11 +143,6 @@ impl HolidayRepository {
         params: UpdateHolidayParams,
         updater_id: i64,
     ) -> AppResult<Option<Holiday>> {
-        let existing = Self::get_holiday_by_id(pool, holiday_id).await?;
-        if existing.is_none() {
-            return Ok(None);
-        }
-
         // 动态构建 SET 子句
         let mut qb: QueryBuilder<sqlx::Postgres> = QueryBuilder::new("UPDATE holidays SET ");
         let mut has_set = false;
@@ -179,17 +182,14 @@ impl HolidayRepository {
         qb.push_bind(updater_id);
         qb.push(", update_date_time = NOW() WHERE id = ");
         qb.push_bind(holiday_id);
-        qb.push(
-            " RETURNING id, holiday_name, description, holiday_date, holiday_type, \
-             creator_id, updater_id, create_date_time, update_date_time",
-        );
+        qb.push(HOLIDAY_RETURNING);
 
         let holiday = qb
             .build_query_as::<Holiday>()
-            .fetch_one(pool)
+            .fetch_optional(pool)
             .await?;
 
-        Ok(Some(holiday))
+        Ok(holiday)
     }
 
     pub async fn delete_holiday(pool: &PgPool, holiday_id: i64) -> AppResult<bool> {
@@ -221,31 +221,31 @@ impl HolidayRepository {
         params: Vec<CreateHolidayParams>,
         creator_id: i64,
     ) -> AppResult<Vec<Holiday>> {
-        let mut holidays = Vec::new();
-
-        for (idx, param) in params.into_iter().enumerate() {
-            let holiday_id = holiday_ids[idx];
-
-            let holiday = sqlx::query_as::<_, Holiday>(
-                r#"
-                INSERT INTO holidays (id, holiday_name, description, holiday_date, holiday_type,
-                                    creator_id, create_date_time)
-                VALUES ($1, $2, $3, $4, $5, $6, NOW())
-                RETURNING id, holiday_name, description, holiday_date, holiday_type,
-                          creator_id, updater_id, create_date_time, update_date_time
-                "#,
-            )
-            .bind(holiday_id)
-            .bind(&param.holiday_name)
-            .bind(&param.description)
-            .bind(param.holiday_date)
-            .bind(param.holiday_type)
-            .bind(creator_id)
-            .fetch_one(pool)
-            .await?;
-
-            holidays.push(holiday);
+        if holiday_ids.is_empty() {
+            return Ok(vec![]);
         }
+
+        let mut qb: QueryBuilder<sqlx::Postgres> = QueryBuilder::new(
+            "INSERT INTO holidays (id, holiday_name, description, holiday_date, holiday_type, \
+             creator_id, create_date_time) ",
+        );
+
+        qb.push_values(
+            holiday_ids.iter().zip(params.iter()),
+            |mut b, (id, param)| {
+                b.push_bind(*id)
+                    .push_bind(param.holiday_name.clone())
+                    .push_bind(param.description.clone())
+                    .push_bind(param.holiday_date)
+                    .push_bind(param.holiday_type)
+                    .push_bind(creator_id)
+                    .push("NOW()");
+            },
+        );
+
+        qb.push(HOLIDAY_RETURNING);
+
+        let holidays = qb.build_query_as::<Holiday>().fetch_all(pool).await?;
 
         Ok(holidays)
     }
@@ -293,13 +293,10 @@ impl HolidayRepository {
         if !has_set {
             // Nothing to update, just return current holidays
             let holidays = sqlx::query_as::<_, Holiday>(
-                r#"
-                SELECT id, holiday_name, description, holiday_date, holiday_type,
-                       creator_id, updater_id, create_date_time, update_date_time
-                FROM holidays
-                WHERE id = ANY($1)
-                ORDER BY holiday_date
-                "#,
+                &format!(
+                    "SELECT {} FROM holidays WHERE id = ANY($1) ORDER BY holiday_date",
+                    HOLIDAY_COLUMNS,
+                ),
             )
             .bind(&holiday_ids)
             .fetch_all(pool)
@@ -311,7 +308,8 @@ impl HolidayRepository {
         qb.push_bind(updater_id);
         qb.push(", update_date_time = NOW() WHERE id = ANY(");
         qb.push_bind(&holiday_ids);
-        qb.push(") RETURNING id, holiday_name, description, holiday_date, holiday_type, creator_id, updater_id, create_date_time, update_date_time");
+        qb.push(") ");
+        qb.push(HOLIDAY_RETURNING);
 
         let holidays = qb
             .build_query_as::<Holiday>()

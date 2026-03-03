@@ -259,3 +259,7 @@ export interface ReorderProjectTasksParams {
   /** null 表示重排根任务 */
   parentId?: string | null;
 }
+
+export interface BatchCreateProjectTasksParams {
+  tasks: CreateProjectTaskParams[];
+}

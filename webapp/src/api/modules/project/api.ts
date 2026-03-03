@@ -5,6 +5,7 @@
 import type {PageResponse} from "@Webapp/http";
 import {del, get, post, put} from "@Webapp/http";
 import type {
+    BatchCreateProjectTasksParams,
     BatchDeleteProjectsParams,
     BatchDeleteProjectTaskAttributeConfigsParams,
     CreateProjectParams,
@@ -114,6 +115,13 @@ export const projectApi = {
    */
   createProjectTask: (projectId: string, data: CreateProjectTaskParams) => {
     return post<ProjectTask>(`/projects/${projectId}/tasks`, data);
+  },
+
+  /**
+   * 批量创建项目任务
+   */
+  batchCreateProjectTasks: (projectId: string, data: BatchCreateProjectTasksParams) => {
+    return post<ProjectTask[]>(`/projects/${projectId}/tasks/batch-create`, data);
   },
 
   /**

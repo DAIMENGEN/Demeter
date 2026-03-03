@@ -250,7 +250,15 @@
     "columnStartDateTime": "开始时间",
     "columnEndDateTime": "结束时间",
     "columnTaskType": "任务类型",
-    "defaultProjectName": "项目名称"
+    "defaultProjectName": "项目名称",
+    "batchCreateTask": "批量创建任务",
+    "batchCreateCount": "共 {{count}} 条任务",
+    "batchCreateSuccess": "批量创建成功",
+    "batchCreateFailed": "批量创建失败",
+    "batchAddRow": "添加行",
+    "batchAddNRows": "添加 {{count}} 行",
+    "batchDeleteSelected": "删除选中 ({{count}})",
+    "batchDeleteSelectedConfirm": "确定要删除选中的 {{count}} 行吗？"
   },
   "displayConfig": {
     "title": "显示配置",
@@ -279,6 +287,7 @@
     "startTime": "开始时间",
     "endTime": "结束时间",
     "createTask": "创建任务",
+    "batchCreateTask": "批量创建任务",
     "configAttributes": "配置任务自定义字段",
     "backToList": "返回项目列表"
   },

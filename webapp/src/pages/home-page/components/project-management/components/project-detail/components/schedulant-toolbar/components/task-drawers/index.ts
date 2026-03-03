@@ -6,3 +6,5 @@ export {EditTaskDrawer} from "./edit-task-drawer";
 export type {EditTaskDrawerProps} from "./edit-task-drawer";
 export {TaskPreviewDrawer} from "./task-preview-drawer";
 export type {TaskPreviewDrawerProps} from "./task-preview-drawer";
+export {BatchCreateTaskDrawer} from "./batch-create-task-drawer";
+export type {BatchCreateTaskDrawerProps} from "./batch-create-task-drawer";

@@ -7,6 +7,16 @@ use sqlx::QueryBuilder;
 
 pub struct ProjectRepository;
 
+/// projects 表 SELECT 列
+const PROJECT_COLUMNS: &str = r#"id, project_name, description, start_date_time, end_date_time, 
+    project_status, version, "order", creator_id, updater_id, 
+    create_date_time, update_date_time"#;
+
+/// projects 表 RETURNING 列
+const PROJECT_RETURNING: &str = r#" RETURNING id, project_name, description, start_date_time, end_date_time, 
+    project_status, version, "order", creator_id, updater_id, 
+    create_date_time, update_date_time"#;
+
 impl ProjectRepository {
     pub async fn get_project_list(
         pool: &PgPool,
@@ -17,18 +27,19 @@ impl ProjectRepository {
         let offset = (page - 1) * page_size;
         let project_name_pattern = params.project_name.as_ref().map(|p| format!("%{}%", p));
         let projects = sqlx::query_as::<_, Project>(
-            r#"
-            SELECT id, project_name, description, start_date_time, end_date_time,
-                   project_status, version, "order", creator_id, updater_id,
-                   create_date_time, update_date_time
-            FROM projects
-            WHERE ($1::TEXT IS NULL OR project_name ILIKE $1)
-              AND ($2::SMALLINT IS NULL OR project_status = $2)
-              AND ($3::TIMESTAMP IS NULL OR start_date_time >= $3)
-              AND ($4::TIMESTAMP IS NULL OR end_date_time <= $4)
-            ORDER BY "order" ASC NULLS LAST, create_date_time DESC
-            LIMIT $5 OFFSET $6
-            "#,
+            &format!(
+                r#"
+                SELECT {}
+                FROM projects
+                WHERE ($1::TEXT IS NULL OR project_name ILIKE $1)
+                  AND ($2::SMALLINT IS NULL OR project_status = $2)
+                  AND ($3::TIMESTAMP IS NULL OR start_date_time >= $3)
+                  AND ($4::TIMESTAMP IS NULL OR end_date_time <= $4)
+                ORDER BY "order" ASC NULLS LAST, create_date_time DESC
+                LIMIT $5 OFFSET $6
+                "#,
+                PROJECT_COLUMNS,
+            ),
         )
         .bind(&project_name_pattern)
         .bind(params.project_status)
@@ -65,17 +76,18 @@ impl ProjectRepository {
     ) -> AppResult<Vec<Project>> {
         let project_name_pattern = params.project_name.as_ref().map(|p| format!("%{}%", p));
         let projects = sqlx::query_as::<_, Project>(
-            r#"
-            SELECT id, project_name, description, start_date_time, end_date_time,
-                   project_status, version, "order", creator_id, updater_id,
-                   create_date_time, update_date_time
-            FROM projects
-            WHERE ($1::TEXT IS NULL OR project_name ILIKE $1)
-              AND ($2::SMALLINT IS NULL OR project_status = $2)
-              AND ($3::TIMESTAMP IS NULL OR start_date_time >= $3)
-              AND ($4::TIMESTAMP IS NULL OR end_date_time <= $4)
-            ORDER BY "order" ASC NULLS LAST, create_date_time DESC
-            "#,
+            &format!(
+                r#"
+                SELECT {}
+                FROM projects
+                WHERE ($1::TEXT IS NULL OR project_name ILIKE $1)
+                  AND ($2::SMALLINT IS NULL OR project_status = $2)
+                  AND ($3::TIMESTAMP IS NULL OR start_date_time >= $3)
+                  AND ($4::TIMESTAMP IS NULL OR end_date_time <= $4)
+                ORDER BY "order" ASC NULLS LAST, create_date_time DESC
+                "#,
+                PROJECT_COLUMNS,
+            ),
         )
         .bind(&project_name_pattern)
         .bind(params.project_status)
@@ -89,13 +101,10 @@ impl ProjectRepository {
 
     pub async fn get_project_by_id(pool: &PgPool, project_id: i64) -> AppResult<Option<Project>> {
         let project = sqlx::query_as::<_, Project>(
-            r#"
-            SELECT id, project_name, description, start_date_time, end_date_time,
-                   project_status, version, "order", creator_id, updater_id,
-                   create_date_time, update_date_time
-            FROM projects
-            WHERE id = $1
-            "#,
+            &format!(
+                "SELECT {} FROM projects WHERE id = $1",
+                PROJECT_COLUMNS,
+            ),
         )
         .bind(project_id)
         .fetch_optional(pool)
@@ -109,13 +118,10 @@ impl ProjectRepository {
         project_name: &str,
     ) -> AppResult<Option<Project>> {
         let project = sqlx::query_as::<_, Project>(
-            r#"
-            SELECT id, project_name, description, start_date_time, end_date_time,
-                   project_status, version, "order", creator_id, updater_id,
-                   create_date_time, update_date_time
-            FROM projects
-            WHERE project_name = $1
-            "#,
+            &format!(
+                "SELECT {} FROM projects WHERE project_name = $1",
+                PROJECT_COLUMNS,
+            ),
         )
         .bind(project_name)
         .fetch_optional(pool)
@@ -135,16 +141,17 @@ impl ProjectRepository {
         let project_name_pattern = params.project_name.as_ref().map(|p| format!("%{}%", p));
 
         let projects = sqlx::query_as::<_, Project>(
-            r#"
-            SELECT id, project_name, description, start_date_time, end_date_time,
-                   project_status, version, "order", creator_id, updater_id,
-                   create_date_time, update_date_time
-            FROM projects
-            WHERE creator_id = $1
-              AND ($2::TEXT IS NULL OR project_name ILIKE $2)
-            ORDER BY "order" ASC NULLS LAST, create_date_time DESC
-            LIMIT $3 OFFSET $4
-            "#,
+            &format!(
+                r#"
+                SELECT {}
+                FROM projects
+                WHERE creator_id = $1
+                  AND ($2::TEXT IS NULL OR project_name ILIKE $2)
+                ORDER BY "order" ASC NULLS LAST, create_date_time DESC
+                LIMIT $3 OFFSET $4
+                "#,
+                PROJECT_COLUMNS,
+            ),
         )
         .bind(creator_id)
         .bind(&project_name_pattern)
@@ -176,15 +183,16 @@ impl ProjectRepository {
     ) -> AppResult<Vec<Project>> {
         let project_name_pattern = params.project_name.as_ref().map(|p| format!("%{}%", p));
         let projects = sqlx::query_as::<_, Project>(
-            r#"
-            SELECT id, project_name, description, start_date_time, end_date_time,
-                   project_status, version, "order", creator_id, updater_id,
-                   create_date_time, update_date_time
-            FROM projects
-            WHERE creator_id = $1
-              AND ($2::TEXT IS NULL OR project_name ILIKE $2)
-            ORDER BY "order" ASC NULLS LAST, create_date_time DESC
-            "#,
+            &format!(
+                r#"
+                SELECT {}
+                FROM projects
+                WHERE creator_id = $1
+                  AND ($2::TEXT IS NULL OR project_name ILIKE $2)
+                ORDER BY "order" ASC NULLS LAST, create_date_time DESC
+                "#,
+                PROJECT_COLUMNS,
+            ),
         )
         .bind(creator_id)
         .bind(&project_name_pattern)
@@ -200,16 +208,14 @@ impl ProjectRepository {
         params: CreateProjectParams,
         creator_id: i64,
     ) -> AppResult<Project> {
-        let project = sqlx::query_as::<_, Project>(
-            r#"
-            INSERT INTO projects (id, project_name, description, start_date_time, end_date_time,
+        let sql = format!(
+            r#"INSERT INTO projects (id, project_name, description, start_date_time, end_date_time,
                                  project_status, version, "order", creator_id, create_date_time)
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW())
-            RETURNING id, project_name, description, start_date_time, end_date_time,
-                      project_status, version, "order", creator_id, updater_id,
-                      create_date_time, update_date_time
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW()){}
             "#,
-        )
+            PROJECT_RETURNING,
+        );
+        let project = sqlx::query_as::<_, Project>(&sql)
         .bind(project_id)
         .bind(&params.project_name)
         .bind(&params.description)
@@ -291,11 +297,7 @@ impl ProjectRepository {
         qb.push_bind(updater_id);
         qb.push(", update_date_time = CURRENT_TIMESTAMP WHERE id = ");
         qb.push_bind(project_id);
-        qb.push(
-            " RETURNING id, project_name, description, start_date_time, end_date_time, \
-             project_status, version, \"order\", creator_id, updater_id, \
-             create_date_time, update_date_time",
-        );
+        qb.push(PROJECT_RETURNING);
 
         let project = qb
             .build_query_as::<Project>()
@@ -350,24 +352,22 @@ impl ProjectRepository {
             return Ok(());
         }
 
-        let mut tx = pool.begin().await?;
+        // 生成 order 值数组 [0.0, 1.0, 2.0, ...]
+        let orders: Vec<f64> = (0..project_ids.len()).map(|i| i as f64).collect();
 
-        // 为每个项目设置新的 order 值，从 0 开始递增
-        for (index, project_id) in project_ids.iter().enumerate() {
-            sqlx::query(
-                r#"
-                UPDATE projects
-                SET "order" = $1, update_date_time = CURRENT_TIMESTAMP
-                WHERE id = $2
-                "#,
-            )
-            .bind(index as f64)
-            .bind(project_id)
-            .execute(&mut *tx)
-            .await?;
-        }
+        sqlx::query(
+            r#"
+            UPDATE projects
+            SET "order" = data.new_order, update_date_time = CURRENT_TIMESTAMP
+            FROM unnest($1::bigint[], $2::float8[]) AS data(id, new_order)
+            WHERE projects.id = data.id
+            "#,
+        )
+        .bind(&project_ids)
+        .bind(&orders)
+        .execute(pool)
+        .await?;
 
-        tx.commit().await?;
         Ok(())
     }
 }

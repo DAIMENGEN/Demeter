@@ -8,21 +8,45 @@ use sqlx::QueryBuilder;
 
 pub struct TaskRepository;
 
+/// project_task_attribute_configs 表 SELECT 列（含 COALESCE）
+const CONFIG_COLUMNS: &str = r#"id, project_id, attribute_name, attribute_label, attribute_type,
+    is_required, default_value,
+    COALESCE(options, 'null'::jsonb) AS options,
+    COALESCE(value_color_map, 'null'::jsonb) AS value_color_map,
+    "order", is_archived, creator_id, updater_id, create_date_time, update_date_time"#;
+
+/// project_task_attribute_configs 表 RETURNING 列（含 COALESCE）
+const CONFIG_RETURNING: &str = r#" RETURNING id, project_id, attribute_name, attribute_label, attribute_type,
+    is_required, default_value,
+    COALESCE(options, 'null'::jsonb) AS options,
+    COALESCE(value_color_map, 'null'::jsonb) AS value_color_map,
+    "order", is_archived, creator_id, updater_id, create_date_time, update_date_time"#;
+
+/// project_tasks 表 SELECT 列
+const TASK_COLUMNS: &str = r#"id, task_name, parent_id, project_id, "order",
+    custom_attributes,
+    start_date_time, end_date_time, task_type,
+    creator_id, updater_id, create_date_time, update_date_time"#;
+
+/// project_tasks 表 RETURNING 列
+const TASK_RETURNING: &str = r#" RETURNING id, task_name, parent_id, project_id, "order",
+    custom_attributes,
+    start_date_time, end_date_time, task_type,
+    creator_id, updater_id, create_date_time, update_date_time"#;
+
 impl TaskRepository {
     pub async fn get_attribute_configs_by_project(
         pool: &PgPool,
         project_id: i64,
     ) -> AppResult<Vec<TaskAttributeConfig>> {
-        let configs = sqlx::query_as::<_, TaskAttributeConfig>(
-            r#"SELECT id, project_id, attribute_name, attribute_label, attribute_type,
-                      is_required, default_value,
-                      COALESCE(options, 'null'::jsonb) AS options,
-                      COALESCE(value_color_map, 'null'::jsonb) AS value_color_map,
-                      "order", is_archived, creator_id, updater_id, create_date_time, update_date_time
+        let sql = format!(
+            r#"SELECT {}
                FROM project_task_attribute_configs
                WHERE project_id = $1
                ORDER BY is_archived ASC, "order" ASC NULLS LAST, create_date_time ASC"#,
-        )
+            CONFIG_COLUMNS,
+        );
+        let configs = sqlx::query_as::<_, TaskAttributeConfig>(&sql)
         .bind(project_id)
         .fetch_all(pool)
         .await?;
@@ -34,15 +58,11 @@ impl TaskRepository {
         pool: &PgPool,
         config_id: i64,
     ) -> AppResult<Option<TaskAttributeConfig>> {
-        let config = sqlx::query_as::<_, TaskAttributeConfig>(
-            r#"SELECT id, project_id, attribute_name, attribute_label, attribute_type,
-                      is_required, default_value,
-                      COALESCE(options, 'null'::jsonb) AS options,
-                      COALESCE(value_color_map, 'null'::jsonb) AS value_color_map,
-                      "order", is_archived, creator_id, updater_id, create_date_time, update_date_time
-               FROM project_task_attribute_configs
-               WHERE id = $1"#,
-        )
+        let sql = format!(
+            r#"SELECT {} FROM project_task_attribute_configs WHERE id = $1"#,
+            CONFIG_COLUMNS,
+        );
+        let config = sqlx::query_as::<_, TaskAttributeConfig>(&sql)
         .bind(config_id)
         .fetch_optional(pool)
         .await?;
@@ -57,17 +77,14 @@ impl TaskRepository {
         params: CreateTaskAttributeConfigParams,
         creator_id: i64,
     ) -> AppResult<TaskAttributeConfig> {
-        let config = sqlx::query_as::<_, TaskAttributeConfig>(
+        let sql = format!(
             r#"INSERT INTO project_task_attribute_configs
                (id, project_id, attribute_name, attribute_label, attribute_type,
                 is_required, default_value, options, value_color_map, "order", creator_id, create_date_time)
-               VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, CURRENT_TIMESTAMP)
-               RETURNING id, project_id, attribute_name, attribute_label, attribute_type,
-                         is_required, default_value,
-                         COALESCE(options, 'null'::jsonb) AS options,
-                         COALESCE(value_color_map, 'null'::jsonb) AS value_color_map,
-                         "order", is_archived, creator_id, updater_id, create_date_time, update_date_time"#
-        )
+               VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, CURRENT_TIMESTAMP){}"#,
+            CONFIG_RETURNING,
+        );
+        let config = sqlx::query_as::<_, TaskAttributeConfig>(&sql)
         .bind(id)
         .bind(project_id)
         .bind(&params.attribute_name)
@@ -144,13 +161,7 @@ impl TaskRepository {
         qb.push_bind(updater_id);
         qb.push(", update_date_time = CURRENT_TIMESTAMP WHERE id = ");
         qb.push_bind(config_id);
-        qb.push(
-            " RETURNING id, project_id, attribute_name, attribute_label, attribute_type, \
-             is_required, default_value, \
-             COALESCE(options, 'null'::jsonb) AS options, \
-             COALESCE(value_color_map, 'null'::jsonb) AS value_color_map, \
-             \"order\", is_archived, creator_id, updater_id, create_date_time, update_date_time",
-        );
+        qb.push(CONFIG_RETURNING);
 
         let config = qb
             .build_query_as::<TaskAttributeConfig>()
@@ -227,16 +238,16 @@ impl TaskRepository {
         let offset = (page - 1) * page_size;
         let task_name_pattern = params.task_name.as_ref().map(|t| format!("%{}%", t));
         let tasks = sqlx::query_as::<_, Task>(
-            r#"SELECT id, task_name, parent_id, project_id, "order",
-                      custom_attributes,
-                      start_date_time, end_date_time, task_type,
-                      creator_id, updater_id, create_date_time, update_date_time
+            &format!(
+                r#"SELECT {}
                FROM project_tasks
                WHERE project_id = $1
                  AND ($2::TEXT IS NULL OR task_name ILIKE $2)
                  AND ($3::BIGINT IS NULL OR parent_id = $3)
                ORDER BY "order" ASC NULLS LAST, create_date_time DESC
                LIMIT $4 OFFSET $5"#,
+                TASK_COLUMNS,
+            ),
         )
         .bind(project_id)
         .bind(&task_name_pattern)
@@ -269,15 +280,15 @@ impl TaskRepository {
     ) -> AppResult<Vec<Task>> {
         let task_name_pattern = params.task_name.as_ref().map(|t| format!("%{}%", t));
         let tasks = sqlx::query_as::<_, Task>(
-            r#"SELECT id, task_name, parent_id, project_id, "order",
-                      custom_attributes,
-                      start_date_time, end_date_time, task_type,
-                      creator_id, updater_id, create_date_time, update_date_time
+            &format!(
+                r#"SELECT {}
                FROM project_tasks
                WHERE project_id = $1
                  AND ($2::TEXT IS NULL OR task_name ILIKE $2)
                  AND ($3::BIGINT IS NULL OR parent_id = $3)
                ORDER BY "order" ASC NULLS LAST, create_date_time DESC"#,
+                TASK_COLUMNS,
+            ),
         )
         .bind(project_id)
         .bind(&task_name_pattern)
@@ -289,14 +300,11 @@ impl TaskRepository {
     }
 
     pub async fn get_task_by_id(pool: &PgPool, task_id: i64) -> AppResult<Option<Task>> {
-        let task = sqlx::query_as::<_, Task>(
-            r#"SELECT id, task_name, parent_id, project_id, "order",
-                      custom_attributes,
-                      start_date_time, end_date_time, task_type,
-                      creator_id, updater_id, create_date_time, update_date_time
-               FROM project_tasks
-               WHERE id = $1"#,
-        )
+        let sql = format!(
+            r#"SELECT {} FROM project_tasks WHERE id = $1"#,
+            TASK_COLUMNS,
+        );
+        let task = sqlx::query_as::<_, Task>(&sql)
         .bind(task_id)
         .fetch_optional(pool)
         .await?;
@@ -312,19 +320,17 @@ impl TaskRepository {
         creator_id: i64,
     ) -> AppResult<Task> {
         let custom_attrs = params.custom_attributes.unwrap_or(serde_json::json!({}));
-        let task = sqlx::query_as::<_, Task>(
+        let sql = format!(
             r#"INSERT INTO project_tasks
                (id, task_name, parent_id, project_id, "order", custom_attributes,
                 start_date_time, end_date_time, task_type,
                 creator_id, create_date_time)
                VALUES ($1, $2, $3, $4, $5, $6,
                        $7, $8, $9,
-                       $10, CURRENT_TIMESTAMP)
-               RETURNING id, task_name, parent_id, project_id, "order",
-                         custom_attributes,
-                         start_date_time, end_date_time, task_type,
-                         creator_id, updater_id, create_date_time, update_date_time"#,
-        )
+                       $10, CURRENT_TIMESTAMP){}"#,
+            TASK_RETURNING,
+        );
+        let task = sqlx::query_as::<_, Task>(&sql)
         .bind(id)
         .bind(&params.task_name)
         .bind(params.parent_id)
@@ -339,6 +345,49 @@ impl TaskRepository {
         .await?;
 
         Ok(task)
+    }
+
+    pub async fn batch_create_tasks(
+        pool: &PgPool,
+        tasks_with_ids: Vec<(i64, CreateTaskParams)>,
+        project_id: i64,
+        creator_id: i64,
+    ) -> AppResult<Vec<Task>> {
+        if tasks_with_ids.is_empty() {
+            return Ok(vec![]);
+        }
+
+        let mut qb: QueryBuilder<sqlx::Postgres> = QueryBuilder::new(
+            r#"INSERT INTO project_tasks
+               (id, task_name, parent_id, project_id, "order", custom_attributes,
+                start_date_time, end_date_time, task_type,
+                creator_id, create_date_time) "#,
+        );
+
+        qb.push_values(tasks_with_ids.iter(), |mut b, (id, params)| {
+            let custom_attrs = params
+                .custom_attributes
+                .clone()
+                .unwrap_or(serde_json::json!({}));
+
+            b.push_bind(*id)
+                .push_bind(params.task_name.clone())
+                .push_bind(params.parent_id.map(|pid| pid.0))
+                .push_bind(project_id)
+                .push_bind(params.order)
+                .push_bind(custom_attrs)
+                .push_bind(params.start_date_time)
+                .push_bind(params.end_date_time)
+                .push_bind(params.task_type)
+                .push_bind(creator_id)
+                .push("CURRENT_TIMESTAMP");
+        });
+
+        qb.push(TASK_RETURNING);
+
+        let tasks = qb.build_query_as::<Task>().fetch_all(pool).await?;
+
+        Ok(tasks)
     }
 
     pub async fn update_task(
@@ -408,12 +457,7 @@ impl TaskRepository {
         qb.push_bind(updater_id);
         qb.push(", update_date_time = CURRENT_TIMESTAMP WHERE id = ");
         qb.push_bind(task_id);
-        qb.push(
-            " RETURNING id, task_name, parent_id, project_id, \"order\", \
-             custom_attributes, \
-             start_date_time, end_date_time, task_type, \
-             creator_id, updater_id, create_date_time, update_date_time",
-        );
+        qb.push(TASK_RETURNING);
 
         let task = qb
             .build_query_as::<Task>()

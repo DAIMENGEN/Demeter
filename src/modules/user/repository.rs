@@ -34,6 +34,26 @@ const USER_FROM_JOINS: &str = r#"
     LEFT JOIN departments d ON d.id = ud.department_id
 "#;
 
+/// 列表 / 全量共用的 WHERE 子句（$1–$8 占位符）
+const USER_WHERE: &str = r#"
+    WHERE ($1::TEXT IS NULL OR u.username ILIKE $1 OR u.full_name ILIKE $1)
+      AND ($2::TEXT IS NULL OR u.username ILIKE $2)
+      AND ($3::TEXT IS NULL OR u.full_name ILIKE $3)
+      AND ($4::TEXT IS NULL OR u.email ILIKE $4)
+      AND ($5::TEXT IS NULL OR u.phone ILIKE $5)
+      AND ($6::BOOLEAN IS NULL OR u.is_active = $6)
+      AND ($7::BIGINT IS NULL OR ud.department_id = $7)
+      AND ($8::BIGINT IS NULL OR EXISTS (
+            SELECT 1 FROM user_teams ut2 WHERE ut2.user_id = u.id AND ut2.team_id = $8
+      ))
+"#;
+
+/// COUNT 查询的 FROM 子句（不需要 JOIN departments）
+const USER_COUNT_FROM: &str = r#"
+    FROM users u
+    LEFT JOIN user_departments ud ON ud.user_id = u.id
+"#;
+
 impl UserRepository {
     // ─── 列表 / 全量 / 详情 ───
 
@@ -54,21 +74,13 @@ impl UserRepository {
             r#"
             SELECT {columns}
             {from_joins}
-            WHERE ($1::TEXT IS NULL OR u.username ILIKE $1 OR u.full_name ILIKE $1)
-              AND ($2::TEXT IS NULL OR u.username ILIKE $2)
-              AND ($3::TEXT IS NULL OR u.full_name ILIKE $3)
-              AND ($4::TEXT IS NULL OR u.email ILIKE $4)
-              AND ($5::TEXT IS NULL OR u.phone ILIKE $5)
-              AND ($6::BOOLEAN IS NULL OR u.is_active = $6)
-              AND ($7::BIGINT IS NULL OR ud.department_id = $7)
-              AND ($8::BIGINT IS NULL OR EXISTS (
-                    SELECT 1 FROM user_teams ut2 WHERE ut2.user_id = u.id AND ut2.team_id = $8
-              ))
+            {where_clause}
             ORDER BY u.create_date_time DESC
             LIMIT $9 OFFSET $10
             "#,
             columns = USER_COLUMNS,
             from_joins = USER_FROM_JOINS,
+            where_clause = USER_WHERE,
         );
 
         let users = sqlx::query_as::<_, User>(&sql)
@@ -85,23 +97,17 @@ impl UserRepository {
             .fetch_all(pool)
             .await?;
 
-        let total: (i64,) = sqlx::query_as(
+        let count_sql = format!(
             r#"
             SELECT COUNT(*)
-            FROM users u
-            LEFT JOIN user_departments ud ON ud.user_id = u.id
-            WHERE ($1::TEXT IS NULL OR u.username ILIKE $1 OR u.full_name ILIKE $1)
-              AND ($2::TEXT IS NULL OR u.username ILIKE $2)
-              AND ($3::TEXT IS NULL OR u.full_name ILIKE $3)
-              AND ($4::TEXT IS NULL OR u.email ILIKE $4)
-              AND ($5::TEXT IS NULL OR u.phone ILIKE $5)
-              AND ($6::BOOLEAN IS NULL OR u.is_active = $6)
-              AND ($7::BIGINT IS NULL OR ud.department_id = $7)
-              AND ($8::BIGINT IS NULL OR EXISTS (
-                    SELECT 1 FROM user_teams ut2 WHERE ut2.user_id = u.id AND ut2.team_id = $8
-              ))
+            {count_from}
+            {where_clause}
             "#,
-        )
+            count_from = USER_COUNT_FROM,
+            where_clause = USER_WHERE,
+        );
+
+        let total: (i64,) = sqlx::query_as(&count_sql)
         .bind(&keyword_pattern)
         .bind(&username_pattern)
         .bind(&full_name_pattern)
@@ -130,20 +136,12 @@ impl UserRepository {
             r#"
             SELECT {columns}
             {from_joins}
-            WHERE ($1::TEXT IS NULL OR u.username ILIKE $1 OR u.full_name ILIKE $1)
-              AND ($2::TEXT IS NULL OR u.username ILIKE $2)
-              AND ($3::TEXT IS NULL OR u.full_name ILIKE $3)
-              AND ($4::TEXT IS NULL OR u.email ILIKE $4)
-              AND ($5::TEXT IS NULL OR u.phone ILIKE $5)
-              AND ($6::BOOLEAN IS NULL OR u.is_active = $6)
-              AND ($7::BIGINT IS NULL OR ud.department_id = $7)
-              AND ($8::BIGINT IS NULL OR EXISTS (
-                    SELECT 1 FROM user_teams ut2 WHERE ut2.user_id = u.id AND ut2.team_id = $8
-              ))
+            {where_clause}
             ORDER BY u.create_date_time DESC
             "#,
             columns = USER_COLUMNS,
             from_joins = USER_FROM_JOINS,
+            where_clause = USER_WHERE,
         );
 
         let users = sqlx::query_as::<_, User>(&sql)
@@ -209,6 +207,8 @@ impl UserRepository {
     ) -> AppResult<User> {
         let is_active = params.is_active.unwrap_or(true);
 
+        let mut tx = pool.begin().await?;
+
         // 1. 插入 users 表
         sqlx::query(
             r#"
@@ -224,7 +224,7 @@ impl UserRepository {
         .bind(&params.phone)
         .bind(is_active)
         .bind(creator_id)
-        .execute(pool)
+        .execute(&mut *tx)
         .await?;
 
         // 2. 插入 user_departments
@@ -239,7 +239,7 @@ impl UserRepository {
             .bind(id)
             .bind(dept_id.0)
             .bind(creator_id)
-            .execute(pool)
+            .execute(&mut *tx)
             .await?;
         }
 
@@ -256,10 +256,12 @@ impl UserRepository {
                 .bind(id)
                 .bind(tid.0)
                 .bind(creator_id)
-                .execute(pool)
+                .execute(&mut *tx)
                 .await?;
             }
         }
+
+        tx.commit().await?;
 
         // 4. 返回完整 User（含组织关系）
         Self::get_user_by_id(pool, id)
@@ -281,13 +283,10 @@ impl UserRepository {
         updater_id: i64,
         generate_id: impl Fn() -> Result<i64, crate::common::snowflake::SnowflakeError>,
     ) -> AppResult<Option<User>> {
-        // 检查用户是否存在
-        if Self::get_user_by_id(pool, id).await?.is_none() {
-            return Ok(None);
-        }
+        let mut tx = pool.begin().await?;
 
         // 1. 更新 users 表基础字段
-        sqlx::query(
+        let result = sqlx::query(
             r#"
             UPDATE users
             SET username = COALESCE($2, username),
@@ -309,15 +308,20 @@ impl UserRepository {
         .bind(&params.phone)
         .bind(&params.is_active)
         .bind(updater_id)
-        .execute(pool)
+        .execute(&mut *tx)
         .await?;
+
+        // 用户不存在
+        if result.rows_affected() == 0 {
+            return Ok(None);
+        }
 
         // 2. 更新 user_departments（如果前端传了该字段）
         if let Some(dept_opt) = &params.department_id {
             // 先删除旧关系
             sqlx::query(r#"DELETE FROM user_departments WHERE user_id = $1"#)
                 .bind(id)
-                .execute(pool)
+                .execute(&mut *tx)
                 .await?;
             // 如果传了新部门，则插入
             if let Some(dept_id) = dept_opt {
@@ -331,7 +335,7 @@ impl UserRepository {
                 .bind(id)
                 .bind(dept_id.0)
                 .bind(updater_id)
-                .execute(pool)
+                .execute(&mut *tx)
                 .await?;
             }
         }
@@ -341,7 +345,7 @@ impl UserRepository {
             // 先删除旧关系
             sqlx::query(r#"DELETE FROM user_teams WHERE user_id = $1"#)
                 .bind(id)
-                .execute(pool)
+                .execute(&mut *tx)
                 .await?;
             // 插入新关系
             for tid in team_ids {
@@ -355,10 +359,12 @@ impl UserRepository {
                 .bind(id)
                 .bind(tid.0)
                 .bind(updater_id)
-                .execute(pool)
+                .execute(&mut *tx)
                 .await?;
             }
         }
+
+        tx.commit().await?;
 
         Self::get_user_by_id(pool, id).await
     }

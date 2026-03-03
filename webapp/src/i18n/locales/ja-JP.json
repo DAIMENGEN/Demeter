@@ -250,7 +250,15 @@
     "columnStartDateTime": "開始時間",
     "columnEndDateTime": "終了時間",
     "columnTaskType": "タスクタイプ",
-    "defaultProjectName": "プロジェクト名"
+    "defaultProjectName": "プロジェクト名",
+    "batchCreateTask": "一括タスク作成",
+    "batchCreateCount": "全 {{count}} 件のタスク",
+    "batchCreateSuccess": "一括作成しました",
+    "batchCreateFailed": "一括作成に失敗しました",
+    "batchAddRow": "行を追加",
+    "batchAddNRows": "{{count}} 行追加",
+    "batchDeleteSelected": "選択を削除 ({{count}})",
+    "batchDeleteSelectedConfirm": "選択された {{count}} 行を削除してもよろしいですか？"
   },
   "displayConfig": {
     "title": "表示設定",
@@ -279,6 +287,7 @@
     "startTime": "開始時間",
     "endTime": "終了時間",
     "createTask": "タスクを作成",
+    "batchCreateTask": "一括タスク作成",
     "configAttributes": "カスタム属性の設定",
     "backToList": "プロジェクト一覧に戻る"
   },

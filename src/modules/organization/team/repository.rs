@@ -7,6 +7,12 @@ use sqlx::QueryBuilder;
 
 pub struct TeamRepository;
 
+/// teams 表 SELECT 列
+const TEAM_COLUMNS: &str = "id, team_name, description, creator_id, updater_id, create_date_time, update_date_time";
+
+/// teams 表 RETURNING 列
+const TEAM_RETURNING: &str = " RETURNING id, team_name, description, creator_id, updater_id, create_date_time, update_date_time";
+
 impl TeamRepository {
     pub async fn get_team_list(
         pool: &PgPool,
@@ -17,20 +23,16 @@ impl TeamRepository {
         let offset = (page - 1) * page_size;
         let team_name_pattern = params.team_name.as_ref().map(|t| format!("%{}%", t));
         let teams = sqlx::query_as::<_, Team>(
-            r#"
-            SELECT 
-                id,
-                team_name,
-                description,
-                creator_id,
-                updater_id,
-                create_date_time,
-                update_date_time
-            FROM teams
-            WHERE ($1::TEXT IS NULL OR team_name ILIKE $1)
-            ORDER BY create_date_time DESC
-            LIMIT $2 OFFSET $3
-            "#,
+            &format!(
+                r#"
+                SELECT {}
+                FROM teams
+                WHERE ($1::TEXT IS NULL OR team_name ILIKE $1)
+                ORDER BY create_date_time DESC
+                LIMIT $2 OFFSET $3
+                "#,
+                TEAM_COLUMNS,
+            ),
         )
         .bind(&team_name_pattern)
         .bind(page_size)
@@ -56,12 +58,15 @@ impl TeamRepository {
         let team_name_pattern = params.team_name.as_ref().map(|t| format!("%{}%", t));
 
         let teams = sqlx::query_as::<_, Team>(
-            r#"
-            SELECT id, team_name, description, creator_id, updater_id, create_date_time, update_date_time
-            FROM teams
-            WHERE ($1::TEXT IS NULL OR team_name ILIKE $1)
-            ORDER BY create_date_time DESC
-            "#,
+            &format!(
+                r#"
+                SELECT {}
+                FROM teams
+                WHERE ($1::TEXT IS NULL OR team_name ILIKE $1)
+                ORDER BY create_date_time DESC
+                "#,
+                TEAM_COLUMNS,
+            ),
         )
         .bind(&team_name_pattern)
         .fetch_all(pool)
@@ -72,11 +77,7 @@ impl TeamRepository {
 
     pub async fn get_team_by_id(pool: &PgPool, team_id: i64) -> AppResult<Option<Team>> {
         let team = sqlx::query_as::<_, Team>(
-            r#"
-            SELECT id, team_name, description, creator_id, updater_id, create_date_time, update_date_time
-            FROM teams
-            WHERE id = $1
-            "#,
+            &format!("SELECT {} FROM teams WHERE id = $1", TEAM_COLUMNS),
         )
         .bind(team_id)
         .fetch_optional(pool)
@@ -86,11 +87,7 @@ impl TeamRepository {
 
     pub async fn get_team_by_name(pool: &PgPool, team_name: &str) -> AppResult<Option<Team>> {
         let team = sqlx::query_as::<_, Team>(
-            r#"
-            SELECT id, team_name, description, creator_id, updater_id, create_date_time, update_date_time
-            FROM teams
-            WHERE team_name = $1
-            "#,
+            &format!("SELECT {} FROM teams WHERE team_name = $1", TEAM_COLUMNS),
         )
         .bind(team_name)
         .fetch_optional(pool)
@@ -104,13 +101,12 @@ impl TeamRepository {
         params: CreateTeamParams,
         creator_id: i64,
     ) -> AppResult<Team> {
-        let team = sqlx::query_as::<_, Team>(
-            r#"
-            INSERT INTO teams (id, team_name, description, creator_id, create_date_time)
-            VALUES ($1, $2, $3, $4, NOW())
-            RETURNING id, team_name, description, creator_id, updater_id, create_date_time, update_date_time
-            "#
-        )
+        let sql = format!(
+            "INSERT INTO teams (id, team_name, description, creator_id, create_date_time) \
+             VALUES ($1, $2, $3, $4, NOW()){}",
+            TEAM_RETURNING,
+        );
+        let team = sqlx::query_as::<_, Team>(&sql)
         .bind(team_id)
         .bind(&params.team_name)
         .bind(&params.description)
@@ -126,11 +122,6 @@ impl TeamRepository {
         params: UpdateTeamParams,
         updater_id: i64,
     ) -> AppResult<Option<Team>> {
-        let existing = Self::get_team_by_id(pool, team_id).await?;
-        if existing.is_none() {
-            return Ok(None);
-        }
-
         // 动态构建 SET 子句
         let mut qb: QueryBuilder<sqlx::Postgres> = QueryBuilder::new("UPDATE teams SET ");
         let mut has_set = false;
@@ -155,17 +146,14 @@ impl TeamRepository {
         qb.push_bind(updater_id);
         qb.push(", update_date_time = NOW() WHERE id = ");
         qb.push_bind(team_id);
-        qb.push(
-            " RETURNING id, team_name, description, creator_id, updater_id, \
-             create_date_time, update_date_time",
-        );
+        qb.push(TEAM_RETURNING);
 
         let team = qb
             .build_query_as::<Team>()
-            .fetch_one(pool)
+            .fetch_optional(pool)
             .await?;
 
-        Ok(Some(team))
+        Ok(team)
     }
 
     pub async fn delete_team(pool: &PgPool, team_id: i64) -> AppResult<bool> {

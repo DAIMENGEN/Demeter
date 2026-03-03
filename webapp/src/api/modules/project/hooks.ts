@@ -5,6 +5,7 @@
 import {useCallback, useState} from "react";
 import {projectApi} from "./api";
 import type {
+    BatchCreateProjectTasksParams,
     BatchDeleteProjectsParams,
     BatchDeleteProjectTaskAttributeConfigsParams,
     CreateProjectParams,
@@ -307,12 +308,23 @@ export const useProjectTaskActions = () => {
     }
   }, []);
 
+  const batchCreateTasks = useCallback(async (projectId: string, data: BatchCreateProjectTasksParams) => {
+    try {
+      setLoading(true);
+      const response = await projectApi.batchCreateProjectTasks(projectId, data);
+      return assertApiOk(response);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
   return {
     loading,
     createTask,
     updateTask,
     deleteTask,
     reorderTasks,
+    batchCreateTasks,
   };
 };
 

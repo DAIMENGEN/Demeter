@@ -3,6 +3,7 @@ import {useTranslation} from "react-i18next";
 import {Button, DatePicker, Select, Space, Tooltip} from "antd";
 import "./schedulant-toolbar.scss";
 import {
+    AppstoreAddOutlined,
     ArrowLeftOutlined,
     CalendarOutlined,
     LeftOutlined,
@@ -35,6 +36,7 @@ export interface SchedulantToolbarProps {
     onShiftRight?: () => void;
     onJumpToToday?: () => void;
     onOpenCreateTask?: () => void;
+    onOpenBatchCreateTask?: () => void;
     onBack?: () => void;
 
     // 显示配置 props
@@ -72,6 +74,7 @@ export const SchedulantToolbar = React.forwardRef<HTMLDivElement, SchedulantTool
                                                                                                onShiftRight,
                                                                                                onJumpToToday,
                                                                                                onOpenCreateTask,
+                                                                                               onOpenBatchCreateTask,
                                                                                                onBack,
                                                                                                // 显示配置
                                                                                                lineHeightMode,
@@ -147,6 +150,9 @@ export const SchedulantToolbar = React.forwardRef<HTMLDivElement, SchedulantTool
                         style={{width: 140}}/>
                     <Tooltip title={t("toolbar.createTask")}>
                         <Button type="primary" icon={<PlusOutlined/>} onClick={onOpenCreateTask}/>
+                    </Tooltip>
+                    <Tooltip title={t("toolbar.batchCreateTask")}>
+                        <Button type="primary" icon={<AppstoreAddOutlined/>} onClick={onOpenBatchCreateTask}/>
                     </Tooltip>
                     <SchedulantConfig
                         lineHeightMode={lineHeightMode}
