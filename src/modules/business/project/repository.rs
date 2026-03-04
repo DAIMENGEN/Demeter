@@ -393,10 +393,11 @@ impl ProjectVisitRepository {
     ) -> AppResult<()> {
         sqlx::query(
             r#"
-            INSERT INTO project_visits (id, user_id, project_id, visited_at)
-            VALUES ($1, $2, $3, CURRENT_TIMESTAMP)
+            INSERT INTO project_visits (id, user_id, project_id, visited_at, create_date_time)
+            VALUES ($1, $2, $3, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
             ON CONFLICT (user_id, project_id)
-            DO UPDATE SET visited_at = CURRENT_TIMESTAMP
+            DO UPDATE SET visited_at = CURRENT_TIMESTAMP,
+                         update_date_time = CURRENT_TIMESTAMP
             "#,
         )
         .bind(visit_id)

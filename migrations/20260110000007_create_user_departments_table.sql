@@ -4,7 +4,9 @@ CREATE TABLE IF NOT EXISTS user_departments (
     user_id BIGINT NOT NULL UNIQUE,
     department_id BIGINT NOT NULL,
     creator_id BIGINT NOT NULL,
+    updater_id BIGINT,
     create_date_time TIMESTAMP NOT NULL DEFAULT NOW(),
+    update_date_time TIMESTAMP,
     CONSTRAINT fk_ud_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
     CONSTRAINT fk_ud_department FOREIGN KEY (department_id) REFERENCES departments(id) ON DELETE CASCADE
 );

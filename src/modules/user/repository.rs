@@ -233,7 +233,7 @@ impl UserRepository {
                 crate::common::error::AppError::InternalError(format!("Failed to generate ID: {}", e))
             })?;
             sqlx::query(
-                r#"INSERT INTO user_departments (id, user_id, department_id, creator_id) VALUES ($1, $2, $3, $4)"#,
+                r#"INSERT INTO user_departments (id, user_id, department_id, creator_id, create_date_time) VALUES ($1, $2, $3, $4, NOW())"#,
             )
             .bind(rel_id)
             .bind(id)
@@ -250,7 +250,7 @@ impl UserRepository {
                     crate::common::error::AppError::InternalError(format!("Failed to generate ID: {}", e))
                 })?;
                 sqlx::query(
-                    r#"INSERT INTO user_teams (id, user_id, team_id, creator_id) VALUES ($1, $2, $3, $4)"#,
+                    r#"INSERT INTO user_teams (id, user_id, team_id, creator_id, create_date_time) VALUES ($1, $2, $3, $4, NOW())"#,
                 )
                 .bind(rel_id)
                 .bind(id)
@@ -329,7 +329,7 @@ impl UserRepository {
                     crate::common::error::AppError::InternalError(format!("Failed to generate ID: {}", e))
                 })?;
                 sqlx::query(
-                    r#"INSERT INTO user_departments (id, user_id, department_id, creator_id) VALUES ($1, $2, $3, $4)"#,
+                    r#"INSERT INTO user_departments (id, user_id, department_id, creator_id, updater_id, create_date_time, update_date_time) VALUES ($1, $2, $3, $4, $4, NOW(), NOW())"#,
                 )
                 .bind(rel_id)
                 .bind(id)
@@ -353,7 +353,7 @@ impl UserRepository {
                     crate::common::error::AppError::InternalError(format!("Failed to generate ID: {}", e))
                 })?;
                 sqlx::query(
-                    r#"INSERT INTO user_teams (id, user_id, team_id, creator_id) VALUES ($1, $2, $3, $4)"#,
+                    r#"INSERT INTO user_teams (id, user_id, team_id, creator_id, updater_id, create_date_time, update_date_time) VALUES ($1, $2, $3, $4, $4, NOW(), NOW())"#,
                 )
                 .bind(rel_id)
                 .bind(id)

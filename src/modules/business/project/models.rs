@@ -84,6 +84,9 @@ pub struct ProjectVisit {
     pub user_id: Id,
     pub project_id: Id,
     pub visited_at: chrono::NaiveDateTime,
+    pub updater_id: Option<Id>,
+    pub create_date_time: chrono::NaiveDateTime,
+    pub update_date_time: Option<chrono::NaiveDateTime>,
 }
 
 #[derive(Debug, Deserialize)]
