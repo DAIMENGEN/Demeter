@@ -55,7 +55,7 @@ export const FeatureNavigation = () => {
     const navigate = useNavigate();
     const {t} = useTranslation();
     const currentUser = useAppSelector(selectCurrentUser);
-    const isAdmin = currentUser?.username === "admin";
+    const isAdmin = currentUser?.role === "super_admin" || currentUser?.role === "admin";
 
     const visibleFeatures = useMemo(
         () => features.filter((f) => !f.adminOnly || isAdmin),

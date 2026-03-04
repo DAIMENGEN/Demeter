@@ -5,7 +5,7 @@ use crate::common::jwt::Claims;
 use crate::common::response::{ApiResponse, PageResponse};
 use crate::modules::user::models::{
     BatchDeleteUsersParams, CreateUserParams, ResetPasswordResponse, ToggleUserStatusParams,
-    UpdateProfileParams, UpdateUserParams, UserQueryParams,
+    UpdateProfileParams, UpdateUserParams, UserQueryParams, UserRole,
 };
 use crate::modules::user::repository::UserRepository;
 use axum::{
@@ -70,6 +70,15 @@ pub async fn create_user(
         ));
     }
 
+    // 只有 super_admin 才能创建 admin / super_admin 角色的用户
+    if let Some(ref role) = params.role {
+        if role.is_admin() && claims.role != "super_admin" {
+            return Err(AppError::Forbidden(
+                "Only super admin can assign admin roles".to_string(),
+            ));
+        }
+    }
+
     let password_hash = bcrypt::hash(&params.password, bcrypt::DEFAULT_COST)
         .map_err(|e| AppError::InternalError(format!("Failed to hash password: {}", e)))?;
 
@@ -100,6 +109,26 @@ pub async fn update_user(
     Json(params): Json<UpdateUserParams>,
 ) -> AppResult<Json<ApiResponse<crate::modules::user::models::User>>> {
     let updater_id = claims.sub;
+
+    // 只有 super_admin 才能修改用户角色为 admin / super_admin
+    if let Some(ref role) = params.role {
+        if role.is_admin() && claims.role != "super_admin" {
+            return Err(AppError::Forbidden(
+                "Only super admin can assign admin roles".to_string(),
+            ));
+        }
+    }
+
+    // 不允许修改 super_admin 的角色（降级保护）
+    if params.role.is_some() {
+        if let Some(target_user) = UserRepository::get_user_by_id(&state.pool, id.0).await? {
+            if target_user.role == UserRole::SuperAdmin && claims.role != "super_admin" {
+                return Err(AppError::Forbidden(
+                    "Cannot modify super admin's role".to_string(),
+                ));
+            }
+        }
+    }
 
     // Hash password if provided
     let password_hash = match &params.password {
@@ -137,6 +166,15 @@ pub async fn delete_user(
     State(state): State<AppState>,
     Path(id): Path<Id>,
 ) -> AppResult<Json<ApiResponse<()>>> {
+    // 不允许删除 super_admin 用户
+    if let Some(target_user) = UserRepository::get_user_by_id(&state.pool, id.0).await? {
+        if target_user.role == UserRole::SuperAdmin {
+            return Err(AppError::Forbidden(
+                "Cannot delete super admin user".to_string(),
+            ));
+        }
+    }
+
     let deleted = UserRepository::delete_user(&state.pool, id.0).await?;
     if !deleted {
         return Err(AppError::NotFound(format!("User not found: {}", id)));
@@ -148,7 +186,19 @@ pub async fn batch_delete_users(
     State(state): State<AppState>,
     Json(params): Json<BatchDeleteUsersParams>,
 ) -> AppResult<Json<ApiResponse<()>>> {
-    let ids: Vec<i64> = params.ids.into_iter().map(|id| id.0).collect();
+    let ids: Vec<i64> = params.ids.iter().map(|id| id.0).collect();
+
+    // 检查批量删除中是否包含 super_admin 用户
+    for &uid in &ids {
+        if let Some(target_user) = UserRepository::get_user_by_id(&state.pool, uid).await? {
+            if target_user.role == UserRole::SuperAdmin {
+                return Err(AppError::Forbidden(
+                    "Cannot delete super admin user".to_string(),
+                ));
+            }
+        }
+    }
+
     UserRepository::batch_delete_users(&state.pool, ids).await?;
     Ok(Json(ApiResponse::success(())))
 }

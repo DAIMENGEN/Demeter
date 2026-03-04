@@ -16,6 +16,7 @@ const USER_COLUMNS: &str = r#"
     u.full_name,
     u.email,
     u.phone,
+    u.role,
     u.is_active,
     ud.department_id,
     d.department_name,
@@ -206,14 +207,15 @@ impl UserRepository {
         generate_id: impl Fn() -> Result<i64, crate::common::snowflake::SnowflakeError>,
     ) -> AppResult<User> {
         let is_active = params.is_active.unwrap_or(true);
+        let role = params.role.clone().unwrap_or(crate::modules::user::models::UserRole::User);
 
         let mut tx = pool.begin().await?;
 
         // 1. 插入 users 表
         sqlx::query(
             r#"
-            INSERT INTO users (id, username, password, full_name, email, phone, is_active, creator_id, create_date_time)
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW())
+            INSERT INTO users (id, username, password, full_name, email, phone, role, is_active, creator_id, create_date_time)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW())
             "#,
         )
         .bind(id)
@@ -222,6 +224,7 @@ impl UserRepository {
         .bind(&params.full_name)
         .bind(&params.email)
         .bind(&params.phone)
+        .bind(&role)
         .bind(is_active)
         .bind(creator_id)
         .execute(&mut *tx)
@@ -295,7 +298,8 @@ impl UserRepository {
                 email = COALESCE($5, email),
                 phone = COALESCE($6, phone),
                 is_active = COALESCE($7, is_active),
-                updater_id = $8,
+                role = COALESCE($8, role),
+                updater_id = $9,
                 update_date_time = NOW()
             WHERE id = $1
             "#,
@@ -307,6 +311,7 @@ impl UserRepository {
         .bind(&params.email)
         .bind(&params.phone)
         .bind(&params.is_active)
+        .bind(&params.role)
         .bind(updater_id)
         .execute(&mut *tx)
         .await?;

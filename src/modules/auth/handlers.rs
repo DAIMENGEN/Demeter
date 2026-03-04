@@ -152,9 +152,9 @@ pub async fn register(
     .await?;
 
     let access_token =
-        JwtUtil::generate_access_token(user.id.into(), &user.username, &state.jwt_config)?;
+        JwtUtil::generate_access_token(user.id.into(), &user.role.to_string(), &state.jwt_config)?;
     let refresh_token =
-        JwtUtil::generate_refresh_token(user.id.into(), &user.username, &state.jwt_config)?;
+        JwtUtil::generate_refresh_token(user.id.into(), &user.role.to_string(), &state.jwt_config)?;
     persist_refresh_token(&state, user.id.into(), &refresh_token).await?;
 
     let full_user = UserRepository::get_user_by_id(&state.pool, user.id.into())
@@ -205,9 +205,9 @@ pub async fn login(
     }
 
     let access_token =
-        JwtUtil::generate_access_token(user.id.into(), &user.username, &state.jwt_config)?;
+        JwtUtil::generate_access_token(user.id.into(), &user.role.to_string(), &state.jwt_config)?;
     let refresh_token =
-        JwtUtil::generate_refresh_token(user.id.into(), &user.username, &state.jwt_config)?;
+        JwtUtil::generate_refresh_token(user.id.into(), &user.role.to_string(), &state.jwt_config)?;
     persist_refresh_token(&state, user.id.into(), &refresh_token).await?;
 
     let full_user = UserRepository::get_user_by_id(&state.pool, user.id.into())
@@ -251,9 +251,9 @@ pub async fn refresh_token(
     }
 
     let new_access_token =
-        JwtUtil::generate_access_token(user.id.into(), &user.username, &state.jwt_config)?;
+        JwtUtil::generate_access_token(user.id.into(), &user.role.to_string(), &state.jwt_config)?;
     let new_refresh_token =
-        JwtUtil::generate_refresh_token(user.id.into(), &user.username, &state.jwt_config)?;
+        JwtUtil::generate_refresh_token(user.id.into(), &user.role.to_string(), &state.jwt_config)?;
 
     AuthRepository::delete_refresh_token(&state.pool, &refresh_token).await?;
 
