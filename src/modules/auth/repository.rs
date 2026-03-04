@@ -133,6 +133,7 @@ impl AuthRepository {
         Ok(())
     }
 
+    #[allow(unused)]
     pub async fn delete_user_refresh_tokens(pool: &PgPool, user_id: i64) -> AppResult<()> {
         sqlx::query(
             r#"
@@ -147,6 +148,7 @@ impl AuthRepository {
         Ok(())
     }
 
+    #[allow(unused)]
     pub async fn cleanup_expired_tokens(pool: &PgPool) -> AppResult<u64> {
         let result = sqlx::query(
             r#"

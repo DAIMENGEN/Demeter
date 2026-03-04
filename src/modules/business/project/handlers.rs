@@ -5,9 +5,9 @@ use crate::common::jwt::Claims;
 use crate::common::response::{ApiResponse, PageResponse};
 use crate::modules::business::project::models::{
     BatchDeleteProjectsParams, CreateProjectParams, Project, ProjectQueryParams,
-    ReorderProjectsParams, UpdateProjectParams,
+    RecentlyVisitedQueryParams, ReorderProjectsParams, UpdateProjectParams,
 };
-use crate::modules::business::project::repository::ProjectRepository;
+use crate::modules::business::project::repository::{ProjectRepository, ProjectVisitRepository};
 use axum::{
     extract::{Path, Query, State},
     http::StatusCode,
@@ -144,4 +144,29 @@ pub async fn reorder_projects(
     let project_ids: Vec<i64> = params.project_ids.into_iter().map(|id| id.0).collect();
     ProjectRepository::reorder_projects(&state.pool, project_ids).await?;
     Ok(Json(ApiResponse::success(())))
+}
+
+pub async fn record_project_visit(
+    State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
+    Path(project_id): Path<Id>,
+) -> AppResult<Json<ApiResponse<()>>> {
+    let user_id = claims.sub;
+    let visit_id = state
+        .generate_id()
+        .map_err(|e| AppError::InternalError(format!("Failed to generate visit ID: {}", e)))?;
+    ProjectVisitRepository::record_visit(&state.pool, visit_id, user_id, project_id.0).await?;
+    Ok(Json(ApiResponse::success(())))
+}
+
+pub async fn get_recently_visited_projects(
+    State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
+    Query(params): Query<RecentlyVisitedQueryParams>,
+) -> AppResult<Json<ApiResponse<Vec<Project>>>> {
+    let user_id = claims.sub;
+    let projects =
+        ProjectVisitRepository::get_recently_visited_projects(&state.pool, user_id, params)
+            .await?;
+    Ok(Json(ApiResponse::success(projects)))
 }

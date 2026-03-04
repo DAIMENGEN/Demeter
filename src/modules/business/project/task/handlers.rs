@@ -157,7 +157,7 @@ pub async fn get_task_by_id(
 ) -> AppResult<Json<ApiResponse<Task>>> {
     let task = TaskRepository::get_task_by_id(&state.pool, task_id.0)
         .await?
-        .ok_or_else(|| crate::common::error::AppError::NotFound("Task not found".to_string()))?;
+        .ok_or_else(|| AppError::NotFound("Task not found".to_string()))?;
 
     Ok(Json(ApiResponse::success(task)))
 }

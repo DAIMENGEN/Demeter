@@ -4,6 +4,7 @@ use sqlx::FromRow;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "lowercase")]
+#[allow(unused)]
 pub enum AttributeType {
     Text,
     Number,
@@ -14,6 +15,7 @@ pub enum AttributeType {
 }
 
 impl AttributeType {
+    #[allow(unused)]
     pub fn as_str(&self) -> &str {
         match self {
             AttributeType::Text => "text",
@@ -25,6 +27,7 @@ impl AttributeType {
         }
     }
 
+    #[allow(unused)]
     pub fn from_str(s: &str) -> Option<Self> {
         match s {
             "text" => Some(AttributeType::Text),
@@ -40,6 +43,7 @@ impl AttributeType {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(i32)]
+#[allow(unused)]
 pub enum TaskType {
     Unknown = 0,
     Default = 1,
@@ -48,12 +52,14 @@ pub enum TaskType {
 }
 
 impl TaskType {
+    #[allow(unused)]
     pub fn from_i32(v: i32) -> Self {
         match v {
             _ => TaskType::Unknown,
         }
     }
 
+    #[allow(unused)]
     pub fn as_i32(self) -> i32 {
         self as i32
     }

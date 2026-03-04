@@ -16,7 +16,7 @@ impl<T: Serialize> ApiResponse<T> {
         }
     }
 
-    #[warn(unused)]
+    #[allow(unused)]
     pub fn error(code: u16, message: String) -> Self
     where
         T: Default,

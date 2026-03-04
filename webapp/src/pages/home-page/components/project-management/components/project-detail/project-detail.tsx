@@ -1,4 +1,4 @@
-import React, {useCallback, useMemo, useState} from "react";
+import React, {useCallback, useEffect, useMemo, useState} from "react";
 import {useNavigate, useParams} from "react-router-dom";
 import {useTranslation} from "react-i18next";
 import {Result404} from "@Webapp/components/result-404";
@@ -19,7 +19,7 @@ import type {
 } from "schedulant";
 import {Schedulant} from "schedulant";
 import dayjs, {type Dayjs} from "dayjs";
-import {ProjectTaskType, type UpdateProjectTaskParams, useProjectTaskActions,} from "@Webapp/api";
+import {ProjectTaskType, type UpdateProjectTaskParams, useProjectTaskActions, useRecordProjectVisit,} from "@Webapp/api";
 import {
     DEFAULT_CUSTOM_LINE_HEIGHT,
     DEFAULT_CUSTOM_SLOT_MIN_WIDTH,
@@ -52,6 +52,15 @@ export const ProjectDetail: React.FC = () => {
     const navigate = useNavigate();
     const {projectId} = useParams<{ projectId: string }>();
     const {updateTask, deleteTask} = useProjectTaskActions();
+    const {recordVisit} = useRecordProjectVisit();
+
+    // 进入项目详情页时记录访问
+    useEffect(() => {
+        if (projectId) {
+            recordVisit(projectId);
+        }
+    }, [projectId, recordVisit]);
+
     const {
         project,
         projectLoading,

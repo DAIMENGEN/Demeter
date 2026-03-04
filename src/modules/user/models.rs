@@ -10,6 +10,7 @@ use sqlx::FromRow;
 pub struct User {
     pub id: Id,
     pub username: String,
+    #[allow(unused)]
     #[serde(skip_serializing)]
     pub password: Option<String>,
     pub full_name: String,

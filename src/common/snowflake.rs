@@ -29,6 +29,7 @@ pub struct SnowflakeIdGenerator {
 }
 
 impl SnowflakeIdGenerator {
+    #[allow(unused)]
     const TIMESTAMP_BITS: i64 = 41;
     const DATACENTER_ID_BITS: i64 = 5;
     const MACHINE_ID_BITS: i64 = 5;
@@ -110,6 +111,7 @@ impl SnowflakeIdGenerator {
         timestamp
     }
 
+    #[allow(unused)]
     pub fn parse_id(id: i64) -> (i64, i64, i64, i64) {
         let timestamp = (id >> Self::TIMESTAMP_SHIFT) + Self::DEFAULT_EPOCH;
         let datacenter_id = (id >> Self::DATACENTER_ID_SHIFT) & Self::MAX_DATACENTER_ID;
@@ -132,6 +134,7 @@ impl SnowflakeIdBucket {
         })
     }
 
+    #[allow(unused)]
     pub fn with_epoch(
         datacenter_id: i64,
         machine_id: i64,
@@ -148,6 +151,7 @@ impl SnowflakeIdBucket {
         generator.real_time_generate()
     }
 
+    #[allow(unused)]
     pub fn parse_id(id: i64) -> (i64, i64, i64, i64) {
         SnowflakeIdGenerator::parse_id(id)
     }

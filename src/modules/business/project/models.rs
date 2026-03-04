@@ -75,3 +75,20 @@ pub struct BatchDeleteProjectsParams {
 pub struct ReorderProjectsParams {
     pub project_ids: Vec<Id>,
 }
+
+#[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
+#[serde(rename_all = "camelCase")]
+#[allow(unused)]
+pub struct ProjectVisit {
+    pub id: Id,
+    pub user_id: Id,
+    pub project_id: Id,
+    pub visited_at: chrono::NaiveDateTime,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct RecentlyVisitedQueryParams {
+    pub limit: Option<i64>,
+    pub project_name: Option<String>,
+}

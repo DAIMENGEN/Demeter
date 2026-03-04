@@ -15,6 +15,7 @@ import type {
     ProjectQueryParams,
     ProjectTask,
     ProjectTaskAttributeConfig,
+    RecentlyVisitedQueryParams,
     ReorderProjectsParams,
     ReorderProjectTasksParams,
     UpdateProjectParams,
@@ -236,6 +237,45 @@ export const useMyAllProjects = () => {
     loading,
     fetchAllProjects,
   };
+};
+
+/**
+ * 获取最近访问的项目列表 Hook
+ */
+export const useRecentlyVisitedProjects = () => {
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  const fetchRecentlyVisited = useCallback(async (params?: RecentlyVisitedQueryParams) => {
+    try {
+      setLoading(true);
+      const response = await projectApi.getRecentlyVisitedProjects(params);
+      setProjects(assertApiOk(response));
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  return {
+    projects,
+    loading,
+    fetchRecentlyVisited,
+  };
+};
+
+/**
+ * 记录项目访问 Hook
+ */
+export const useRecordProjectVisit = () => {
+  const recordVisit = useCallback(async (projectId: string) => {
+    try {
+      await projectApi.recordProjectVisit(projectId);
+    } catch {
+      // 静默失败，不影响主流程
+    }
+  }, []);
+
+  return { recordVisit };
 };
 
 /**

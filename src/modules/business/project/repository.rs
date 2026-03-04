@@ -1,9 +1,12 @@
 use crate::common::error::AppResult;
 use crate::modules::business::project::models::{
-    CreateProjectParams, Project, ProjectQueryParams, UpdateProjectParams,
+    CreateProjectParams, Project, ProjectQueryParams, RecentlyVisitedQueryParams,
+    UpdateProjectParams,
 };
 use sqlx::PgPool;
 use sqlx::QueryBuilder;
+
+pub struct ProjectVisitRepository;
 
 pub struct ProjectRepository;
 
@@ -317,6 +320,10 @@ impl ProjectRepository {
             .bind(project_id)
             .execute(&mut *tx)
             .await?;
+        sqlx::query("DELETE FROM project_visits WHERE project_id = $1")
+            .bind(project_id)
+            .execute(&mut *tx)
+            .await?;
         let result = sqlx::query("DELETE FROM projects WHERE id = $1")
             .bind(project_id)
             .execute(&mut *tx)
@@ -336,6 +343,10 @@ impl ProjectRepository {
             .execute(&mut *tx)
             .await?;
         sqlx::query("DELETE FROM project_task_attribute_configs WHERE project_id = ANY($1)")
+            .bind(&project_ids)
+            .execute(&mut *tx)
+            .await?;
+        sqlx::query("DELETE FROM project_visits WHERE project_id = ANY($1)")
             .bind(&project_ids)
             .execute(&mut *tx)
             .await?;
@@ -369,5 +380,62 @@ impl ProjectRepository {
         .await?;
 
         Ok(())
+    }
+}
+
+impl ProjectVisitRepository {
+    /// 记录用户访问项目（UPSERT：同一用户+项目只保留一条，更新 visited_at）
+    pub async fn record_visit(
+        pool: &PgPool,
+        visit_id: i64,
+        user_id: i64,
+        project_id: i64,
+    ) -> AppResult<()> {
+        sqlx::query(
+            r#"
+            INSERT INTO project_visits (id, user_id, project_id, visited_at)
+            VALUES ($1, $2, $3, CURRENT_TIMESTAMP)
+            ON CONFLICT (user_id, project_id)
+            DO UPDATE SET visited_at = CURRENT_TIMESTAMP
+            "#,
+        )
+        .bind(visit_id)
+        .bind(user_id)
+        .bind(project_id)
+        .execute(pool)
+        .await?;
+
+        Ok(())
+    }
+
+    /// 获取用户最近访问的项目列表（JOIN projects 表返回完整项目信息）
+    pub async fn get_recently_visited_projects(
+        pool: &PgPool,
+        user_id: i64,
+        params: RecentlyVisitedQueryParams,
+    ) -> AppResult<Vec<Project>> {
+        let limit = params.limit.unwrap_or(20);
+        let project_name_pattern = params.project_name.as_ref().map(|p| format!("%{}%", p));
+
+        let projects = sqlx::query_as::<_, Project>(
+            r#"
+            SELECT p.id, p.project_name, p.description, p.start_date_time, p.end_date_time,
+                   p.project_status, p.version, p."order", p.creator_id, p.updater_id,
+                   p.create_date_time, p.update_date_time
+            FROM projects p
+            INNER JOIN project_visits pv ON p.id = pv.project_id
+            WHERE pv.user_id = $1
+              AND ($2::TEXT IS NULL OR p.project_name ILIKE $2)
+            ORDER BY pv.visited_at DESC
+            LIMIT $3
+            "#,
+        )
+        .bind(user_id)
+        .bind(&project_name_pattern)
+        .bind(limit)
+        .fetch_all(pool)
+        .await?;
+
+        Ok(projects)
     }
 }

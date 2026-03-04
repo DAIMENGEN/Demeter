@@ -13,13 +13,20 @@ pub struct AuthUser {
     pub id: Id,
     pub username: String,
     pub password: Option<String>,
+    #[allow(unused)]
     pub full_name: String,
+    #[allow(unused)]
     pub email: String,
+    #[allow(unused)]
     pub phone: Option<String>,
     pub is_active: bool,
+    #[allow(unused)]
     pub creator_id: Id,
+    #[allow(unused)]
     pub updater_id: Option<Id>,
+    #[allow(unused)]
     pub create_date_time: chrono::NaiveDateTime,
+    #[allow(unused)]
     pub update_date_time: Option<chrono::NaiveDateTime>,
 }
 

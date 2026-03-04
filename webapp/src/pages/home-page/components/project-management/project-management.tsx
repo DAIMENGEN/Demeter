@@ -2,7 +2,7 @@ import React, {useCallback, useEffect, useMemo, useState} from "react";
 import {App, Layout, Menu} from "antd";
 import {useNavigate} from "react-router-dom";
 import {ClockCircleOutlined, ExclamationCircleOutlined, FolderOutlined, TeamOutlined} from "@ant-design/icons";
-import {type Project, useMyAllProjects, useProjectActions} from "@Webapp/api/modules/project";
+import {type Project, useMyAllProjects, useProjectActions, useRecentlyVisitedProjects} from "@Webapp/api/modules/project";
 import "./project-management.scss";
 import {ProjectList} from "./components/project-list";
 import {CreateProjectDrawer, EditProjectDrawer} from "./components/project-drawer";
@@ -28,7 +28,12 @@ export const ProjectManagement: React.FC = () => {
     const {deleteProject, reorderProjects} = useProjectActions();
     const myCreatedProjects = useMyAllProjects();
     const myAccessibleProjects = useMyAllProjects();
-    const recentlyAccessedProjects = useMyAllProjects();
+    const recentlyAccessedProjects = useRecentlyVisitedProjects();
+
+    // 包装 fetchRecentlyVisited，使其签名与其他视图的 refetch 兼容，同时保持引用稳定
+    const recentlyAccessedRefetch = useCallback((params?: { projectName?: string }) => {
+        return recentlyAccessedProjects.fetchRecentlyVisited(params);
+    }, [recentlyAccessedProjects.fetchRecentlyVisited]);
 
     // 使用 useMemo 缓存当前视图配置，避免每次渲染都创建新对象
     const viewConfig = useMemo(() => {
@@ -53,7 +58,7 @@ export const ProjectManagement: React.FC = () => {
                 return {
                     projects: recentlyAccessedProjects.projects,
                     loading: recentlyAccessedProjects.loading,
-                    refetch: recentlyAccessedProjects.fetchAllProjects,
+                    refetch: recentlyAccessedRefetch,
                     title: t("project.recentlyAccessedTitle"),
                     emptyDescription: t("project.recentlyAccessedEmpty")
                 };
@@ -76,7 +81,7 @@ export const ProjectManagement: React.FC = () => {
         myAccessibleProjects.fetchAllProjects,
         recentlyAccessedProjects.projects,
         recentlyAccessedProjects.loading,
-        recentlyAccessedProjects.fetchAllProjects,
+        recentlyAccessedRefetch,
         t,
     ]);
 

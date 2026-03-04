@@ -15,6 +15,7 @@ import type {
     ProjectQueryParams,
     ProjectTask,
     ProjectTaskAttributeConfig,
+    RecentlyVisitedQueryParams,
     ReorderProjectsParams,
     ReorderProjectTasksParams,
     UpdateProjectParams,
@@ -101,6 +102,20 @@ export const projectApi = {
    */
   reorderProjects: (params: ReorderProjectsParams) => {
     return post<void>("/projects/reorder", params);
+  },
+
+  /**
+   * 记录项目访问
+   */
+  recordProjectVisit: (id: string) => {
+    return post<void>(`/projects/${id}/visit`);
+  },
+
+  /**
+   * 获取最近访问的项目列表
+   */
+  getRecentlyVisitedProjects: (params?: RecentlyVisitedQueryParams) => {
+    return get<Project[]>("/projects/recently-visited", params);
   },
 
   /**
