@@ -2,7 +2,7 @@ import React, {useCallback, useEffect, useMemo, useState} from "react";
 import {useNavigate, useParams} from "react-router-dom";
 import {useTranslation} from "react-i18next";
 import {Result404} from "@Webapp/components/result-404";
-import {useDomRef} from "@Webapp/hooks";
+import {useDomRef, useLocalStorageState} from "@Webapp/hooks";
 import {useSchedulantHeight} from "./hooks/use-schedulant-height.ts";
 import {useSchedulantData} from "./hooks/use-schedulant-data.ts";
 import {App, Card, Spin} from "antd";
@@ -98,16 +98,16 @@ export const ProjectDetail: React.FC = () => {
         {key: "delete-task", label: t("common.delete")},
     ], [t]);
 
-    // 视图状态
-    const [schedulantViewType, setSchedulantViewType] = useState<SchedulantViewType>("Day");
-    const [schedulantStartDate, setSchedulantStartDate] = useState<Dayjs>(dayjs().startOf("month"));
-    const [schedulantEndDate, setSchedulantEndDate] = useState<Dayjs>(dayjs().startOf("month").add(SCHEDULANT_VIEW_DEFAULT_RANGE_MAP["Day"], "day"));
+    // 视图状态（视图类型持久化，日期范围根据视图类型动态计算）
+    const [schedulantViewType, setSchedulantViewType] = useLocalStorageState<SchedulantViewType>("schedulant-view-type", "Day");
+    const [schedulantStartDate, setSchedulantStartDate] = useState<Dayjs>(() => dayjs().startOf(SCHEDULANT_VIEW_UNIT_MAP[schedulantViewType] as dayjs.OpUnitType));
+    const [schedulantEndDate, setSchedulantEndDate] = useState<Dayjs>(() => dayjs().startOf(SCHEDULANT_VIEW_UNIT_MAP[schedulantViewType] as dayjs.OpUnitType).add(SCHEDULANT_VIEW_DEFAULT_RANGE_MAP[schedulantViewType], SCHEDULANT_VIEW_UNIT_MAP[schedulantViewType] as dayjs.ManipulateType));
 
-    // 显示配置状态
-    const [lineHeightMode, setLineHeightMode] = useState<LineHeightMode>(DEFAULT_LINE_HEIGHT_MODE);
-    const [customLineHeight, setCustomLineHeight] = useState(DEFAULT_CUSTOM_LINE_HEIGHT);
-    const [slotMinWidthMode, setSlotMinWidthMode] = useState<SlotMinWidthMode>(DEFAULT_SLOT_MIN_WIDTH_MODE);
-    const [customSlotMinWidth, setCustomSlotMinWidth] = useState(DEFAULT_CUSTOM_SLOT_MIN_WIDTH);
+    // 显示配置状态（持久化到 localStorage）
+    const [lineHeightMode, setLineHeightMode] = useLocalStorageState<LineHeightMode>("schedulant-line-height-mode", DEFAULT_LINE_HEIGHT_MODE);
+    const [customLineHeight, setCustomLineHeight] = useLocalStorageState<number>("schedulant-custom-line-height", DEFAULT_CUSTOM_LINE_HEIGHT);
+    const [slotMinWidthMode, setSlotMinWidthMode] = useLocalStorageState<SlotMinWidthMode>("schedulant-slot-min-width-mode", DEFAULT_SLOT_MIN_WIDTH_MODE);
+    const [customSlotMinWidth, setCustomSlotMinWidth] = useLocalStorageState<number>("schedulant-custom-slot-min-width", DEFAULT_CUSTOM_SLOT_MIN_WIDTH);
 
     // 计算实际行高和槽宽
     const actualLineHeight = useMemo(() => {

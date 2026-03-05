@@ -1,4 +1,5 @@
 import {useCallback, useEffect, useMemo, useState} from "react";
+import {useLocalStorageState} from "@Webapp/hooks";
 import {useTranslation} from "react-i18next";
 import type {TFunction} from "i18next";
 import type {Checkpoint, Event, Milestone, Resource, ResourceAreaColumn} from "schedulant";
@@ -221,11 +222,15 @@ export const useSchedulantData = (projectId: string) => {
         fetchConfigs: fetchAttributeConfigs,
     } = useProjectTaskAttributeConfigList();
 
-    // ---- 颜色渲染属性 ----
-    const [colorRenderAttributeName, setColorRenderAttributeName] = useState<string | null>(null);
+    // ---- 颜色渲染属性（按项目持久化）----
+    const [colorRenderAttributeName, setColorRenderAttributeName] = useLocalStorageState<string | null>(
+        `schedulant-color-attr:${projectId}`, null,
+    );
 
-    // ---- 列选择 ----
-    const [selectedColumnKeys, setSelectedColumnKeys] = useState<string[]>(["title"]);
+    // ---- 列选择（按项目持久化）----
+    const [selectedColumnKeys, setSelectedColumnKeys] = useLocalStorageState<string[]>(
+        `schedulant-selected-cols:${projectId}`, ["title"],
+    );
 
     // ---- 初始拉取 ----
     useEffect(() => {
