@@ -24,12 +24,12 @@ export const TeamManagement: React.FC = () => {
     const [form] = Form.useForm();
 
     const buildQueryParams = useCallback(
-        (page?: number, pageSize?: number): TeamQueryParams => ({
+        (page?: number, perPage?: number): TeamQueryParams => ({
             page: page ?? pagination.page,
-            pageSize: pageSize ?? pagination.pageSize,
+            perPage: perPage ?? pagination.perPage,
             teamName: keyword || undefined,
         }),
-        [keyword, pagination.page, pagination.pageSize]
+        [keyword, pagination.page, pagination.perPage]
     );
 
     useEffect(() => {
@@ -42,8 +42,8 @@ export const TeamManagement: React.FC = () => {
 
     const handleReset = useCallback(() => {
         setKeyword("");
-        fetchTeams({page: 1, pageSize: pagination.pageSize});
-    }, [fetchTeams, pagination.pageSize]);
+        fetchTeams({page: 1, perPage: pagination.perPage});
+    }, [fetchTeams, pagination.perPage]);
 
     const handleRefresh = useCallback(() => {
         fetchTeams(buildQueryParams());
@@ -53,7 +53,7 @@ export const TeamManagement: React.FC = () => {
         (paginationConfig: TablePaginationConfig) => {
             const newPage = paginationConfig.current ?? 1;
             const newPageSize = paginationConfig.pageSize ?? 10;
-            setPagination((prev) => ({...prev, page: newPage, pageSize: newPageSize}));
+            setPagination((prev) => ({...prev, page: newPage, perPage: newPageSize}));
             fetchTeams(buildQueryParams(newPage, newPageSize));
         },
         [fetchTeams, buildQueryParams, setPagination]
@@ -211,7 +211,7 @@ export const TeamManagement: React.FC = () => {
                 loading={loading}
                 pagination={{
                     current: pagination.page,
-                    pageSize: pagination.pageSize,
+                    pageSize: pagination.perPage,
                     total: pagination.total,
                     showSizeChanger: true,
                     showTotal: (total) => t("teamManagement.totalCount", {total}),

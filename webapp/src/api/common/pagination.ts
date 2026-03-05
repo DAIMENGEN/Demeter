@@ -7,8 +7,9 @@
  */
 export interface Pagination {
   page: number;
-  pageSize: number;
+  perPage: number;
   total: number;
+  totalPages: number;
 }
 
 /**
@@ -16,6 +17,7 @@ export interface Pagination {
  */
 export const DEFAULT_PAGINATION: Pagination = {
   page: 1,
-  pageSize: 10,
-  total: 0
+  perPage: 20,
+  total: 0,
+  totalPages: 0,
 };

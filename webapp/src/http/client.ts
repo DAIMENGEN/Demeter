@@ -4,10 +4,10 @@
 import "@Webapp/logging";
 import type {AxiosInstance, InternalAxiosRequestConfig} from "axios";
 import axios, {AxiosError} from "axios";
-import type {ApiResponse, HttpError} from "./types";
+import type {ApiErrorResponse, ApiResponse, HttpError} from "./types";
 import {log} from "@Webapp/logging.ts";
 
-const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || "http://localhost:9000/api";
+const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || "http://localhost:9000/api/v1";
 
 /**
  * 创建 axios 实例
@@ -48,7 +48,7 @@ function processQueue(error: unknown, token: string | null) {
 const refreshToken = async (): Promise<string> => {
   // access_token/refresh_token 由 HttpOnly Cookie 承载，浏览器会在 withCredentials=true 时自动携带
   // 刷新成功后，后端会通过 Set-Cookie 更新 access_token
-  await axios.post<ApiResponse<unknown>>(
+  await axios.post<ApiResponse>(
     `${apiBaseUrl}/auth/refresh`,
     null,
     {
@@ -99,7 +99,7 @@ httpClient.interceptors.response.use(
     // 直接返回响应数据
     return response;
   },
-  async (error: AxiosError<ApiResponse>) => {
+  async (error: AxiosError<ApiErrorResponse>) => {
     const originalRequest = error.config as (typeof error.config & { _retry?: boolean }) | undefined;
 
     // 登出过程中：不做刷新、不做重试，直接拒绝（避免二次跳转/提示）
@@ -160,7 +160,7 @@ httpClient.interceptors.response.use(
 
     // 处理其他错误
     const httpError: HttpError = {
-      code: 0,
+      code: "unknown_error",
       message: "Unknown error",
     };
 
@@ -168,9 +168,9 @@ httpClient.interceptors.response.use(
       // 服务器返回了错误响应
       const { status, data } = error.response;
       httpError.status = status;
-      httpError.code = data?.code || status;
-      httpError.message = data?.message || "Server error";
-      httpError.data = data?.data;
+      httpError.code = data?.error?.code || String(status);
+      httpError.message = data?.error?.message || "Server error";
+      httpError.data = data?.error?.details;
 
       // 根据状态码处理不同的错误
       switch (status) {

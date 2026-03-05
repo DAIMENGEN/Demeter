@@ -19,7 +19,7 @@ impl DepartmentRepository {
         params: DepartmentQueryParams,
     ) -> AppResult<(Vec<Department>, i64)> {
         let page = params.page.unwrap_or(1);
-        let page_size = params.page_size.unwrap_or(10);
+        let page_size = params.per_page.unwrap_or(10);
         let offset = (page - 1) * page_size;
         let department_name_pattern = params.department_name.as_ref().map(|d| format!("%{}%", d));
         let departments = sqlx::query_as::<_, Department>(

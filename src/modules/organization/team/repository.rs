@@ -19,7 +19,7 @@ impl TeamRepository {
         params: TeamQueryParams,
     ) -> AppResult<(Vec<Team>, i64)> {
         let page = params.page.unwrap_or(1);
-        let page_size = params.page_size.unwrap_or(10);
+        let page_size = params.per_page.unwrap_or(10);
         let offset = (page - 1) * page_size;
         let team_name_pattern = params.team_name.as_ref().map(|t| format!("%{}%", t));
         let teams = sqlx::query_as::<_, Team>(

@@ -210,6 +210,7 @@ export const ProjectDetail: React.FC = () => {
 
     // ---- Schedulant 事件回调 ----
     const handleEventMove = useCallback((arg: EventMoveMountArg) => {
+        if (arg.startDate.isSame(arg.eventApi.getStart()) && arg.endDate.isSame(arg.eventApi.getEnd())) return;
         const taskId = arg.eventApi.getId();
         void doUpdateTask(taskId, {
             startDateTime: toNaiveDateTimeString(arg.startDate),
@@ -218,6 +219,7 @@ export const ProjectDetail: React.FC = () => {
     }, [doUpdateTask]);
 
     const handleEventResizeStart = useCallback((arg: EventResizeMountArg) => {
+        if (arg.date.isSame(arg.eventApi.getStart())) return;
         const taskId = arg.eventApi.getId();
         void doUpdateTask(taskId, {
             startDateTime: toNaiveDateTimeString(arg.date),
@@ -225,6 +227,7 @@ export const ProjectDetail: React.FC = () => {
     }, [doUpdateTask]);
 
     const handleEventResizeEnd = useCallback((arg: EventResizeMountArg) => {
+        if (arg.date.isSame(arg.eventApi.getEnd())) return;
         const taskId = arg.eventApi.getId();
         void doUpdateTask(taskId, {
             endDateTime: toNaiveDateTimeString(arg.date),
@@ -232,6 +235,7 @@ export const ProjectDetail: React.FC = () => {
     }, [doUpdateTask]);
 
     const handleMilestoneMove = useCallback((arg: MilestoneMoveMountArg) => {
+        if (arg.date.isSame(arg.milestoneApi.getTime())) return;
         const taskId = arg.milestoneApi.getId();
         void doUpdateTask(taskId, {
             startDateTime: toNaiveDateTimeString(arg.date),
@@ -240,6 +244,7 @@ export const ProjectDetail: React.FC = () => {
     }, [doUpdateTask]);
 
     const handleCheckpointMove = useCallback((arg: CheckpointMoveMountArg) => {
+        if (arg.date.isSame(arg.checkpointApi.getTime())) return;
         const taskId = arg.checkpointApi.getId();
         void doUpdateTask(taskId, {
             startDateTime: toNaiveDateTimeString(arg.date),

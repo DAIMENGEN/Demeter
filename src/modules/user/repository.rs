@@ -63,7 +63,7 @@ impl UserRepository {
         params: UserQueryParams,
     ) -> AppResult<(Vec<User>, i64)> {
         let page = params.page.unwrap_or(1);
-        let page_size = params.page_size.unwrap_or(10);
+        let page_size = params.per_page.unwrap_or(10);
         let offset = (page - 1) * page_size;
         let keyword_pattern = params.keyword.as_ref().map(|k| format!("%{}%", k));
         let username_pattern = params.username.as_ref().map(|u| format!("%{}%", u));

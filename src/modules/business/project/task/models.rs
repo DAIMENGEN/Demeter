@@ -176,7 +176,7 @@ pub struct UpdateTaskParams {
 #[serde(rename_all = "camelCase")]
 pub struct TaskQueryParams {
     pub page: Option<i64>,
-    pub page_size: Option<i64>,
+    pub per_page: Option<i64>,
     pub task_name: Option<String>,
     pub parent_id: Option<Id>,
 }

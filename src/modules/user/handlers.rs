@@ -2,7 +2,7 @@ use crate::common::app_state::AppState;
 use crate::common::error::{AppError, AppResult};
 use crate::common::id::Id;
 use crate::common::jwt::Claims;
-use crate::common::response::{ApiResponse, PageResponse};
+use crate::common::response::{ApiResponse, PaginatedResponse};
 use crate::modules::user::models::{
     BatchDeleteUsersParams, CreateUserParams, ResetPasswordResponse, ToggleUserStatusParams,
     UpdateProfileParams, UpdateUserParams, UserQueryParams, UserRole,
@@ -17,12 +17,17 @@ use axum::{
 pub async fn get_user_list(
     State(state): State<AppState>,
     Query(params): Query<UserQueryParams>,
-) -> AppResult<Json<ApiResponse<PageResponse<crate::modules::user::models::User>>>> {
+) -> AppResult<Json<PaginatedResponse<crate::modules::user::models::User>>> {
+    let page = params.page.unwrap_or(1);
+    let per_page = params.per_page.unwrap_or(20);
     let (users, total) = UserRepository::get_user_list(&state.pool, params).await?;
-    Ok(Json(ApiResponse::success(PageResponse {
-        list: users,
+    Ok(Json(PaginatedResponse::new(
+        users,
         total,
-    })))
+        page,
+        per_page,
+        "/api/v1/users",
+    )))
 }
 
 pub async fn get_all_users(
@@ -165,7 +170,7 @@ pub async fn update_user(
 pub async fn delete_user(
     State(state): State<AppState>,
     Path(id): Path<Id>,
-) -> AppResult<Json<ApiResponse<()>>> {
+) -> AppResult<StatusCode> {
     // 不允许删除 super_admin 用户
     if let Some(target_user) = UserRepository::get_user_by_id(&state.pool, id.0).await? {
         if target_user.role == UserRole::SuperAdmin {
@@ -179,13 +184,13 @@ pub async fn delete_user(
     if !deleted {
         return Err(AppError::NotFound(format!("User not found: {}", id)));
     }
-    Ok(Json(ApiResponse::success(())))
+    Ok(StatusCode::NO_CONTENT)
 }
 
 pub async fn batch_delete_users(
     State(state): State<AppState>,
     Json(params): Json<BatchDeleteUsersParams>,
-) -> AppResult<Json<ApiResponse<()>>> {
+) -> AppResult<StatusCode> {
     let ids: Vec<i64> = params.ids.iter().map(|id| id.0).collect();
 
     // 检查批量删除中是否包含 super_admin 用户
@@ -200,7 +205,7 @@ pub async fn batch_delete_users(
     }
 
     UserRepository::batch_delete_users(&state.pool, ids).await?;
-    Ok(Json(ApiResponse::success(())))
+    Ok(StatusCode::NO_CONTENT)
 }
 
 pub async fn toggle_user_status(

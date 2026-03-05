@@ -5,7 +5,7 @@
 import {useCallback, useState} from "react";
 import {departmentApi} from "./api";
 import type {CreateDepartmentParams, Department, DepartmentQueryParams, UpdateDepartmentParams} from "./types";
-import {assertApiOk} from "@Webapp/api/common/response";
+import {unwrapData} from "@Webapp/api/common/response";
 import {DEFAULT_PAGINATION, type Pagination} from "@Webapp/api/common/pagination";
 
 /**
@@ -19,7 +19,7 @@ export const useAllDepartments = () => {
         try {
             setLoading(true);
             const response = await departmentApi.getAllDepartments();
-            setDepartments(assertApiOk(response));
+            setDepartments(unwrapData(response));
         } finally {
             setLoading(false);
         }
@@ -45,21 +45,21 @@ export const useDepartmentList = () => {
             setLoading(true);
             const response = await departmentApi.getDepartmentList({
                 page: pagination.page,
-                pageSize: pagination.pageSize,
+                perPage: pagination.perPage,
                 ...params,
             });
-            const pageRes = assertApiOk(response);
-            setDepartments(pageRes.list);
+            setDepartments(response.data);
             setPagination((prev) => ({
                 ...prev,
-                total: pageRes.total,
+                total: response.meta.total,
+                totalPages: response.meta.total_pages,
                 page: params?.page ?? prev.page,
-                pageSize: params?.pageSize ?? prev.pageSize,
+                perPage: params?.perPage ?? prev.perPage,
             }));
         } finally {
             setLoading(false);
         }
-    }, [pagination.page, pagination.pageSize]);
+    }, [pagination.page, pagination.perPage]);
 
     return {departments, loading, pagination, fetchDepartments, setPagination};
 };
@@ -74,7 +74,7 @@ export const useDepartmentActions = () => {
         try {
             setLoading(true);
             const response = await departmentApi.createDepartment(data);
-            return assertApiOk(response);
+            return unwrapData(response);
         } finally {
             setLoading(false);
         }
@@ -84,7 +84,7 @@ export const useDepartmentActions = () => {
         try {
             setLoading(true);
             const response = await departmentApi.updateDepartment(id, data);
-            return assertApiOk(response);
+            return unwrapData(response);
         } finally {
             setLoading(false);
         }
@@ -93,8 +93,7 @@ export const useDepartmentActions = () => {
     const deleteDepartment = useCallback(async (id: string) => {
         try {
             setLoading(true);
-            const response = await departmentApi.deleteDepartment(id);
-            assertApiOk(response);
+            await departmentApi.deleteDepartment(id);
         } finally {
             setLoading(false);
         }

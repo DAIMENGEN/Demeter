@@ -2,7 +2,7 @@ use crate::common::app_state::AppState;
 use crate::common::error::{AppError, AppResult};
 use crate::common::id::Id;
 use crate::common::jwt::Claims;
-use crate::common::response::{ApiResponse, PageResponse};
+use crate::common::response::{ApiResponse, PaginatedResponse};
 use crate::modules::business::project::task::models::{
     BatchCreateTasksParams, BatchDeleteTaskAttributeConfigsParams, BatchDeleteTasksParams,
     CreateTaskAttributeConfigParams, CreateTaskParams, Task, TaskAttributeConfig, TaskQueryParams,
@@ -133,13 +133,18 @@ pub async fn get_task_list(
     State(state): State<AppState>,
     Path(project_id): Path<Id>,
     Query(params): Query<TaskQueryParams>,
-) -> AppResult<Json<ApiResponse<PageResponse<Task>>>> {
+) -> AppResult<Json<PaginatedResponse<Task>>> {
+    let page = params.page.unwrap_or(1);
+    let per_page = params.per_page.unwrap_or(20);
     let (tasks, total) = TaskRepository::get_task_list(&state.pool, project_id.0, params).await?;
 
-    Ok(Json(ApiResponse::success(PageResponse {
-        list: tasks,
+    Ok(Json(PaginatedResponse::new(
+        tasks,
         total,
-    })))
+        page,
+        per_page,
+        &format!("/api/v1/projects/{}/tasks", project_id),
+    )))
 }
 
 pub async fn get_all_tasks(

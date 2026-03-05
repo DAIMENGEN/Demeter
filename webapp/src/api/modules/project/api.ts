@@ -2,7 +2,7 @@
  * 项目模块 API
  */
 
-import type {PageResponse} from "@Webapp/http";
+import type {PaginatedResponse, ApiResponse} from "@Webapp/http";
 import {del, get, post, put} from "@Webapp/http";
 import type {
     BatchCreateProjectTasksParams,
@@ -31,56 +31,56 @@ export const projectApi = {
    * 获取项目列表（分页）
    */
   getProjectList: (params?: ProjectQueryParams) => {
-    return get<PageResponse<Project>>("/projects", params);
+    return get<PaginatedResponse<Project>>("/projects", params);
   },
 
   /**
    * 获取所有项目（不分页）
    */
-  getAllProjects: (params?: Omit<ProjectQueryParams, "page" | "pageSize">) => {
-    return get<Project[]>("/projects/all", params);
+  getAllProjects: (params?: Omit<ProjectQueryParams, "page" | "perPage">) => {
+    return get<ApiResponse<Project[]>>("/projects/all", params);
   },
 
   /**
    * 获取我创建的项目列表（分页）
    */
   getMyProjectList: (params?: ProjectQueryParams) => {
-    return get<PageResponse<Project>>("/projects/my", params);
+    return get<PaginatedResponse<Project>>("/projects/my", params);
   },
 
   /**
    * 获取我创建的所有项目（不分页）
    */
-  getMyAllProjects: (params?: Omit<ProjectQueryParams, "page" | "pageSize">) => {
-    return get<Project[]>("/projects/my/all", params);
+  getMyAllProjects: (params?: Omit<ProjectQueryParams, "page" | "perPage">) => {
+    return get<ApiResponse<Project[]>>("/projects/my/all", params);
   },
 
   /**
    * 根据 ID 获取项目详情
    */
   getProjectById: (id: string) => {
-    return get<Project>(`/projects/${id}`);
+    return get<ApiResponse<Project>>(`/projects/${id}`);
   },
 
   /**
    * 根据项目名称获取项目详情
    */
   getProjectByName: (projectName: string) => {
-    return get<Project>(`/projects/name/${projectName}`);
+    return get<ApiResponse<Project>>(`/projects/name/${projectName}`);
   },
 
   /**
    * 创建项目
    */
   createProject: (data: CreateProjectParams) => {
-    return post<Project>("/projects", data);
+    return post<ApiResponse<Project>>("/projects", data);
   },
 
   /**
    * 更新项目
    */
   updateProject: (id: string, data: UpdateProjectParams) => {
-    return put<Project>(`/projects/${id}`, data);
+    return put<ApiResponse<Project>>(`/projects/${id}`, data);
   },
 
   /**
@@ -94,7 +94,7 @@ export const projectApi = {
    * 批量删除项目
    */
   batchDeleteProjects: (params: BatchDeleteProjectsParams) => {
-    return post<number>("/projects/batch-delete", params);
+    return post<void>("/projects/batch-delete", params);
   },
 
   /**
@@ -115,35 +115,35 @@ export const projectApi = {
    * 获取最近访问的项目列表
    */
   getRecentlyVisitedProjects: (params?: RecentlyVisitedQueryParams) => {
-    return get<Project[]>("/projects/recently-visited", params);
+    return get<ApiResponse<Project[]>>("/projects/recently-visited", params);
   },
 
   /**
    * 获取项目任务列表
    */
   getProjectTasks: (projectId: string) => {
-    return get<ProjectTask[]>(`/projects/${projectId}/tasks/all`);
+    return get<ApiResponse<ProjectTask[]>>(`/projects/${projectId}/tasks/all`);
   },
 
   /**
    * 创建项目任务
    */
   createProjectTask: (projectId: string, data: CreateProjectTaskParams) => {
-    return post<ProjectTask>(`/projects/${projectId}/tasks`, data);
+    return post<ApiResponse<ProjectTask>>(`/projects/${projectId}/tasks`, data);
   },
 
   /**
    * 批量创建项目任务
    */
   batchCreateProjectTasks: (projectId: string, data: BatchCreateProjectTasksParams) => {
-    return post<ProjectTask[]>(`/projects/${projectId}/tasks/batch-create`, data);
+    return post<ApiResponse<ProjectTask[]>>(`/projects/${projectId}/tasks/batch-create`, data);
   },
 
   /**
    * 更新项目任务
    */
   updateProjectTask: (projectId: string, taskId: string, data: UpdateProjectTaskParams) => {
-    return put<ProjectTask>(`/projects/${projectId}/tasks/${taskId}`, data);
+    return put<ApiResponse<ProjectTask>>(`/projects/${projectId}/tasks/${taskId}`, data);
   },
 
   /**
@@ -164,14 +164,14 @@ export const projectApi = {
    * 获取项目任务自定义字段配置列表
    */
   getProjectTaskAttributeConfigs: (projectId: string) => {
-    return get<ProjectTaskAttributeConfig[]>(`/projects/${projectId}/task-attribute-configs`);
+    return get<ApiResponse<ProjectTaskAttributeConfig[]>>(`/projects/${projectId}/task-attribute-configs`);
   },
 
   /**
    * 创建项目任务自定义字段配置
    */
   createProjectTaskAttributeConfig: (projectId: string, data: CreateProjectTaskAttributeConfigParams) => {
-    return post<ProjectTaskAttributeConfig>(`/projects/${projectId}/task-attribute-configs`, data);
+    return post<ApiResponse<ProjectTaskAttributeConfig>>(`/projects/${projectId}/task-attribute-configs`, data);
   },
 
   /**
@@ -182,7 +182,7 @@ export const projectApi = {
     id: string,
     data: UpdateProjectTaskAttributeConfigParams,
   ) => {
-    return put<ProjectTaskAttributeConfig>(
+    return put<ApiResponse<ProjectTaskAttributeConfig>>(
       `/projects/${projectId}/task-attribute-configs/${id}`,
       data,
     );

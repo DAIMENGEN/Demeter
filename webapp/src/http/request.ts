@@ -3,7 +3,7 @@
  */
 
 import httpClient from "./client";
-import type {ApiResponse, RequestConfig} from "./types";
+import type {RequestConfig} from "./types";
 import type {AxiosResponse} from "axios";
 
 /**
@@ -11,21 +11,17 @@ import type {AxiosResponse} from "axios";
  */
 async function request<T = unknown>(
     config: RequestConfig
-): Promise<ApiResponse<T>> {
+): Promise<T> {
     try {
-        const response: AxiosResponse<ApiResponse<T>> = await httpClient.request(config);
+        const response: AxiosResponse<T> = await httpClient.request(config);
 
-        const rawData = response.data as unknown;
+        // 204 No Content — return undefined
         if (
             response.status === 204
-            || rawData == null
-            || (typeof rawData === "string" && rawData.length === 0)
+            || response.data == null
+            || (typeof response.data === "string" && (response.data as string).length === 0)
         ) {
-            return {
-                code: response.status,
-                data: undefined as T,
-                message: "No Content",
-            };
+            return undefined as T;
         }
 
         return response.data;
@@ -45,7 +41,7 @@ export async function get<T = unknown>(
     url: string,
     params?: unknown,
     config?: RequestConfig
-): Promise<ApiResponse<T>> {
+): Promise<T> {
     return request<T>({
         ...config,
         method: "GET",
@@ -61,7 +57,7 @@ export async function post<T = unknown>(
     url: string,
     data?: unknown,
     config?: RequestConfig
-): Promise<ApiResponse<T>> {
+): Promise<T> {
     return request<T>({
         ...config,
         method: "POST",
@@ -77,7 +73,7 @@ export async function put<T = unknown>(
     url: string,
     data?: unknown,
     config?: RequestConfig
-): Promise<ApiResponse<T>> {
+): Promise<T> {
     return request<T>({
         ...config,
         method: "PUT",
@@ -93,7 +89,7 @@ export async function patch<T = unknown>(
     url: string,
     data?: unknown,
     config?: RequestConfig
-): Promise<ApiResponse<T>> {
+): Promise<T> {
     return request<T>({
         ...config,
         method: "PATCH",
@@ -109,7 +105,7 @@ export async function del<T = unknown>(
     url: string,
     params?: unknown,
     config?: RequestConfig
-): Promise<ApiResponse<T>> {
+): Promise<T> {
     return request<T>({
         ...config,
         method: "DELETE",
@@ -125,7 +121,7 @@ export async function upload<T = unknown>(
     url: string,
     file: File | Blob,
     config?: RequestConfig
-): Promise<ApiResponse<T>> {
+): Promise<T> {
     const formData = new FormData();
     formData.append("file", file);
 

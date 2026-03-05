@@ -115,7 +115,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             Duration::from_secs(30),
         ));
 
-    let app = Router::new().nest("/api", api_routes).layer(cors);
+    let app = Router::new().nest("/api/v1", api_routes).layer(cors);
 
     // Start server
     let addr = format!("{}:{}", config.server.host, config.server.port);

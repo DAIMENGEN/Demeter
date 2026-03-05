@@ -2,7 +2,7 @@ use crate::common::app_state::AppState;
 use crate::common::error::{AppError, AppResult};
 use crate::common::id::Id;
 use crate::common::jwt::Claims;
-use crate::common::response::{ApiResponse, PageResponse};
+use crate::common::response::{ApiResponse, PaginatedResponse};
 use crate::modules::organization::department::models::{
     BatchDeleteDepartmentsParams, CreateDepartmentParams, Department, DepartmentQueryParams,
     UpdateDepartmentParams,
@@ -17,13 +17,18 @@ use axum::{
 pub async fn get_department_list(
     State(state): State<AppState>,
     Query(params): Query<DepartmentQueryParams>,
-) -> AppResult<Json<ApiResponse<PageResponse<Department>>>> {
+) -> AppResult<Json<PaginatedResponse<Department>>> {
+    let page = params.page.unwrap_or(1);
+    let per_page = params.per_page.unwrap_or(20);
     let (departments, total) =
         DepartmentRepository::get_department_list(&state.pool, params).await?;
-    Ok(Json(ApiResponse::success(PageResponse {
-        list: departments,
+    Ok(Json(PaginatedResponse::new(
+        departments,
         total,
-    })))
+        page,
+        per_page,
+        "/api/v1/departments",
+    )))
 }
 
 pub async fn get_all_departments(
@@ -96,7 +101,7 @@ pub async fn update_department(
 pub async fn delete_department(
     State(state): State<AppState>,
     Path(department_id): Path<Id>,
-) -> AppResult<Json<ApiResponse<()>>> {
+) -> AppResult<StatusCode> {
     let deleted = DepartmentRepository::delete_department(&state.pool, department_id.0).await?;
     if !deleted {
         return Err(AppError::NotFound(format!(
@@ -104,14 +109,14 @@ pub async fn delete_department(
             department_id
         )));
     }
-    Ok(Json(ApiResponse::success(())))
+    Ok(StatusCode::NO_CONTENT)
 }
 
 pub async fn batch_delete_departments(
     State(state): State<AppState>,
     Json(params): Json<BatchDeleteDepartmentsParams>,
-) -> AppResult<Json<ApiResponse<()>>> {
+) -> AppResult<StatusCode> {
     let department_ids: Vec<i64> = params.ids.into_iter().map(|id| id.0).collect();
     DepartmentRepository::batch_delete_departments(&state.pool, department_ids).await?;
-    Ok(Json(ApiResponse::success(())))
+    Ok(StatusCode::NO_CONTENT)
 }

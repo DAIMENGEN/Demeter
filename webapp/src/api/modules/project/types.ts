@@ -89,7 +89,7 @@ export interface UpdateProjectParams {
  */
 export interface ProjectQueryParams {
   page?: number;
-  pageSize?: number;
+  perPage?: number;
   projectName?: string;
   projectStatus?: ProjectStatus;
   startDateTime?: string;

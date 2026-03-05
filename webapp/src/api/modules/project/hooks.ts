@@ -22,7 +22,7 @@ import type {
     UpdateProjectTaskAttributeConfigParams,
     UpdateProjectTaskParams,
 } from "./types";
-import {assertApiOk} from "@Webapp/api/common/response.ts";
+import {unwrapData} from "@Webapp/api/common/response.ts";
 import {DEFAULT_PAGINATION, type Pagination} from "@Webapp/api/common/pagination.ts";
 
 /**
@@ -38,21 +38,21 @@ export const useProjectList = () => {
       setLoading(true);
       const response = await projectApi.getProjectList({
         page: pagination.page,
-        pageSize: pagination.pageSize,
+        perPage: pagination.perPage,
         ...params,
       });
-      const pageRes = assertApiOk(response);
-      setProjects(pageRes.list);
+      setProjects(response.data);
       setPagination((prev) => ({
         ...prev,
-        total: pageRes.total,
+        total: response.meta.total,
+        totalPages: response.meta.total_pages,
         page: params?.page ?? prev.page,
-        pageSize: params?.pageSize ?? prev.pageSize,
+        perPage: params?.perPage ?? prev.perPage,
       }));
     } finally {
       setLoading(false);
     }
-  }, [pagination.page, pagination.pageSize]);
+  }, [pagination.page, pagination.perPage]);
 
   return {
     projects,
@@ -74,7 +74,7 @@ export const useProjectDetail = () => {
     try {
       setLoading(true);
       const response = await projectApi.getProjectById(id);
-      setProject(assertApiOk(response));
+      setProject(unwrapData(response));
     } finally {
       setLoading(false);
     }
@@ -97,7 +97,7 @@ export const useProjectActions = () => {
     try {
       setLoading(true);
       const response = await projectApi.createProject(data);
-      return assertApiOk(response);
+      return unwrapData(response);
     } finally {
       setLoading(false);
     }
@@ -107,7 +107,7 @@ export const useProjectActions = () => {
     try {
       setLoading(true);
       const response = await projectApi.updateProject(id, data);
-      return assertApiOk(response);
+      return unwrapData(response);
     } finally {
       setLoading(false);
     }
@@ -116,8 +116,7 @@ export const useProjectActions = () => {
   const deleteProject = useCallback(async (id: string) => {
     try {
       setLoading(true);
-      const response = await projectApi.deleteProject(id);
-      assertApiOk(response);
+      await projectApi.deleteProject(id);
     } finally {
       setLoading(false);
     }
@@ -126,8 +125,7 @@ export const useProjectActions = () => {
   const batchDeleteProjects = useCallback(async (params: BatchDeleteProjectsParams) => {
     try {
       setLoading(true);
-      const response = await projectApi.batchDeleteProjects(params);
-      return assertApiOk(response);
+      await projectApi.batchDeleteProjects(params);
     } finally {
       setLoading(false);
     }
@@ -136,8 +134,7 @@ export const useProjectActions = () => {
   const reorderProjects = useCallback(async (params: ReorderProjectsParams) => {
     try {
       setLoading(true);
-      const response = await projectApi.reorderProjects(params);
-      assertApiOk(response);
+      await projectApi.reorderProjects(params);
     } finally {
       setLoading(false);
     }
@@ -160,11 +157,11 @@ export const useAllProjects = () => {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(false);
 
-  const fetchAllProjects = useCallback(async (params?: Omit<ProjectQueryParams, "page" | "pageSize">) => {
+  const fetchAllProjects = useCallback(async (params?: Omit<ProjectQueryParams, "page" | "perPage">) => {
     try {
       setLoading(true);
       const response = await projectApi.getAllProjects(params);
-      setProjects(assertApiOk(response));
+      setProjects(unwrapData(response));
     } finally {
       setLoading(false);
     }
@@ -190,21 +187,21 @@ export const useMyProjectList = () => {
       setLoading(true);
       const response = await projectApi.getMyProjectList({
         page: pagination.page,
-        pageSize: pagination.pageSize,
+        perPage: pagination.perPage,
         ...params,
       });
-      const pageRes = assertApiOk(response);
-      setProjects(pageRes.list);
+      setProjects(response.data);
       setPagination((prev) => ({
         ...prev,
-        total: pageRes.total,
+        total: response.meta.total,
+        totalPages: response.meta.total_pages,
         page: params?.page ?? prev.page,
-        pageSize: params?.pageSize ?? prev.pageSize,
+        perPage: params?.perPage ?? prev.perPage,
       }));
     } finally {
       setLoading(false);
     }
-  }, [pagination.page, pagination.pageSize]);
+  }, [pagination.page, pagination.perPage]);
 
   return {
     projects,
@@ -222,11 +219,11 @@ export const useMyAllProjects = () => {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(false);
 
-  const fetchAllProjects = useCallback(async (params?: Omit<ProjectQueryParams, "page" | "pageSize">) => {
+  const fetchAllProjects = useCallback(async (params?: Omit<ProjectQueryParams, "page" | "perPage">) => {
     try {
       setLoading(true);
       const response = await projectApi.getMyAllProjects(params);
-      setProjects(assertApiOk(response));
+      setProjects(unwrapData(response));
     } finally {
       setLoading(false);
     }
@@ -250,7 +247,7 @@ export const useRecentlyVisitedProjects = () => {
     try {
       setLoading(true);
       const response = await projectApi.getRecentlyVisitedProjects(params);
-      setProjects(assertApiOk(response));
+      setProjects(unwrapData(response));
     } finally {
       setLoading(false);
     }
@@ -289,7 +286,7 @@ export const useProjectTaskList = () => {
     try {
       setLoading(true);
       const response = await projectApi.getProjectTasks(projectId);
-      setTasks(assertApiOk(response));
+      setTasks(unwrapData(response));
     } finally {
       setLoading(false);
     }
@@ -312,7 +309,7 @@ export const useProjectTaskActions = () => {
     try {
       setLoading(true);
       const response = await projectApi.createProjectTask(projectId, data);
-      return assertApiOk(response);
+      return unwrapData(response);
     } finally {
       setLoading(false);
     }
@@ -322,7 +319,7 @@ export const useProjectTaskActions = () => {
     try {
       setLoading(true);
       const response = await projectApi.updateProjectTask(projectId, taskId, data);
-      return assertApiOk(response);
+      return unwrapData(response);
     } finally {
       setLoading(false);
     }
@@ -331,8 +328,7 @@ export const useProjectTaskActions = () => {
   const deleteTask = useCallback(async (projectId: string, taskId: string) => {
     try {
       setLoading(true);
-      const response = await projectApi.deleteProjectTask(projectId, taskId);
-      assertApiOk(response);
+      await projectApi.deleteProjectTask(projectId, taskId);
     } finally {
       setLoading(false);
     }
@@ -341,8 +337,7 @@ export const useProjectTaskActions = () => {
   const reorderTasks = useCallback(async (projectId: string, params: ReorderProjectTasksParams) => {
     try {
       setLoading(true);
-      const response = await projectApi.reorderProjectTasks(projectId, params);
-      assertApiOk(response);
+      await projectApi.reorderProjectTasks(projectId, params);
     } finally {
       setLoading(false);
     }
@@ -352,7 +347,7 @@ export const useProjectTaskActions = () => {
     try {
       setLoading(true);
       const response = await projectApi.batchCreateProjectTasks(projectId, data);
-      return assertApiOk(response);
+      return unwrapData(response);
     } finally {
       setLoading(false);
     }
@@ -379,7 +374,7 @@ export const useProjectTaskAttributeConfigList = () => {
     try {
       setLoading(true);
       const response = await projectApi.getProjectTaskAttributeConfigs(projectId);
-      setConfigs(assertApiOk(response));
+      setConfigs(unwrapData(response));
     } finally {
       setLoading(false);
     }
@@ -405,7 +400,7 @@ export const useProjectTaskAttributeConfigActions = () => {
     try {
       setLoading(true);
       const response = await projectApi.createProjectTaskAttributeConfig(projectId, data);
-      return assertApiOk(response);
+      return unwrapData(response);
     } finally {
       setLoading(false);
     }
@@ -419,7 +414,7 @@ export const useProjectTaskAttributeConfigActions = () => {
     try {
       setLoading(true);
       const response = await projectApi.updateProjectTaskAttributeConfig(projectId, id, data);
-      return assertApiOk(response);
+      return unwrapData(response);
     } finally {
       setLoading(false);
     }
@@ -428,8 +423,7 @@ export const useProjectTaskAttributeConfigActions = () => {
   const deleteConfig = useCallback(async (projectId: string, id: string) => {
     try {
       setLoading(true);
-      const response = await projectApi.deleteProjectTaskAttributeConfig(projectId, id);
-      assertApiOk(response);
+      await projectApi.deleteProjectTaskAttributeConfig(projectId, id);
     } finally {
       setLoading(false);
     }
@@ -441,8 +435,7 @@ export const useProjectTaskAttributeConfigActions = () => {
   ) => {
     try {
       setLoading(true);
-      const response = await projectApi.batchDeleteProjectTaskAttributeConfigs(projectId, params);
-      assertApiOk(response);
+      await projectApi.batchDeleteProjectTaskAttributeConfigs(projectId, params);
     } finally {
       setLoading(false);
     }
@@ -451,8 +444,7 @@ export const useProjectTaskAttributeConfigActions = () => {
   const restoreConfig = useCallback(async (projectId: string, id: string) => {
     try {
       setLoading(true);
-      const response = await projectApi.restoreProjectTaskAttributeConfig(projectId, id);
-      assertApiOk(response);
+      await projectApi.restoreProjectTaskAttributeConfig(projectId, id);
     } finally {
       setLoading(false);
     }

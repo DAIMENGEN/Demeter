@@ -35,7 +35,7 @@ pub struct UpdateDepartmentParams {
 #[serde(rename_all = "camelCase")]
 pub struct DepartmentQueryParams {
     pub page: Option<i64>,
-    pub page_size: Option<i64>,
+    pub per_page: Option<i64>,
     pub department_name: Option<String>,
 }
 

@@ -5,7 +5,7 @@
 import {useCallback, useState} from "react";
 import {teamApi} from "./api";
 import type {CreateTeamParams, Team, TeamQueryParams, UpdateTeamParams} from "./types";
-import {assertApiOk} from "@Webapp/api/common/response";
+import {unwrapData} from "@Webapp/api/common/response";
 import {DEFAULT_PAGINATION, type Pagination} from "@Webapp/api/common/pagination";
 
 /**
@@ -19,7 +19,7 @@ export const useAllTeams = () => {
         try {
             setLoading(true);
             const response = await teamApi.getAllTeams();
-            setTeams(assertApiOk(response));
+            setTeams(unwrapData(response));
         } finally {
             setLoading(false);
         }
@@ -45,21 +45,21 @@ export const useTeamList = () => {
             setLoading(true);
             const response = await teamApi.getTeamList({
                 page: pagination.page,
-                pageSize: pagination.pageSize,
+                perPage: pagination.perPage,
                 ...params,
             });
-            const pageRes = assertApiOk(response);
-            setTeams(pageRes.list);
+            setTeams(response.data);
             setPagination((prev) => ({
                 ...prev,
-                total: pageRes.total,
+                total: response.meta.total,
+                totalPages: response.meta.total_pages,
                 page: params?.page ?? prev.page,
-                pageSize: params?.pageSize ?? prev.pageSize,
+                perPage: params?.perPage ?? prev.perPage,
             }));
         } finally {
             setLoading(false);
         }
-    }, [pagination.page, pagination.pageSize]);
+    }, [pagination.page, pagination.perPage]);
 
     return {teams, loading, pagination, fetchTeams, setPagination};
 };
@@ -74,7 +74,7 @@ export const useTeamActions = () => {
         try {
             setLoading(true);
             const response = await teamApi.createTeam(data);
-            return assertApiOk(response);
+            return unwrapData(response);
         } finally {
             setLoading(false);
         }
@@ -84,7 +84,7 @@ export const useTeamActions = () => {
         try {
             setLoading(true);
             const response = await teamApi.updateTeam(id, data);
-            return assertApiOk(response);
+            return unwrapData(response);
         } finally {
             setLoading(false);
         }
@@ -93,8 +93,7 @@ export const useTeamActions = () => {
     const deleteTeam = useCallback(async (id: string) => {
         try {
             setLoading(true);
-            const response = await teamApi.deleteTeam(id);
-            assertApiOk(response);
+            await teamApi.deleteTeam(id);
         } finally {
             setLoading(false);
         }

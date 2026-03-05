@@ -2,6 +2,7 @@
  * 认证模块 API
  */
 
+import type {ApiResponse} from "@Webapp/http";
 import {get, post} from "@Webapp/http";
 import type {AuthResponse, LoginParams, RegisterParams} from "./types";
 
@@ -13,14 +14,14 @@ export const authApi = {
    * 用户登录
    */
   login: (data: LoginParams) => {
-    return post<AuthResponse>("/auth/login", data);
+    return post<ApiResponse<AuthResponse>>("/auth/login", data);
   },
 
   /**
    * 用户注册
    */
   register: (data: RegisterParams) => {
-    return post<AuthResponse>("/auth/register", data);
+    return post<ApiResponse<AuthResponse>>("/auth/register", data);
   },
 
   /**
@@ -34,13 +35,13 @@ export const authApi = {
    * 刷新 Token
    */
   refreshToken: () => {
-    return post<AuthResponse>("/auth/refresh");
+    return post<ApiResponse<AuthResponse>>("/auth/refresh");
   },
 
   /**
    * 获取当前会话用户信息（需要已登录 cookie）
    */
   getSession: () => {
-    return get<AuthResponse>("/auth/session");
+    return get<ApiResponse<AuthResponse>>("/auth/session");
   },
 };

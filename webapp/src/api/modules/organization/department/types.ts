@@ -31,7 +31,7 @@ export interface UpdateDepartmentParams {
 
 export interface DepartmentQueryParams {
     page?: number;
-    pageSize?: number;
+    perPage?: number;
     departmentName?: string;
 }
 

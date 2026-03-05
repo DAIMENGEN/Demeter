@@ -21,7 +21,7 @@ impl HolidayRepository {
         params: HolidayQueryParams,
     ) -> AppResult<(Vec<Holiday>, i64)> {
         let page = params.page.unwrap_or(1);
-        let page_size = params.page_size.unwrap_or(10);
+        let page_size = params.per_page.unwrap_or(10);
         let offset = (page - 1) * page_size;
         let holiday_name_pattern = params.holiday_name.as_ref().map(|h| format!("%{}%", h));
         let holidays = sqlx::query_as::<_, Holiday>(

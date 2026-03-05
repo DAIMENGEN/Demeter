@@ -5,12 +5,60 @@
 import type {AxiosRequestConfig} from "axios";
 
 /**
- * 通用的 API 响应结构
+ * 通用的 API 成功响应结构: { data: T }
  */
 export interface ApiResponse<T = unknown> {
-  code: number;
   data: T;
+}
+
+/**
+ * 分页响应元信息
+ */
+export interface PaginationMeta {
+  total: number;
+  page: number;
+  per_page: number;
+  total_pages: number;
+}
+
+/**
+ * 分页响应链接
+ */
+export interface PaginationLinks {
+  self: string;
+  next?: string;
+  prev?: string;
+  first: string;
+  last: string;
+}
+
+/**
+ * 分页响应数据: { data: T[], meta: PaginationMeta, links: PaginationLinks }
+ */
+export interface PaginatedResponse<T = unknown> {
+  data: T[];
+  meta: PaginationMeta;
+  links: PaginationLinks;
+}
+
+/**
+ * API 错误响应体
+ */
+export interface ApiErrorResponse {
+  error: {
+    code: string;
+    message: string;
+    details?: FieldError[];
+  };
+}
+
+/**
+ * 字段级验证错误
+ */
+export interface FieldError {
+  field: string;
   message: string;
+  code: string;
 }
 
 /**
@@ -30,24 +78,14 @@ export interface RequestConfig extends AxiosRequestConfig {
  */
 export interface PageParams {
   page: number;
-  pageSize: number;
-}
-
-/**
- * 分页响应数据
- */
-export interface PageResponse<T = unknown> {
-  list: T[];
-  total: number;
-  page: number;
-  pageSize: number;
+  perPage: number;
 }
 
 /**
  * HTTP 错误响应
  */
 export interface HttpError {
-  code: number;
+  code: string;
   message: string;
   data?: unknown;
   status?: number;

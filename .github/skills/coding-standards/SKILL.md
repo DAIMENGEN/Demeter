@@ -327,44 +327,4 @@ if (retryCount > MAX_RETRIES) { }
 setTimeout(callback, DEBOUNCE_DELAY_MS)
 ```
 
-## File Organization
-
-### Backend Project Structure
-```
-src/
-├── main.rs
-├── common/
-│   ├── app_state.rs   
-├── config/
-│   ├── ... 
-├── modules/
-│   ├── ... 
-
-```
-
-### Frontend Project Structure
-
-```
-webapp/
-├── src
-│   ├── api/
-│   ├── assets/  
-│   ├── components/
-│   ├── config/
-│   ├── hooks/
-│   ├── http/
-│   ├── i18n/
-│   ├── pages/
-│   ├── store/
-│   ├── types/
-│   ├── App.css
-│   ├── App.tsx
-│   ├── AppRoutes.tsx
-│   ├── index.css
-│   ├── loggin.ts
-│   ├── main.tsx
-│   ├── module.d.ts
-│   ├── .....
-```
-
 **Remember**: Code quality is not negotiable. Clear, maintainable code enables rapid development and confident refactoring.

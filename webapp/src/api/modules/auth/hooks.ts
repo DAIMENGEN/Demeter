@@ -5,7 +5,7 @@
 import {useCallback, useState} from "react";
 import {authApi} from "./api";
 import type {LoginParams, RegisterParams} from "./types";
-import {assertApiOk} from "@Webapp/api/common/response";
+import {unwrapData} from "@Webapp/api/common/response";
 
 /**
  * 登录 Hook
@@ -17,7 +17,7 @@ export const useLogin = () => {
         setLoading(true);
         try {
             const response = await authApi.login(params);
-            return assertApiOk(response);
+            return unwrapData(response);
         } finally {
             setLoading(false);
         }
@@ -36,8 +36,7 @@ export const useRegister = () => {
         setLoading(true);
         try {
             const response = await authApi.register(params);
-            assertApiOk(response);
-            return response
+            return unwrapData(response);
         } finally {
             setLoading(false);
         }
@@ -58,8 +57,7 @@ export const useSession = () => {
         setLoading(true);
         try {
             const response = await authApi.getSession();
-            assertApiOk(response);
-            return response.data;
+            return unwrapData(response);
         } finally {
             setLoading(false);
         }

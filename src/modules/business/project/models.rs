@@ -58,7 +58,7 @@ pub struct UpdateProjectParams {
 #[serde(rename_all = "camelCase")]
 pub struct ProjectQueryParams {
     pub page: Option<i64>,
-    pub page_size: Option<i64>,
+    pub per_page: Option<i64>,
     pub project_name: Option<String>,
     pub project_status: Option<i32>,
     pub start_date_time: Option<chrono::NaiveDateTime>,

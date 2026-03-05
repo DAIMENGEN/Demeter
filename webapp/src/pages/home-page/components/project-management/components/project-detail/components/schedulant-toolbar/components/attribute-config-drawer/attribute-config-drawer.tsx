@@ -76,7 +76,7 @@ export const AttributeConfigDrawer: React.FC<TaskAttributeConfigDrawerProps> = (
         deleteConfig,
         restoreConfig
     } = useProjectTaskAttributeConfigActions();
-    const userPicker = useUserSelectOptions({pageSize: 20, activeOnly: true});
+    const userPicker = useUserSelectOptions({perPage: 20, activeOnly: true});
 
     const {onUserSearch, resetUserSearch} = useDebouncedUserSearch({
         open,
@@ -267,7 +267,7 @@ export const AttributeConfigDrawer: React.FC<TaskAttributeConfigDrawerProps> = (
                                     if (type === "user" && defaultUserId && optFromOptions && !optFromOptionsLabel) {
                                         try {
                                             const resp = await userApi.getUserById(defaultUserId);
-                                            const u = assertApiOkSafe(resp);
+                                            const u = resp?.data ?? null;
                                             if (u) {
                                                 const opt = {value: u.id, label: `${u.fullName} (${u.username})`};
 
@@ -633,7 +633,4 @@ export const AttributeConfigDrawer: React.FC<TaskAttributeConfigDrawerProps> = (
     );
 };
 
-// ─── 安全版本的 assertApiOk（不抛异常） ──────────────
-function assertApiOkSafe<T>(resp: {code: number; data: T}): T | null {
-    return resp.code === 200 ? resp.data : null;
-}
+// ─── 已删除旧版 assertApiOkSafe，使用 resp.data 直接解包 ───

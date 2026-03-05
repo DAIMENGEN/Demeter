@@ -2,7 +2,7 @@ use crate::common::app_state::AppState;
 use crate::common::error::{AppError, AppResult};
 use crate::common::id::Id;
 use crate::common::jwt::Claims;
-use crate::common::response::{ApiResponse, PageResponse};
+use crate::common::response::{ApiResponse, PaginatedResponse};
 use crate::modules::holiday::models::{
     BatchCreateHolidaysParams, BatchDeleteHolidaysParams, BatchUpdateHolidaysParams,
     CreateHolidayParams, Holiday, HolidayQueryParams, UpdateHolidayParams,
@@ -17,12 +17,17 @@ use axum::{
 pub async fn get_holiday_list(
     State(state): State<AppState>,
     Query(params): Query<HolidayQueryParams>,
-) -> AppResult<Json<ApiResponse<PageResponse<Holiday>>>> {
+) -> AppResult<Json<PaginatedResponse<Holiday>>> {
+    let page = params.page.unwrap_or(1);
+    let per_page = params.per_page.unwrap_or(20);
     let (holidays, total) = HolidayRepository::get_holiday_list(&state.pool, params).await?;
-    Ok(Json(ApiResponse::success(PageResponse {
-        list: holidays,
+    Ok(Json(PaginatedResponse::new(
+        holidays,
         total,
-    })))
+        page,
+        per_page,
+        "/api/v1/holidays",
+    )))
 }
 
 pub async fn get_all_holidays(
@@ -39,7 +44,7 @@ pub async fn get_holiday_by_id(
 ) -> AppResult<Json<ApiResponse<Holiday>>> {
     let holiday = HolidayRepository::get_holiday_by_id(&state.pool, holiday_id.0)
         .await?
-        .ok_or(AppError::NotFound(format!("假期不存在: {}", holiday_id)))?;
+        .ok_or(AppError::NotFound(format!("Holiday not found: {}", holiday_id)))?;
 
     Ok(Json(ApiResponse::success(holiday)))
 }
@@ -52,7 +57,7 @@ pub async fn create_holiday(
     let creator_id = claims.sub;
     let holiday_id = state
         .generate_id()
-        .map_err(|e| AppError::InternalError(format!("生成假期ID失败: {}", e)))?;
+        .map_err(|e| AppError::InternalError(format!("Failed to generate holiday ID: {}", e)))?;
     let holiday =
         HolidayRepository::create_holiday(&state.pool, holiday_id, params, creator_id).await?;
     Ok((StatusCode::CREATED, Json(ApiResponse::success(holiday))))
@@ -67,28 +72,28 @@ pub async fn update_holiday(
     let updater_id = claims.sub;
     let holiday = HolidayRepository::update_holiday(&state.pool, holiday_id.0, params, updater_id)
         .await?
-        .ok_or(AppError::NotFound(format!("假期不存在: {}", holiday_id)))?;
+        .ok_or(AppError::NotFound(format!("Holiday not found: {}", holiday_id)))?;
     Ok(Json(ApiResponse::success(holiday)))
 }
 
 pub async fn delete_holiday(
     State(state): State<AppState>,
     Path(holiday_id): Path<Id>,
-) -> AppResult<Json<ApiResponse<()>>> {
+) -> AppResult<StatusCode> {
     let deleted = HolidayRepository::delete_holiday(&state.pool, holiday_id.0).await?;
     if !deleted {
-        return Err(AppError::NotFound(format!("假期不存在: {}", holiday_id)));
+        return Err(AppError::NotFound(format!("Holiday not found: {}", holiday_id)));
     }
-    Ok(Json(ApiResponse::success(())))
+    Ok(StatusCode::NO_CONTENT)
 }
 
 pub async fn batch_delete_holidays(
     State(state): State<AppState>,
     Json(params): Json<BatchDeleteHolidaysParams>,
-) -> AppResult<Json<ApiResponse<u64>>> {
+) -> AppResult<StatusCode> {
     let holiday_ids: Vec<i64> = params.ids.into_iter().map(|id| id.0).collect();
-    let deleted_count = HolidayRepository::batch_delete_holidays(&state.pool, holiday_ids).await?;
-    Ok(Json(ApiResponse::success(deleted_count)))
+    HolidayRepository::batch_delete_holidays(&state.pool, holiday_ids).await?;
+    Ok(StatusCode::NO_CONTENT)
 }
 
 pub async fn batch_create_holidays(
@@ -101,7 +106,7 @@ pub async fn batch_create_holidays(
     for _ in 0..params.holidays.len() {
         let id = state
             .generate_id()
-            .map_err(|e| AppError::InternalError(format!("生成假期ID失败: {}", e)))?;
+            .map_err(|e| AppError::InternalError(format!("Failed to generate holiday ID: {}", e)))?;
         holiday_ids.push(id);
     }
     let holidays = HolidayRepository::batch_create_holidays(

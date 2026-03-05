@@ -234,7 +234,7 @@ impl TaskRepository {
         params: TaskQueryParams,
     ) -> AppResult<(Vec<Task>, i64)> {
         let page = params.page.unwrap_or(1);
-        let page_size = params.page_size.unwrap_or(10);
+        let page_size = params.per_page.unwrap_or(10);
         let offset = (page - 1) * page_size;
         let task_name_pattern = params.task_name.as_ref().map(|t| format!("%{}%", t));
         let tasks = sqlx::query_as::<_, Task>(

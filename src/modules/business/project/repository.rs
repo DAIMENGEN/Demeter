@@ -26,7 +26,7 @@ impl ProjectRepository {
         params: ProjectQueryParams,
     ) -> AppResult<(Vec<Project>, i64)> {
         let page = params.page.unwrap_or(1);
-        let page_size = params.page_size.unwrap_or(10);
+        let page_size = params.per_page.unwrap_or(10);
         let offset = (page - 1) * page_size;
         let project_name_pattern = params.project_name.as_ref().map(|p| format!("%{}%", p));
         let projects = sqlx::query_as::<_, Project>(
@@ -139,7 +139,7 @@ impl ProjectRepository {
         params: ProjectQueryParams,
     ) -> AppResult<(Vec<Project>, i64)> {
         let page = params.page.unwrap_or(1);
-        let page_size = params.page_size.unwrap_or(10);
+        let page_size = params.per_page.unwrap_or(10);
         let offset = (page - 1) * page_size;
         let project_name_pattern = params.project_name.as_ref().map(|p| format!("%{}%", p));
 

@@ -36,15 +36,15 @@ export const UserManagement: React.FC = () => {
 
     // Build query params
     const buildQueryParams = useCallback(
-        (page?: number, pageSize?: number): UserQueryParams => ({
+        (page?: number, perPage?: number): UserQueryParams => ({
             page: page ?? pagination.page,
-            pageSize: pageSize ?? pagination.pageSize,
+            perPage: perPage ?? pagination.perPage,
             keyword: keyword || undefined,
             departmentId: filterDepartmentId || undefined,
             teamId: filterTeamId || undefined,
             isActive: filterStatus,
         }),
-        [keyword, filterDepartmentId, filterTeamId, filterStatus, pagination.page, pagination.pageSize]
+        [keyword, filterDepartmentId, filterTeamId, filterStatus, pagination.page, pagination.perPage]
     );
 
     // Fetch data on mount
@@ -68,8 +68,8 @@ export const UserManagement: React.FC = () => {
         setFilterDepartmentId(undefined);
         setFilterTeamId(undefined);
         setFilterStatus(undefined);
-        fetchUsers({page: 1, pageSize: pagination.pageSize});
-    }, [fetchUsers, pagination.pageSize]);
+        fetchUsers({page: 1, perPage: pagination.perPage});
+    }, [fetchUsers, pagination.perPage]);
 
     // Handle refresh
     const handleRefresh = useCallback(() => {
@@ -81,7 +81,7 @@ export const UserManagement: React.FC = () => {
         (paginationConfig: TablePaginationConfig) => {
             const newPage = paginationConfig.current ?? 1;
             const newPageSize = paginationConfig.pageSize ?? 10;
-            setPagination((prev) => ({...prev, page: newPage, pageSize: newPageSize}));
+            setPagination((prev) => ({...prev, page: newPage, perPage: newPageSize}));
             fetchUsers(buildQueryParams(newPage, newPageSize));
         },
         [fetchUsers, buildQueryParams, setPagination]
@@ -331,7 +331,7 @@ export const UserManagement: React.FC = () => {
                 scroll={{x: 1300}}
                 pagination={{
                     current: pagination.page,
-                    pageSize: pagination.pageSize,
+                    pageSize: pagination.perPage,
                     total: pagination.total,
                     showSizeChanger: true,
                     showTotal: (total) => t("userManagement.totalCount", {total}),

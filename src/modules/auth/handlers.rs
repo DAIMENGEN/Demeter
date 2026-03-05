@@ -11,7 +11,7 @@ use cookie::{time::Duration as CookieDuration, Cookie, SameSite};
 
 const REFRESH_COOKIE_NAME: &str = "refresh_token";
 const ACCESS_COOKIE_NAME: &str = "access_token";
-const COOKIE_PATH: &str = "/api";
+const COOKIE_PATH: &str = "/api/v1";
 
 fn build_auth_cookie(name: &'static str, value: String, max_age_seconds: i64) -> Cookie<'static> {
     Cookie::build((name, value))
@@ -125,11 +125,11 @@ pub async fn register(
     }
 
     if AuthRepository::check_username_exists(&state.pool, &request.username).await? {
-        return Err(AppError::BadRequest("Username already exists".to_string()));
+        return Err(AppError::Conflict("Username already exists".to_string()));
     }
 
     if AuthRepository::check_email_exists(&state.pool, &request.email).await? {
-        return Err(AppError::BadRequest(
+        return Err(AppError::Conflict(
             "Email is already registered".to_string(),
         ));
     }
@@ -300,7 +300,7 @@ pub async fn logout(
             .expect("valid access Set-Cookie header value"),
     );
 
-    Ok((headers, Json(ApiResponse::success(()))))
+    Ok((StatusCode::NO_CONTENT, headers))
 }
 
 pub async fn session(
