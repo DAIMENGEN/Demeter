@@ -632,5 +632,3 @@ export const AttributeConfigDrawer: React.FC<TaskAttributeConfigDrawerProps> = (
         </Drawer>
     );
 };
-
-// ─── 已删除旧版 assertApiOkSafe，使用 resp.data 直接解包 ───

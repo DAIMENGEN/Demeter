@@ -5,7 +5,6 @@
  * - 成功响应直接返回 { data: T } 或 { data: T[], meta, links }
  * - 错误通过 HTTP 状态码 + { error: { code, message, details? } } 返回
  *
- * assertApiOk 用于从 { data: T } 信封中提取 data。
  */
 
 import type {ApiResponse} from "@Webapp/http";
@@ -32,8 +31,3 @@ export const unwrapData = <T>(response: ApiResponse<T> | T): T => {
     }
     return response as T;
 };
-
-/**
- * 向后兼容别名 — 等同于 unwrapData
- */
-export const assertApiOk = unwrapData;
