@@ -2,7 +2,7 @@ import React, {useCallback, useEffect, useMemo, useState} from "react";
 import {App, Layout, Menu} from "antd";
 import {useNavigate} from "react-router-dom";
 import {ClockCircleOutlined, ExclamationCircleOutlined, FolderOutlined, TeamOutlined} from "@ant-design/icons";
-import {type Project, useMyAllProjects, useProjectActions, useRecentlyVisitedProjects} from "@Webapp/api/modules/project";
+import {type Project, useAccessibleProjects, useMyAllProjects, useProjectActions, useRecentlyVisitedProjects} from "@Webapp/api/modules/project";
 import "./project-management.scss";
 import {ProjectList} from "./components/project-list";
 import {CreateProjectDrawer, EditProjectDrawer} from "./components/project-drawer";
@@ -30,7 +30,7 @@ export const ProjectManagement: React.FC = () => {
     // 获取不同视图的项目数据
     const {deleteProject, reorderProjects} = useProjectActions();
     const myCreatedProjects = useMyAllProjects();
-    const myAccessibleProjects = useMyAllProjects();
+    const myAccessibleProjects = useAccessibleProjects();
     const recentlyAccessedProjects = useRecentlyVisitedProjects();
 
     // 包装 fetchRecentlyVisited，使其签名与其他视图的 refetch 兼容，同时保持引用稳定
@@ -53,7 +53,7 @@ export const ProjectManagement: React.FC = () => {
                 return {
                     projects: myAccessibleProjects.projects,
                     loading: myAccessibleProjects.loading,
-                    refetch: myAccessibleProjects.fetchAllProjects,
+                    refetch: myAccessibleProjects.fetchAccessibleProjects,
                     title: t("project.myAccessibleTitle"),
                     emptyDescription: t("project.myAccessibleEmpty")
                 };
@@ -81,7 +81,7 @@ export const ProjectManagement: React.FC = () => {
         myCreatedProjects.fetchAllProjects,
         myAccessibleProjects.projects,
         myAccessibleProjects.loading,
-        myAccessibleProjects.fetchAllProjects,
+        myAccessibleProjects.fetchAccessibleProjects,
         recentlyAccessedProjects.projects,
         recentlyAccessedProjects.loading,
         recentlyAccessedRefetch,

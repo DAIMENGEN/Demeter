@@ -205,6 +205,47 @@ impl ProjectRepository {
         Ok(projects)
     }
 
+    /// 获取用户可访问的所有项目（不分页）
+    /// 来源：直接成员 + 团队成员 + 部门成员 + Internal/Public 可见性 + 用户创建的项目
+    pub async fn get_accessible_projects(
+        pool: &PgPool,
+        user_id: i64,
+        params: ProjectQueryParams,
+    ) -> AppResult<Vec<Project>> {
+        let project_name_pattern = params.project_name.as_ref().map(|p| format!("%{}%", p));
+        let projects = sqlx::query_as::<_, Project>(
+            r#"
+            SELECT DISTINCT p.id, p.project_name, p.description, p.start_date_time, p.end_date_time,
+                p.project_status, p.version, p."order", p.visibility, p.creator_id, p.updater_id,
+                p.create_date_time, p.update_date_time
+            FROM projects p
+            WHERE (
+                p.creator_id = $1
+                OR EXISTS (SELECT 1 FROM project_members pm WHERE pm.project_id = p.id AND pm.user_id = $1)
+                OR EXISTS (
+                    SELECT 1 FROM project_team_roles ptr
+                    JOIN user_teams ut ON ut.team_id = ptr.team_id
+                    WHERE ptr.project_id = p.id AND ut.user_id = $1
+                )
+                OR EXISTS (
+                    SELECT 1 FROM project_department_roles pdr
+                    JOIN user_departments ud ON ud.department_id = pdr.department_id
+                    WHERE pdr.project_id = p.id AND ud.user_id = $1
+                )
+                OR p.visibility IN (1, 2)
+            )
+            AND ($2::TEXT IS NULL OR p.project_name ILIKE $2)
+            ORDER BY p."order" ASC NULLS LAST, p.create_date_time DESC
+            "#,
+        )
+        .bind(user_id)
+        .bind(&project_name_pattern)
+        .fetch_all(pool)
+        .await?;
+
+        Ok(projects)
+    }
+
     pub async fn create_project(
         pool: &PgPool,
         project_id: i64,

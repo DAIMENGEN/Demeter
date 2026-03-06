@@ -247,6 +247,30 @@ export const useMyAllProjects = () => {
 };
 
 /**
+ * 获取当前用户可访问的所有项目（不分页） Hook
+ */
+export const useAccessibleProjects = () => {
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  const fetchAccessibleProjects = useCallback(async (params?: Omit<ProjectQueryParams, "page" | "perPage">) => {
+    try {
+      setLoading(true);
+      const response = await projectApi.getAccessibleProjects(params);
+      setProjects(unwrapData(response));
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  return {
+    projects,
+    loading,
+    fetchAccessibleProjects,
+  };
+};
+
+/**
  * 获取最近访问的项目列表 Hook
  */
 export const useRecentlyVisitedProjects = () => {

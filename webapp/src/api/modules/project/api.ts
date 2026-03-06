@@ -66,6 +66,14 @@ export const projectApi = {
   },
 
   /**
+   * 获取当前用户可访问的所有项目（不分页）
+   * 来源：直接成员 + 团队成员 + 部门成员 + Internal/Public 可见性 + 创建者
+   */
+  getAccessibleProjects: (params?: Omit<ProjectQueryParams, "page" | "perPage">) => {
+    return get<ApiResponse<Project[]>>("/projects/accessible", params);
+  },
+
+  /**
    * 根据 ID 获取项目详情
    */
   getProjectById: (id: string) => {

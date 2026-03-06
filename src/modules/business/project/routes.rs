@@ -33,6 +33,10 @@ pub fn project_routes(state: AppState) -> Router {
             "/projects/recently-visited",
             get(handlers::get_recently_visited_projects),
         )
+        .route(
+            "/projects/accessible",
+            get(handlers::get_accessible_projects),
+        )
         .route("/projects", post(handlers::create_project))
         .route(
             "/projects/name/{project_name}",

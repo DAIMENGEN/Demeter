@@ -210,3 +210,13 @@ pub async fn get_recently_visited_projects(
             .await?;
     Ok(Json(ApiResponse::success(projects)))
 }
+
+pub async fn get_accessible_projects(
+    State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
+    Query(params): Query<ProjectQueryParams>,
+) -> AppResult<Json<ApiResponse<Vec<Project>>>> {
+    let projects =
+        ProjectRepository::get_accessible_projects(&state.pool, claims.sub, params).await?;
+    Ok(Json(ApiResponse::success(projects)))
+}
