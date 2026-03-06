@@ -194,6 +194,98 @@ interface ApiError {
 // Distinguish by HTTP status code
 ```
 
+## Update (PATCH) Semantics
+
+All update endpoints use **Patch semantics** with **tri-state fields**: each field can be _absent_ (keep original), _null_ (clear), or _a value_ (update).
+
+### Tri-State Summary
+
+| Intent | JSON | Rust Type | TypeScript |
+|--------|------|-----------|------------|
+| Keep original | field absent | `None` (outer) | `undefined` |
+| Clear field | `"field": null` | `Some(None)` | `null` |
+| Update value | `"field": "val"` | `Some(Some(v))` | concrete value |
+
+### Backend (Rust / Axum)
+
+**Field type selection** — based on DB column nullability:
+
+```rust
+// DB NOT NULL column → single Option (cannot be cleared)
+pub name: Option<String>,
+
+// DB nullable column → double Option (can be cleared to NULL)
+#[serde(default, deserialize_with = "crate::common::serde_helpers::double_option::deserialize")]
+pub description: Option<Option<String>>,
+```
+
+- `#[serde(default)]` makes absent fields deserialize to `None`
+- `double_option::deserialize` wraps present fields in `Some(...)`, preserving inner `None` vs `Some(v)`
+
+**Repository SQL** — use `QueryBuilder` to dynamically build SET clauses. **Never use COALESCE** (it conflates absent and null):
+
+```rust
+let mut qb: QueryBuilder<sqlx::Postgres> = QueryBuilder::new("UPDATE table SET ");
+let mut has_set = false;
+
+// NOT NULL field
+if let Some(ref name) = params.name {
+    qb.push("name = "); qb.push_bind(name.clone());
+    has_set = true;
+}
+// Nullable field — Some(None) binds SQL NULL, Some(Some(v)) binds v
+if let Some(ref desc_opt) = params.description {
+    if has_set { qb.push(", "); }
+    qb.push("description = "); qb.push_bind(desc_opt.clone());
+    has_set = true;
+}
+// Always update updater_id + update_date_time at the end
+```
+
+**Relation fields:**
+
+```
+Option<Option<Id>>  → None: keep | Some(None): remove relation | Some(Some(id)): set
+Option<Vec<Id>>     → None: keep | Some([]): clear all | Some([..]): replace set
+```
+
+### Frontend (TypeScript / React)
+
+**Type definitions:**
+
+```typescript
+export interface UpdateXxxParams {
+  name?: string;                   // NOT NULL — no null allowed
+  description?: string | null;     // Nullable — null clears the field
+}
+```
+
+**JSON serialization** — `JSON.stringify` naturally omits `undefined` properties, so:
+
+```typescript
+const params = {
+  name: "new",          // sent as "name": "new"        → update
+  description: null,    // sent as "description": null  → clear
+  // endDateTime is undefined → omitted from JSON       → keep original
+};
+```
+
+**Form submission** — distinguish "user cleared the field" from "user didn't touch it":
+
+```typescript
+// User cleared → send null to clear
+endDateTime: endDate ? toNaiveDateTimeString(endDate) : null
+// User didn't touch → leave undefined (don't include the key)
+```
+
+### New Module Checklist
+
+1. Check each field's DB NULL constraint → choose single or double `Option`
+2. Define Rust Update DTO — add `#[serde(default, deserialize_with)]` on nullable fields
+3. Write repository with `QueryBuilder` dynamic SET — no COALESCE
+4. Define TS update type — nullable fields use `T | null`, NOT NULL fields use `T`
+5. Wire form logic — cleared fields send `null`, untouched fields remain `undefined`
+
 ## Pagination
 
 ### Offset-Based (Simple)
@@ -409,3 +501,4 @@ Before shipping a new endpoint:
 - [ ] Rate limiting configured
 - [ ] Response does not leak internal details (stack traces, SQL errors)
 - [ ] Consistent naming with existing endpoints (camelCase vs snake_case)
+- [ ] Update endpoints use tri-state patch semantics (absent/null/value)
