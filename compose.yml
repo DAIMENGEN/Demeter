@@ -1,0 +1,20 @@
+services:
+  demeter-backend:
+    image: xxxx
+    container_name: demeter-backend
+    restart: unless-stopped
+    privileged: true
+    stdin_open: true
+    tty: true
+    ports:
+      - "9000:9000"
+
+  demeter-frontend:
+    image: xxxx
+    container_name: demeter-frontend
+    restart: unless-stopped
+    privileged: true
+    stdin_open: true
+    tty: true
+    ports:
+      - "3000:3000"
