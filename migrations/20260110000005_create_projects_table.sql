@@ -8,6 +8,8 @@ CREATE TABLE IF NOT EXISTS projects (
     project_status INTEGER NOT NULL,
     version INTEGER,
     "order" DOUBLE PRECISION,
+    -- 可见性: 0=private(仅成员可见), 1=internal(登录用户可见), 2=public(所有人可见)
+    visibility INTEGER NOT NULL DEFAULT 0,
     creator_id BIGINT NOT NULL,
     updater_id BIGINT,
     create_date_time TIMESTAMP NOT NULL DEFAULT '2022-10-08 00:00:00',

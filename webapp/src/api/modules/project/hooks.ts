@@ -5,22 +5,32 @@
 import {useCallback, useState} from "react";
 import {projectApi} from "./api";
 import type {
+    AddDepartmentRolesParams,
+    AddMembersParams,
+    AddTeamRolesParams,
     BatchCreateProjectTasksParams,
     BatchDeleteProjectsParams,
     BatchDeleteProjectTaskAttributeConfigsParams,
     CreateProjectParams,
     CreateProjectTaskAttributeConfigParams,
     CreateProjectTaskParams,
+    MyPermissionsResponse,
     Project,
+    ProjectDepartmentRole,
+    ProjectMember,
     ProjectQueryParams,
     ProjectTask,
     ProjectTaskAttributeConfig,
+    ProjectTeamRole,
     RecentlyVisitedQueryParams,
     ReorderProjectsParams,
     ReorderProjectTasksParams,
+    UpdateDepartmentRoleParams,
+    UpdateMemberRoleParams,
     UpdateProjectParams,
     UpdateProjectTaskAttributeConfigParams,
     UpdateProjectTaskParams,
+    UpdateTeamRoleParams,
 } from "./types";
 import {unwrapData} from "@Webapp/http";
 import {DEFAULT_PAGINATION, type Pagination} from "@Webapp/api/common/pagination.ts";
@@ -457,5 +467,237 @@ export const useProjectTaskAttributeConfigActions = () => {
     deleteConfig,
     batchDeleteConfigs,
     restoreConfig,
+  };
+};
+
+// ──────────────── 项目权限管理 Hooks ────────────────
+
+/**
+ * 项目成员列表 Hook
+ */
+export const useProjectMembers = () => {
+  const [members, setMembers] = useState<ProjectMember[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  const fetchMembers = useCallback(async (projectId: string) => {
+    try {
+      setLoading(true);
+      const response = await projectApi.getMembers(projectId);
+      setMembers(unwrapData(response));
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  return {
+    members,
+    loading,
+    fetchMembers,
+  };
+};
+
+/**
+ * 项目成员操作 Hook
+ */
+export const useProjectMemberActions = () => {
+  const [loading, setLoading] = useState(false);
+
+  const addMembers = useCallback(async (projectId: string, data: AddMembersParams) => {
+    try {
+      setLoading(true);
+      const response = await projectApi.addMembers(projectId, data);
+      return unwrapData(response);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const updateMemberRole = useCallback(async (projectId: string, userId: string, data: UpdateMemberRoleParams) => {
+    try {
+      setLoading(true);
+      const response = await projectApi.updateMemberRole(projectId, userId, data);
+      return unwrapData(response);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const removeMember = useCallback(async (projectId: string, userId: string) => {
+    try {
+      setLoading(true);
+      await projectApi.removeMember(projectId, userId);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  return {
+    loading,
+    addMembers,
+    updateMemberRole,
+    removeMember,
+  };
+};
+
+/**
+ * 项目团队角色列表 Hook
+ */
+export const useProjectTeamRoles = () => {
+  const [teamRoles, setTeamRoles] = useState<ProjectTeamRole[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  const fetchTeamRoles = useCallback(async (projectId: string) => {
+    try {
+      setLoading(true);
+      const response = await projectApi.getTeamRoles(projectId);
+      setTeamRoles(unwrapData(response));
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  return {
+    teamRoles,
+    loading,
+    fetchTeamRoles,
+  };
+};
+
+/**
+ * 项目团队角色操作 Hook
+ */
+export const useProjectTeamRoleActions = () => {
+  const [loading, setLoading] = useState(false);
+
+  const addTeamRoles = useCallback(async (projectId: string, data: AddTeamRolesParams) => {
+    try {
+      setLoading(true);
+      const response = await projectApi.addTeamRoles(projectId, data);
+      return unwrapData(response);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const updateTeamRole = useCallback(async (projectId: string, teamId: string, data: UpdateTeamRoleParams) => {
+    try {
+      setLoading(true);
+      const response = await projectApi.updateTeamRole(projectId, teamId, data);
+      return unwrapData(response);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const removeTeamRole = useCallback(async (projectId: string, teamId: string) => {
+    try {
+      setLoading(true);
+      await projectApi.removeTeamRole(projectId, teamId);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  return {
+    loading,
+    addTeamRoles,
+    updateTeamRole,
+    removeTeamRole,
+  };
+};
+
+/**
+ * 项目部门角色列表 Hook
+ */
+export const useProjectDepartmentRoles = () => {
+  const [departmentRoles, setDepartmentRoles] = useState<ProjectDepartmentRole[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  const fetchDepartmentRoles = useCallback(async (projectId: string) => {
+    try {
+      setLoading(true);
+      const response = await projectApi.getDepartmentRoles(projectId);
+      setDepartmentRoles(unwrapData(response));
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  return {
+    departmentRoles,
+    loading,
+    fetchDepartmentRoles,
+  };
+};
+
+/**
+ * 项目部门角色操作 Hook
+ */
+export const useProjectDepartmentRoleActions = () => {
+  const [loading, setLoading] = useState(false);
+
+  const addDepartmentRoles = useCallback(async (projectId: string, data: AddDepartmentRolesParams) => {
+    try {
+      setLoading(true);
+      const response = await projectApi.addDepartmentRoles(projectId, data);
+      return unwrapData(response);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const updateDepartmentRole = useCallback(async (projectId: string, departmentId: string, data: UpdateDepartmentRoleParams) => {
+    try {
+      setLoading(true);
+      const response = await projectApi.updateDepartmentRole(projectId, departmentId, data);
+      return unwrapData(response);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const removeDepartmentRole = useCallback(async (projectId: string, departmentId: string) => {
+    try {
+      setLoading(true);
+      await projectApi.removeDepartmentRole(projectId, departmentId);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  return {
+    loading,
+    addDepartmentRoles,
+    updateDepartmentRole,
+    removeDepartmentRole,
+  };
+};
+
+/**
+ * 当前用户项目权限 Hook
+ */
+export const useMyProjectPermissions = () => {
+  const [permissions, setPermissions] = useState<MyPermissionsResponse>();
+  const [loading, setLoading] = useState(false);
+
+  const fetchPermissions = useCallback(async (projectId: string) => {
+    try {
+      setLoading(true);
+      const response = await projectApi.getMyPermissions(projectId);
+      setPermissions(unwrapData(response));
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const hasPermission = useCallback((permission: string) => {
+    return permissions?.permissions.includes(permission) ?? false;
+  }, [permissions]);
+
+  return {
+    permissions,
+    loading,
+    fetchPermissions,
+    hasPermission,
   };
 };

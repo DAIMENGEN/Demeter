@@ -191,7 +191,15 @@
     "statusInProgress": "In Progress",
     "statusPaused": "Paused",
     "statusCompleted": "Completed",
-    "statusCancelled": "Cancelled"
+    "statusCancelled": "Cancelled",
+    "roleOwner": "Owner",
+    "roleAdmin": "Admin",
+    "roleMaintainer": "Maintainer",
+    "roleMember": "Member",
+    "roleViewer": "Viewer",
+    "visibilityPrivate": "Private",
+    "visibilityInternal": "Internal",
+    "visibilityPublic": "Public"
   },
   "task": {
     "createTask": "Create Task",
@@ -487,6 +495,28 @@
     "viewMonth": "Month",
     "viewQuarter": "Quarter",
     "viewYear": "Year"
+  },
+  "permission": {
+    "title": "Permissions",
+    "members": "Members",
+    "teams": "Teams",
+    "departments": "Departments",
+    "name": "Name",
+    "role": "Role",
+    "joinedAt": "Joined",
+    "actions": "Actions",
+    "teamName": "Team Name",
+    "departmentName": "Department Name",
+    "addMember": "Add Member",
+    "addTeam": "Add Team",
+    "addDepartment": "Add Department",
+    "selectUser": "Select User",
+    "selectTeam": "Select Team",
+    "selectDepartment": "Select Department",
+    "searchUserPlaceholder": "Search by username or name",
+    "searchTeamPlaceholder": "Search teams",
+    "searchDepartmentPlaceholder": "Search departments",
+    "removeConfirm": "Are you sure you want to remove?"
   },
   "notFound": {
     "title": "404",

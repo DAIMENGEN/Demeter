@@ -144,7 +144,6 @@ export const TeamRoleTab: React.FC<TeamRoleTabProps> = ({
                               <Button
                                   type="text"
                                   danger
-                                  size="small"
                                   icon={<DeleteOutlined />}
                               />
                           </Popconfirm>
@@ -159,8 +158,7 @@ export const TeamRoleTab: React.FC<TeamRoleTabProps> = ({
             <div className="popover-field">
                 <span className="popover-label">{t("permission.selectTeam")}</span>
                 <Select
-                    showSearch
-                    optionFilterProp="label"
+                    showSearch={{optionFilterProp: "label"}}
                     placeholder={t("permission.searchTeamPlaceholder")}
                     options={availableTeamOptions}
                     value={selectedTeamId}
@@ -179,12 +177,11 @@ export const TeamRoleTab: React.FC<TeamRoleTabProps> = ({
                 />
             </div>
             <div className="popover-actions">
-                <Button size="small" onClick={() => setPopoverOpen(false)}>
+                <Button onClick={() => setPopoverOpen(false)}>
                     {t("common.cancel")}
                 </Button>
                 <Button
                     type="primary"
-                    size="small"
                     onClick={handleAdd}
                     loading={actionLoading}
                     disabled={!selectedTeamId}
@@ -206,7 +203,7 @@ export const TeamRoleTab: React.FC<TeamRoleTabProps> = ({
                         onOpenChange={setPopoverOpen}
                         content={popoverContent}
                     >
-                        <Button type="primary" size="small" icon={<PlusOutlined />}>
+                        <Button type="primary" icon={<PlusOutlined />}>
                             {t("permission.addTeam")}
                         </Button>
                     </Popover>

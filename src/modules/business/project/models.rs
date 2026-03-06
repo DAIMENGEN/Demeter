@@ -13,6 +13,8 @@ pub struct Project {
     pub project_status: i32,
     pub version: Option<i32>,
     pub order: Option<f64>,
+    /// 可见性: 0=private, 1=internal, 2=public
+    pub visibility: i32,
     pub creator_id: Id,
     pub updater_id: Option<Id>,
     pub create_date_time: chrono::NaiveDateTime,
@@ -29,6 +31,8 @@ pub struct CreateProjectParams {
     pub project_status: i32,
     pub version: Option<i32>,
     pub order: Option<f64>,
+    /// 可见性: 0=private(默认), 1=internal, 2=public
+    pub visibility: Option<i32>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -52,6 +56,8 @@ pub struct UpdateProjectParams {
     /// 可空字段，双层 Option
     #[serde(default, deserialize_with = "crate::common::serde_helpers::double_option::deserialize")]
     pub order: Option<Option<f64>>,
+    /// NOT NULL 字段
+    pub visibility: Option<i32>,
 }
 
 #[derive(Debug, Deserialize)]

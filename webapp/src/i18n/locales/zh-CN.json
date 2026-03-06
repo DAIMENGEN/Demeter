@@ -191,7 +191,15 @@
     "statusInProgress": "进行中",
     "statusPaused": "已暂停",
     "statusCompleted": "已完成",
-    "statusCancelled": "已取消"
+    "statusCancelled": "已取消",
+    "roleOwner": "拥有者",
+    "roleAdmin": "管理员",
+    "roleMaintainer": "维护者",
+    "roleMember": "成员",
+    "roleViewer": "观察者",
+    "visibilityPrivate": "私有",
+    "visibilityInternal": "内部",
+    "visibilityPublic": "公开"
   },
   "task": {
     "createTask": "创建任务",
@@ -487,6 +495,28 @@
     "viewMonth": "月",
     "viewQuarter": "季",
     "viewYear": "年"
+  },
+  "permission": {
+    "title": "权限管理",
+    "members": "成员",
+    "teams": "团队",
+    "departments": "部门",
+    "name": "名称",
+    "role": "角色",
+    "joinedAt": "加入时间",
+    "actions": "操作",
+    "teamName": "团队名称",
+    "departmentName": "部门名称",
+    "addMember": "添加成员",
+    "addTeam": "添加团队",
+    "addDepartment": "添加部门",
+    "selectUser": "选择用户",
+    "selectTeam": "选择团队",
+    "selectDepartment": "选择部门",
+    "searchUserPlaceholder": "搜索用户名或姓名",
+    "searchTeamPlaceholder": "搜索团队",
+    "searchDepartmentPlaceholder": "搜索部门",
+    "removeConfirm": "确定要移除吗？"
   },
   "notFound": {
     "title": "404",

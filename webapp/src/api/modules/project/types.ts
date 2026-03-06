@@ -21,6 +21,53 @@ export const ProjectStatus = {
 export type ProjectStatus = (typeof ProjectStatus)[keyof typeof ProjectStatus];
 
 /**
+ * 项目可见性枚举
+ */
+export const ProjectVisibility = {
+  /** 仅成员可见 */
+  PRIVATE: 0,
+  /** 所有登录用户可见（操作需成员权限） */
+  INTERNAL: 1,
+  /** 所有人可见 */
+  PUBLIC: 2,
+} as const;
+
+export type ProjectVisibility = (typeof ProjectVisibility)[keyof typeof ProjectVisibility];
+
+/**
+ * 项目可见性标签映射 (i18n keys)
+ */
+export const ProjectVisibilityLabelKeys: Record<ProjectVisibility, string> = {
+  [ProjectVisibility.PRIVATE]: "project.visibilityPrivate",
+  [ProjectVisibility.INTERNAL]: "project.visibilityInternal",
+  [ProjectVisibility.PUBLIC]: "project.visibilityPublic",
+};
+
+/**
+ * 项目角色枚举（数值越小权限越高）
+ */
+export const ProjectRole = {
+  OWNER: 0,
+  ADMIN: 1,
+  MAINTAINER: 2,
+  MEMBER: 3,
+  VIEWER: 4,
+} as const;
+
+export type ProjectRole = (typeof ProjectRole)[keyof typeof ProjectRole];
+
+/**
+ * 项目角色标签映射 (i18n keys)
+ */
+export const ProjectRoleLabelKeys: Record<ProjectRole, string> = {
+  [ProjectRole.OWNER]: "project.roleOwner",
+  [ProjectRole.ADMIN]: "project.roleAdmin",
+  [ProjectRole.MAINTAINER]: "project.roleMaintainer",
+  [ProjectRole.MEMBER]: "project.roleMember",
+  [ProjectRole.VIEWER]: "project.roleViewer",
+};
+
+/**
  * 项目状态标签映射 (i18n keys)
  */
 export const ProjectStatusLabelKeys: Record<ProjectStatus, string> = {
@@ -43,6 +90,8 @@ export interface Project {
   projectStatus: ProjectStatus;
   version?: number;
   order?: number;
+  /** 可见性: 0=private, 1=internal, 2=public */
+  visibility: ProjectVisibility;
   creatorId: string;
   updaterId?: string;
   createDateTime: string;
@@ -60,6 +109,8 @@ export interface CreateProjectParams {
   projectStatus: ProjectStatus;
   version?: number;
   order?: number;
+  /** 可见性，默认 0 (private) */
+  visibility?: ProjectVisibility;
 }
 
 /**
@@ -82,6 +133,7 @@ export interface UpdateProjectParams {
   version?: number | null;
   /** 可空字段：传 null 可清空 */
   order?: number | null;
+  visibility?: ProjectVisibility;
 }
 
 /**
@@ -270,4 +322,106 @@ export interface ReorderProjectTasksParams {
 
 export interface BatchCreateProjectTasksParams {
   tasks: CreateProjectTaskParams[];
+}
+
+// ──────────────── 项目权限相关类型 ────────────────
+
+/**
+ * 项目成员
+ */
+export interface ProjectMember {
+  id: string;
+  projectId: string;
+  userId: string;
+  role: number;
+  createDateTime: string;
+  updateDateTime: string | null;
+  username?: string;
+  fullName?: string;
+}
+
+/**
+ * 项目团队角色
+ */
+export interface ProjectTeamRole {
+  id: string;
+  projectId: string;
+  teamId: string;
+  role: number;
+  createDateTime: string;
+  updateDateTime: string | null;
+  teamName?: string;
+}
+
+/**
+ * 项目部门角色
+ */
+export interface ProjectDepartmentRole {
+  id: string;
+  projectId: string;
+  departmentId: string;
+  role: number;
+  createDateTime: string;
+  updateDateTime: string | null;
+  departmentName?: string;
+}
+
+/**
+ * 角色来源信息
+ */
+export interface RoleSource {
+  source: string;
+  sourceName?: string;
+  role: string;
+}
+
+/**
+ * 我的项目权限响应
+ */
+export interface MyPermissionsResponse {
+  role: string;
+  roleSources: RoleSource[];
+  permissions: string[];
+}
+
+/**
+ * 添加成员参数
+ */
+export interface AddMembersParams {
+  members: { userId: string; role: number }[];
+}
+
+/**
+ * 更新成员角色参数
+ */
+export interface UpdateMemberRoleParams {
+  role: number;
+}
+
+/**
+ * 添加团队角色参数
+ */
+export interface AddTeamRolesParams {
+  teamRoles: { teamId: string; role: number }[];
+}
+
+/**
+ * 更新团队角色参数
+ */
+export interface UpdateTeamRoleParams {
+  role: number;
+}
+
+/**
+ * 添加部门角色参数
+ */
+export interface AddDepartmentRolesParams {
+  departmentRoles: { departmentId: string; role: number }[];
+}
+
+/**
+ * 更新部门角色参数
+ */
+export interface UpdateDepartmentRoleParams {
+  role: number;
 }

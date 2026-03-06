@@ -144,7 +144,6 @@ export const DepartmentRoleTab: React.FC<DepartmentRoleTabProps> = ({
                               <Button
                                   type="text"
                                   danger
-                                  size="small"
                                   icon={<DeleteOutlined />}
                               />
                           </Popconfirm>
@@ -159,8 +158,7 @@ export const DepartmentRoleTab: React.FC<DepartmentRoleTabProps> = ({
             <div className="popover-field">
                 <span className="popover-label">{t("permission.selectDepartment")}</span>
                 <Select
-                    showSearch
-                    optionFilterProp="label"
+                    showSearch={{optionFilterProp: "label"}}
                     placeholder={t("permission.searchDepartmentPlaceholder")}
                     options={availableDeptOptions}
                     value={selectedDeptId}
@@ -179,12 +177,11 @@ export const DepartmentRoleTab: React.FC<DepartmentRoleTabProps> = ({
                 />
             </div>
             <div className="popover-actions">
-                <Button size="small" onClick={() => setPopoverOpen(false)}>
+                <Button onClick={() => setPopoverOpen(false)}>
                     {t("common.cancel")}
                 </Button>
                 <Button
                     type="primary"
-                    size="small"
                     onClick={handleAdd}
                     loading={actionLoading}
                     disabled={!selectedDeptId}
@@ -206,7 +203,7 @@ export const DepartmentRoleTab: React.FC<DepartmentRoleTabProps> = ({
                         onOpenChange={setPopoverOpen}
                         content={popoverContent}
                     >
-                        <Button type="primary" size="small" icon={<PlusOutlined />}>
+                        <Button type="primary" icon={<PlusOutlined />}>
                             {t("permission.addDepartment")}
                         </Button>
                     </Popover>

@@ -12,12 +12,12 @@ pub struct ProjectRepository;
 
 /// projects 表 SELECT 列
 const PROJECT_COLUMNS: &str = r#"id, project_name, description, start_date_time, end_date_time, 
-    project_status, version, "order", creator_id, updater_id, 
+    project_status, version, "order", visibility, creator_id, updater_id, 
     create_date_time, update_date_time"#;
 
 /// projects 表 RETURNING 列
 const PROJECT_RETURNING: &str = r#" RETURNING id, project_name, description, start_date_time, end_date_time, 
-    project_status, version, "order", creator_id, updater_id, 
+    project_status, version, "order", visibility, creator_id, updater_id, 
     create_date_time, update_date_time"#;
 
 impl ProjectRepository {
@@ -213,8 +213,8 @@ impl ProjectRepository {
     ) -> AppResult<Project> {
         let sql = format!(
             r#"INSERT INTO projects (id, project_name, description, start_date_time, end_date_time,
-                                 project_status, version, "order", creator_id, create_date_time)
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW()){}
+                                 project_status, version, "order", visibility, creator_id, create_date_time)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW()){}
             "#,
             PROJECT_RETURNING,
         );
@@ -227,6 +227,7 @@ impl ProjectRepository {
         .bind(params.project_status)
         .bind(params.version)
         .bind(params.order)
+        .bind(params.visibility.unwrap_or(0))
         .bind(creator_id)
         .fetch_one(pool)
         .await?;
@@ -294,6 +295,13 @@ impl ProjectRepository {
             has_set = true;
         }
 
+        if let Some(ref vis) = params.visibility {
+            if has_set { qb.push(", "); }
+            qb.push("visibility = ");
+            qb.push_bind(*vis);
+            has_set = true;
+        }
+
         // 若没有任何业务字段出现，仅更新 updater_id + update_date_time
         if has_set { qb.push(", "); }
         qb.push("updater_id = ");
@@ -324,6 +332,18 @@ impl ProjectRepository {
             .bind(project_id)
             .execute(&mut *tx)
             .await?;
+        sqlx::query("DELETE FROM project_members WHERE project_id = $1")
+            .bind(project_id)
+            .execute(&mut *tx)
+            .await?;
+        sqlx::query("DELETE FROM project_team_roles WHERE project_id = $1")
+            .bind(project_id)
+            .execute(&mut *tx)
+            .await?;
+        sqlx::query("DELETE FROM project_department_roles WHERE project_id = $1")
+            .bind(project_id)
+            .execute(&mut *tx)
+            .await?;
         let result = sqlx::query("DELETE FROM projects WHERE id = $1")
             .bind(project_id)
             .execute(&mut *tx)
@@ -347,6 +367,18 @@ impl ProjectRepository {
             .execute(&mut *tx)
             .await?;
         sqlx::query("DELETE FROM project_visits WHERE project_id = ANY($1)")
+            .bind(&project_ids)
+            .execute(&mut *tx)
+            .await?;
+        sqlx::query("DELETE FROM project_members WHERE project_id = ANY($1)")
+            .bind(&project_ids)
+            .execute(&mut *tx)
+            .await?;
+        sqlx::query("DELETE FROM project_team_roles WHERE project_id = ANY($1)")
+            .bind(&project_ids)
+            .execute(&mut *tx)
+            .await?;
+        sqlx::query("DELETE FROM project_department_roles WHERE project_id = ANY($1)")
             .bind(&project_ids)
             .execute(&mut *tx)
             .await?;

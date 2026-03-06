@@ -153,7 +153,6 @@ export const MemberTab: React.FC<MemberTabProps> = ({
                                   <Button
                                       type="text"
                                       danger
-                                      size="small"
                                       icon={<DeleteOutlined />}
                                   />
                               </Popconfirm>
@@ -169,14 +168,12 @@ export const MemberTab: React.FC<MemberTabProps> = ({
             <div className="popover-field">
                 <span className="popover-label">{t("permission.selectUser")}</span>
                 <Select
-                    showSearch
-                    filterOption={false}
+                    showSearch={{filterOption: false, onSearch: onUserSearch}}
                     placeholder={t("permission.searchUserPlaceholder")}
                     options={userPicker.options}
                     loading={userPicker.loading}
                     value={selectedUserId}
                     onChange={setSelectedUserId}
-                    onSearch={onUserSearch}
                     onFocus={() => {
                         if (userPicker.options.length === 0) onUserSearch("");
                     }}
@@ -200,12 +197,11 @@ export const MemberTab: React.FC<MemberTabProps> = ({
                 />
             </div>
             <div className="popover-actions">
-                <Button size="small" onClick={() => setPopoverOpen(false)}>
+                <Button onClick={() => setPopoverOpen(false)}>
                     {t("common.cancel")}
                 </Button>
                 <Button
                     type="primary"
-                    size="small"
                     onClick={handleAdd}
                     loading={actionLoading}
                     disabled={!selectedUserId}
@@ -227,7 +223,7 @@ export const MemberTab: React.FC<MemberTabProps> = ({
                         onOpenChange={setPopoverOpen}
                         content={popoverContent}
                     >
-                        <Button type="primary" size="small" icon={<PlusOutlined />}>
+                        <Button type="primary" icon={<PlusOutlined />}>
                             {t("permission.addMember")}
                         </Button>
                     </Popover>

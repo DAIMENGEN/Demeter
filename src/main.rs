@@ -91,6 +91,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .merge(organization::team::team_routes(app_state.clone()))
         .merge(business::project::project_routes(app_state.clone()))
         .merge(business::project::task::task_routes(app_state.clone()))
+        .merge(business::project::permission::permission_routes(
+            app_state.clone(),
+        ))
         .layer(
             TraceLayer::new_for_http()
                 .make_span_with(

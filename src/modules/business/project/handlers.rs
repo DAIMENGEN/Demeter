@@ -7,6 +7,8 @@ use crate::modules::business::project::models::{
     BatchDeleteProjectsParams, CreateProjectParams, Project, ProjectQueryParams,
     RecentlyVisitedQueryParams, ReorderProjectsParams, UpdateProjectParams,
 };
+use crate::modules::business::project::permission::models::{Permission, ProjectPermission};
+use crate::modules::business::project::permission::repository::ProjectMemberRepository;
 use crate::modules::business::project::repository::{ProjectRepository, ProjectVisitRepository};
 use axum::{
     extract::{Path, Query, State},
@@ -105,15 +107,37 @@ pub async fn create_project(
         .map_err(|e| AppError::InternalError(format!("Failed to generate project ID: {}", e)))?;
     let project =
         ProjectRepository::create_project(&state.pool, project_id, params, creator_id).await?;
+
+    // 自动将创建者添加为项目 Owner
+    let member_id = state
+        .generate_id()
+        .map_err(|e| AppError::InternalError(format!("Failed to generate member ID: {}", e)))?;
+    let owner_item = crate::modules::business::project::permission::models::AddMemberItem {
+        user_id: Id(creator_id),
+        role: 0, // Owner
+    };
+    let _ = ProjectMemberRepository::add_members(
+        &state.pool,
+        project_id,
+        vec![(member_id, &owner_item)],
+    )
+    .await;
+
     Ok((StatusCode::CREATED, Json(ApiResponse::success(project))))
 }
 
 pub async fn update_project(
     State(state): State<AppState>,
     Extension(claims): Extension<Claims>,
+    Extension(perm): Extension<ProjectPermission>,
     Path(project_id): Path<Id>,
     Json(params): Json<UpdateProjectParams>,
 ) -> AppResult<Json<ApiResponse<Project>>> {
+    if !perm.has_permission(Permission::ProjectEdit) {
+        return Err(AppError::Forbidden(
+            "You don't have permission to edit this project".to_string(),
+        ));
+    }
     let updater_id = claims.sub;
     let project = ProjectRepository::update_project(&state.pool, project_id.0, params, updater_id)
         .await?
@@ -126,8 +150,14 @@ pub async fn update_project(
 
 pub async fn delete_project(
     State(state): State<AppState>,
+    Extension(perm): Extension<ProjectPermission>,
     Path(project_id): Path<Id>,
 ) -> AppResult<StatusCode> {
+    if !perm.has_permission(Permission::ProjectDelete) {
+        return Err(AppError::Forbidden(
+            "You don't have permission to delete this project".to_string(),
+        ));
+    }
     let deleted = ProjectRepository::delete_project(&state.pool, project_id.0).await?;
     if !deleted {
         return Err(AppError::NotFound(format!(
