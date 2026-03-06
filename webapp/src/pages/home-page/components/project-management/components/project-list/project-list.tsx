@@ -28,6 +28,7 @@ interface SortableProjectCardProps {
     onEdit?: (project: Project) => void;
     onDelete?: (project: Project) => void;
     onClick?: (project: Project) => void;
+    onPermission?: (project: Project) => void;
 }
 
 const SortableProjectCard: React.FC<SortableProjectCardProps> = ({
@@ -35,6 +36,7 @@ const SortableProjectCard: React.FC<SortableProjectCardProps> = ({
     onEdit,
     onDelete,
     onClick,
+    onPermission,
 }) => {
     const {
         attributes,
@@ -57,6 +59,7 @@ const SortableProjectCard: React.FC<SortableProjectCardProps> = ({
                 onEdit={onEdit}
                 onDelete={onDelete}
                 onClick={onClick}
+                onPermission={onPermission}
                 isDragging={isDragging}
             />
         </div>
@@ -71,6 +74,7 @@ interface ProjectListProps {
     onEdit?: (project: Project) => void;
     onDelete?: (project: Project) => void;
     onClick?: (project: Project) => void;
+    onPermission?: (project: Project) => void;
     onRefresh?: () => void;
     onCreateNew?: () => void;
     onSearch?: (keyword: string) => void;
@@ -87,6 +91,7 @@ export const ProjectList: React.FC<ProjectListProps> = ({
                                                             onEdit,
                                                             onDelete,
                                                             onClick,
+                                                            onPermission,
                                                             onRefresh,
                                                             onCreateNew,
                                                             onSearch,
@@ -202,6 +207,7 @@ export const ProjectList: React.FC<ProjectListProps> = ({
                                             onEdit={onEdit}
                                             onDelete={onDelete}
                                             onClick={onClick}
+                                            onPermission={onPermission}
                                         />
                                     </Col>
                                 ))}
@@ -225,6 +231,7 @@ export const ProjectList: React.FC<ProjectListProps> = ({
                                     onEdit={onEdit}
                                     onDelete={onDelete}
                                     onClick={onClick}
+                                    onPermission={onPermission}
                                 />
                             </Col>
                         ))}

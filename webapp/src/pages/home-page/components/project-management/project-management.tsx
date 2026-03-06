@@ -6,6 +6,7 @@ import {type Project, useMyAllProjects, useProjectActions, useRecentlyVisitedPro
 import "./project-management.scss";
 import {ProjectList} from "./components/project-list";
 import {CreateProjectDrawer, EditProjectDrawer} from "./components/project-drawer";
+import {PermissionDrawer} from "./components/permission-drawer";
 import {log} from "@Webapp/logging.ts";
 import {useTranslation} from "react-i18next";
 
@@ -21,6 +22,8 @@ export const ProjectManagement: React.FC = () => {
     const [createDrawerOpen, setCreateDrawerOpen] = useState(false);
     const [editDrawerOpen, setEditDrawerOpen] = useState(false);
     const [editingProject, setEditingProject] = useState<Project | null>(null);
+    const [permissionDrawerOpen, setPermissionDrawerOpen] = useState(false);
+    const [permissionProject, setPermissionProject] = useState<Project | null>(null);
     const [selectedView, setSelectedView] = useState<ProjectViewType>("myCreated");
     const [searchKeyword, setSearchKeyword] = useState("");
 
@@ -94,6 +97,12 @@ export const ProjectManagement: React.FC = () => {
     const handleEditProject = useCallback((project: Project) => {
         setEditingProject(project);
         setEditDrawerOpen(true);
+    }, []);
+
+    // 处理权限管理
+    const handlePermission = useCallback((project: Project) => {
+        setPermissionProject(project);
+        setPermissionDrawerOpen(true);
     }, []);
 
     // 处理删除项目
@@ -197,6 +206,7 @@ export const ProjectManagement: React.FC = () => {
                              onClick={handleProjectClick}
                              onEdit={handleEditProject}
                              onDelete={handleDeleteProject}
+                             onPermission={handlePermission}
                              onRefresh={handleRefresh}
                              onSearch={handleSearch}
                              searchKeyword={searchKeyword}
@@ -214,6 +224,12 @@ export const ProjectManagement: React.FC = () => {
                                    setEditingProject(null);
                                }}
                                onSuccess={handleEditSuccess}/>
+            <PermissionDrawer open={permissionDrawerOpen}
+                              project={permissionProject}
+                              onClose={() => {
+                                  setPermissionDrawerOpen(false);
+                                  setPermissionProject(null);
+                              }}/>
         </Layout>
     );
 };

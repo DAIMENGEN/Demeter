@@ -23,6 +23,7 @@ interface ProjectCardProps {
     onEdit?: (project: Project) => void;
     onDelete?: (project: Project) => void;
     onClick?: (project: Project) => void;
+    onPermission?: (project: Project) => void;
     isDragging?: boolean;
 }
 
@@ -45,6 +46,7 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({
                                                             onEdit,
                                                             onDelete,
                                                             onClick,
+                                                            onPermission,
                                                             isDragging = false
                                                         }) => {
     const {t} = useTranslation();
@@ -61,9 +63,8 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({
 
     const handlePermission = useCallback((e: React.MouseEvent) => {
         e.stopPropagation();
-        // TODO: 实现权限管理功能
-        console.log("权限管理", project);
-    }, [project]);
+        onPermission?.(project);
+    }, [onPermission, project]);
 
     const handleMoreClick = useCallback((e: React.MouseEvent) => {
         e.stopPropagation();
