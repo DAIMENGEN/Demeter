@@ -13,7 +13,7 @@ import type {
   HolidayQueryParams,
   UpdateHolidayParams
 } from "./types";
-import {unwrapData} from "@Webapp/api/common/response.ts";
+import {unwrapData} from "@Webapp/http";
 import {DEFAULT_PAGINATION, type Pagination} from "@Webapp/api/common/pagination.ts";
 
 /**

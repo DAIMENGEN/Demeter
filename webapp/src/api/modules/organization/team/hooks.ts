@@ -5,7 +5,7 @@
 import {useCallback, useState} from "react";
 import {teamApi} from "./api";
 import type {CreateTeamParams, Team, TeamQueryParams, UpdateTeamParams} from "./types";
-import {unwrapData} from "@Webapp/api/common/response";
+import {unwrapData} from "@Webapp/http";
 import {DEFAULT_PAGINATION, type Pagination} from "@Webapp/api/common/pagination";
 
 /**

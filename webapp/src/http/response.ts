@@ -1,8 +1,6 @@
 /**
- * HTTP 请求相关的类型定义
+ * HTTP 响应相关的类型定义和工具函数
  */
-
-import type {AxiosRequestConfig} from "axios";
 
 /**
  * 通用的 API 成功响应结构: { data: T }
@@ -62,26 +60,6 @@ export interface FieldError {
 }
 
 /**
- * 请求配置选项
- */
-export interface RequestConfig extends AxiosRequestConfig {
-  // 是否显示加载提示
-  showLoading?: boolean;
-  // 是否显示错误提示
-  showError?: boolean;
-  // 自定义错误处理
-  customErrorHandler?: (error: unknown) => void;
-}
-
-/**
- * 分页请求参数
- */
-export interface PageParams {
-  page: number;
-  perPage: number;
-}
-
-/**
  * HTTP 错误响应
  */
 export interface HttpError {
@@ -91,3 +69,28 @@ export interface HttpError {
   status?: number;
 }
 
+/**
+ * API 业务错误，携带后端返回的错误码和附加数据
+ */
+export class ApiError extends Error {
+  readonly code: string;
+  readonly data: unknown;
+
+  constructor(code: string, message: string, data?: unknown) {
+    super(message);
+    this.name = "ApiError";
+    this.code = code;
+    this.data = data;
+  }
+}
+
+/**
+ * 从 ApiResponse<T> 信封中提取 data 字段。
+ * 如果传入的值不包含 data 字段，直接返回原值（兼容直接返回的简单值）。
+ */
+export const unwrapData = <T>(response: ApiResponse<T> | T): T => {
+  if (response != null && typeof response === "object" && "data" in response) {
+    return (response as ApiResponse<T>).data;
+  }
+  return response as T;
+};

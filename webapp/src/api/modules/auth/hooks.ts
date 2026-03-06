@@ -5,7 +5,7 @@
 import {useCallback, useState} from "react";
 import {authApi} from "./api";
 import type {LoginParams, RegisterParams} from "./types";
-import {unwrapData} from "@Webapp/api/common/response";
+import {unwrapData} from "@Webapp/http";
 
 /**
  * 登录 Hook

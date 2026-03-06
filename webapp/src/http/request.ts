@@ -3,8 +3,27 @@
  */
 
 import httpClient from "./client";
-import type {RequestConfig} from "./types";
-import type {AxiosResponse} from "axios";
+import type {AxiosRequestConfig, AxiosResponse} from "axios";
+
+/**
+ * 请求配置选项
+ */
+export interface RequestConfig extends AxiosRequestConfig {
+  // 是否显示加载提示
+  showLoading?: boolean;
+  // 是否显示错误提示
+  showError?: boolean;
+  // 自定义错误处理
+  customErrorHandler?: (error: unknown) => void;
+}
+
+/**
+ * 分页请求参数
+ */
+export interface PageParams {
+  page: number;
+  perPage: number;
+}
 
 /**
  * 通用请求方法

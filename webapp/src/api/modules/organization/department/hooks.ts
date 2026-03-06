@@ -5,7 +5,7 @@
 import {useCallback, useState} from "react";
 import {departmentApi} from "./api";
 import type {CreateDepartmentParams, Department, DepartmentQueryParams, UpdateDepartmentParams} from "./types";
-import {unwrapData} from "@Webapp/api/common/response";
+import {unwrapData} from "@Webapp/http";
 import {DEFAULT_PAGINATION, type Pagination} from "@Webapp/api/common/pagination";
 
 /**

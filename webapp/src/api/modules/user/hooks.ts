@@ -4,7 +4,7 @@
 import {useCallback, useRef, useState} from "react";
 import {userApi} from "./api";
 import type {CreateUserParams, UpdateUserParams, User, UserQueryParams} from "./types";
-import {unwrapData} from "@Webapp/api/common/response.ts";
+import {unwrapData} from "@Webapp/http";
 import {DEFAULT_PAGINATION, type Pagination} from "@Webapp/api/common/pagination.ts";
 
 /**
