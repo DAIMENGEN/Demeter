@@ -152,6 +152,8 @@ httpClient.interceptors.response.use(
       } catch (refreshError) {
         // 刷新失败：统一 reject 队列中的请求，避免 Promise 悬挂
         processQueue(refreshError, null);
+        // 会话彻底失效，强制跳回登录页
+        window.location.replace("/login");
         return Promise.reject(refreshError);
       } finally {
         isRefreshing = false;

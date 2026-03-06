@@ -52,6 +52,7 @@ const userSlice = createSlice({
         // 登出
         logout: (state) => {
             state.currentUser = null;
+            state.isAuthenticated = false;
         },
     },
 });

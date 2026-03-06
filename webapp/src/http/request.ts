@@ -3,7 +3,18 @@
  */
 
 import httpClient from "./client";
+import {errorBus} from "./error-bus";
+import type {HttpError} from "./response";
 import type {AxiosRequestConfig, AxiosResponse} from "axios";
+
+/** 判断是否为拦截器规范化后的 HttpError（排除原始 AxiosError） */
+function isHttpError(e: unknown): e is HttpError {
+    return (
+        typeof e === "object" && e !== null &&
+        "code" in e && "message" in e &&
+        !("isAxiosError" in e)
+    );
+}
 
 /**
  * 请求配置选项
@@ -45,9 +56,12 @@ async function request<T = unknown>(
 
         return response.data;
     } catch (error) {
-        // 如果有自定义错误处理，则调用
         if (config.customErrorHandler) {
+            // 调用方自定义错误处理，不再全局弹窗
             config.customErrorHandler(error);
+        } else if (isHttpError(error)) {
+            // 无自定义处理时，通过全局事件总线展示错误提示
+            errorBus.emit(error.message);
         }
         throw error;
     }

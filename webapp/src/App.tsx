@@ -1,8 +1,29 @@
 import "@Webapp/App.css"
+import {useEffect} from "react";
 import {BrowserRouter} from "react-router-dom"
 import {AppRoutes} from "@Webapp/AppRoutes.tsx";
 import {App as AntdApp, ConfigProvider} from "antd";
 import {useLanguage} from "@Webapp/components";
+import {errorBus} from "@Webapp/http";
+
+/**
+ * 在 AntdApp 内部注册全局错误通知处理器
+ * 必须是独立组件，才能合法调用 AntdApp.useApp()
+ */
+function AppContent() {
+    const {message} = AntdApp.useApp();
+
+    useEffect(() => {
+        errorBus.register((msg) => message.error(msg));
+        return () => errorBus.register(null);
+    }, [message]);
+
+    return (
+        <BrowserRouter>
+            <AppRoutes/>
+        </BrowserRouter>
+    );
+}
 
 function App() {
     const {getAntdLocale} = useLanguage();
@@ -34,9 +55,7 @@ function App() {
             }}
         >
             <AntdApp>
-                <BrowserRouter>
-                    <AppRoutes/>
-                </BrowserRouter>
+                <AppContent/>
             </AntdApp>
         </ConfigProvider>
     )

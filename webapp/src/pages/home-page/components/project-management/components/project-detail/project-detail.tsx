@@ -1,7 +1,7 @@
 import React, {useCallback, useEffect, useMemo, useState} from "react";
 import {useNavigate, useParams} from "react-router-dom";
 import {useTranslation} from "react-i18next";
-import {Result404} from "@Webapp/components/result-404";
+import {NotFound} from "@Webapp/components/not-found";
 import {useDomRef, useLocalStorageState} from "@Webapp/hooks";
 import {useSchedulantHeight} from "./hooks/use-schedulant-height.ts";
 import {useSchedulantData} from "./hooks/use-schedulant-data.ts";
@@ -150,7 +150,7 @@ export const ProjectDetail: React.FC = () => {
     }, [editingTaskId, tasks]);
 
     if (!projectId) {
-        return <Result404 returnPath={"/home/project-management"}/>
+        return <NotFound returnPath={"/home/project-management"}/>
     }
 
     // ---- 视图控制 ----

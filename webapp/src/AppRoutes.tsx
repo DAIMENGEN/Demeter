@@ -1,5 +1,5 @@
 import {Navigate, Route, Routes} from "react-router-dom";
-import {AuthGuard} from "@Webapp/components";
+import {AuthGuard, ErrorBoundary} from "@Webapp/components";
 import {LoginPage} from "@Webapp/pages/login-page";
 import {RegisterPage} from "@Webapp/pages/register-page";
 import {HomePage} from "@Webapp/pages/home-page";
@@ -15,7 +15,8 @@ import {TeamManagement} from "@Webapp/pages/home-page/components/organization-ma
 
 export const AppRoutes = () => {
     return (
-        <AuthGuard>
+        <ErrorBoundary>
+            <AuthGuard>
             <Routes>
                 <Route path="/" element={<LoginPage/>}/>
                 <Route path="/login" element={<LoginPage/>}/>
@@ -33,6 +34,7 @@ export const AppRoutes = () => {
                     </Route>
                 </Route>
             </Routes>
-        </AuthGuard>
+            </AuthGuard>
+        </ErrorBoundary>
     )
 }

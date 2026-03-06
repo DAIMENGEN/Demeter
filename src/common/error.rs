@@ -30,6 +30,7 @@ pub struct FieldError {
 pub enum AppError {
     NotFound(String),
     BadRequest(String),
+    #[allow(dead_code)]
     ValidationError(String, Vec<FieldError>),
     Unauthorized(String),
     Forbidden(String),
