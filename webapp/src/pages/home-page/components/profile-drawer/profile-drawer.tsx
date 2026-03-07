@@ -1,5 +1,5 @@
 import React, {useEffect, useMemo, useState} from "react";
-import {App, Button, Divider, Drawer, Form, Input, Space, Tag, Typography} from "antd";
+import {App, Avatar, Button, Divider, Drawer, Form, Input, Space, Tag, Typography} from "antd";
 import {ApartmentOutlined, CalendarOutlined, MailOutlined, PhoneOutlined, TeamOutlined, UserOutlined} from "@ant-design/icons";
 import dayjs from "@Webapp/config/dayjs";
 import {useTranslation} from "react-i18next";
@@ -121,19 +121,32 @@ export const ProfileDrawer: React.FC<ProfileDrawerProps> = ({open, onClose}) => 
             <div className="profile-drawer-content">
                 {/* Membership Info Section */}
                 <div className="membership-section">
-                    <Space size="small" style={{width: "100%", flexDirection: "column"}}>
-                        <div className="info-item">
-                            <Text type="secondary">
-                                <CalendarOutlined /> {t("profile.registrationDate")}
-                            </Text>
-                            <Text strong>{formattedRegistrationDate}</Text>
+                    <div className="profile-header">
+                        <div className="profile-avatar-slot">
+                            <Avatar
+                                className="profile-avatar"
+                                size={150}
+                                shape="square"
+                                icon={<UserOutlined />}
+                            />
                         </div>
-                        <div className="membership-badge">
-                            <Tag color="blue" style={{fontSize: "14px", padding: "4px 12px"}}>
+                        <div className="profile-meta">
+                            <Text className="profile-name" strong>
+                                {currentUser?.fullName || currentUser?.username || "-"}
+                            </Text>
+
+                            <div className="profile-date-block">
+                                <Text type="secondary" className="profile-date-label">
+                                    <CalendarOutlined /> {t("profile.registrationDate")}
+                                </Text>
+                                <Text strong className="profile-date-value">{formattedRegistrationDate}</Text>
+                            </div>
+
+                            <Tag color="blue" className="profile-membership-tag">
                                 {t("profile.membershipDays", {days: membershipDays})}
                             </Tag>
                         </div>
-                    </Space>
+                    </div>
                 </div>
 
                 <Divider />
