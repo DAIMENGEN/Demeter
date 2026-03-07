@@ -31,12 +31,12 @@ impl<'de> Deserialize<'de> for ProjectRole {
                 formatter.write_str("an integer 0-4 or a string role name (owner/admin/maintainer/member/viewer)")
             }
 
-            fn visit_u64<E: de::Error>(self, v: u64) -> Result<ProjectRole, E> {
+            fn visit_i64<E: de::Error>(self, v: i64) -> Result<ProjectRole, E> {
                 ProjectRole::from_i32(v as i32)
                     .ok_or_else(|| de::Error::custom(format!("invalid role value: {v}. Valid: 0-4")))
             }
 
-            fn visit_i64<E: de::Error>(self, v: i64) -> Result<ProjectRole, E> {
+            fn visit_u64<E: de::Error>(self, v: u64) -> Result<ProjectRole, E> {
                 ProjectRole::from_i32(v as i32)
                     .ok_or_else(|| de::Error::custom(format!("invalid role value: {v}. Valid: 0-4")))
             }
