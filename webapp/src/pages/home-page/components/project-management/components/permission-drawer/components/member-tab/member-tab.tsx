@@ -168,7 +168,10 @@ export const MemberTab: React.FC<MemberTabProps> = ({
             <div className="popover-field">
                 <span className="popover-label">{t("permission.selectUser")}</span>
                 <Select
-                    showSearch={{filterOption: false, onSearch: onUserSearch}}
+                    showSearch={{
+                        filterOption: false,
+                        onSearch: onUserSearch,
+                    }}
                     placeholder={t("permission.searchUserPlaceholder")}
                     options={userPicker.options}
                     loading={userPicker.loading}
@@ -222,6 +225,7 @@ export const MemberTab: React.FC<MemberTabProps> = ({
                         open={popoverOpen}
                         onOpenChange={setPopoverOpen}
                         content={popoverContent}
+                        getPopupContainer={(trigger) => trigger.closest(".ant-drawer-body") || document.body}
                     >
                         <Button type="primary" icon={<PlusOutlined />}>
                             {t("permission.addMember")}

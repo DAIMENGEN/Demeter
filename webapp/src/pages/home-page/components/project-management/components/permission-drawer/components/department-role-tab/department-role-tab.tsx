@@ -158,7 +158,9 @@ export const DepartmentRoleTab: React.FC<DepartmentRoleTabProps> = ({
             <div className="popover-field">
                 <span className="popover-label">{t("permission.selectDepartment")}</span>
                 <Select
-                    showSearch={{optionFilterProp: "label"}}
+                    showSearch={{
+                        optionFilterProp: "label",
+                    }}
                     placeholder={t("permission.searchDepartmentPlaceholder")}
                     options={availableDeptOptions}
                     value={selectedDeptId}
@@ -202,6 +204,7 @@ export const DepartmentRoleTab: React.FC<DepartmentRoleTabProps> = ({
                         open={popoverOpen}
                         onOpenChange={setPopoverOpen}
                         content={popoverContent}
+                        getPopupContainer={(trigger) => trigger.closest(".ant-drawer-body") || document.body}
                     >
                         <Button type="primary" icon={<PlusOutlined />}>
                             {t("permission.addDepartment")}

@@ -158,7 +158,9 @@ export const TeamRoleTab: React.FC<TeamRoleTabProps> = ({
             <div className="popover-field">
                 <span className="popover-label">{t("permission.selectTeam")}</span>
                 <Select
-                    showSearch={{optionFilterProp: "label"}}
+                    showSearch={{
+                        optionFilterProp: "label",
+                    }}
                     placeholder={t("permission.searchTeamPlaceholder")}
                     options={availableTeamOptions}
                     value={selectedTeamId}
@@ -202,6 +204,7 @@ export const TeamRoleTab: React.FC<TeamRoleTabProps> = ({
                         open={popoverOpen}
                         onOpenChange={setPopoverOpen}
                         content={popoverContent}
+                        getPopupContainer={(trigger) => trigger.closest(".ant-drawer-body") || document.body}
                     >
                         <Button type="primary" icon={<PlusOutlined />}>
                             {t("permission.addTeam")}
