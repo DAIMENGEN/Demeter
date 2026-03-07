@@ -15,4 +15,5 @@ export type {
     HttpError
 } from "./response";
 export {ApiError, unwrapData} from "./response";
+export {authEvent} from "./auth-event";
 

@@ -329,6 +329,33 @@ export interface BatchCreateProjectTasksParams {
 // ──────────────── 项目权限相关类型 ────────────────
 
 /**
+ * 项目权限枚举（与后端 Permission enum snake_case 序列化一一对应）
+ */
+export const ProjectPermission = {
+  // 项目
+  PROJECT_VIEW: "project_view",
+  PROJECT_EDIT: "project_edit",
+  PROJECT_DELETE: "project_delete",
+  PROJECT_MANAGE_MEMBERS: "project_manage_members",
+  PROJECT_TRANSFER_OWNERSHIP: "project_transfer_ownership",
+  // 属性配置
+  ATTRIBUTE_CONFIG_VIEW: "attribute_config_view",
+  ATTRIBUTE_CONFIG_CREATE: "attribute_config_create",
+  ATTRIBUTE_CONFIG_EDIT: "attribute_config_edit",
+  ATTRIBUTE_CONFIG_ARCHIVE: "attribute_config_archive",
+  // 任务
+  TASK_VIEW: "task_view",
+  TASK_CREATE: "task_create",
+  TASK_EDIT_ALL: "task_edit_all",
+  TASK_EDIT_OWN: "task_edit_own",
+  TASK_DELETE_ALL: "task_delete_all",
+  TASK_DELETE_OWN: "task_delete_own",
+  TASK_BATCH_OPERATE: "task_batch_operate",
+} as const;
+
+export type ProjectPermission = (typeof ProjectPermission)[keyof typeof ProjectPermission];
+
+/**
  * 项目成员
  */
 export interface ProjectMember {

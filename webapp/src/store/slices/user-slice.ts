@@ -67,5 +67,12 @@ export const {
 // 使用泛型避免循环依赖，实际使用时会通过 useAppSelector 获得正确的类型推断
 export const selectCurrentUser = (state: { user: UserState }) => state.user.currentUser;
 export const selectIsAuthenticated = (state: { user: UserState }) => state.user.isAuthenticated;
+export const selectIsAdmin = (state: { user: UserState }) => {
+    const role = state.user.currentUser?.role;
+    return role === "super_admin" || role === "admin";
+};
+export const selectIsSuperAdmin = (state: { user: UserState }) => {
+    return state.user.currentUser?.role === "super_admin";
+};
 // 导出 reducer
 export default userSlice.reducer;

@@ -3,7 +3,7 @@ import {Tabs} from "antd";
 import {TeamOutlined, ApartmentOutlined, UserOutlined} from "@ant-design/icons";
 import {useTranslation} from "react-i18next";
 import type {Project} from "@Webapp/api/modules/project";
-import {useMyProjectPermissions} from "@Webapp/api/modules/project";
+import {ProjectPermission, useMyProjectPermissions} from "@Webapp/api/modules/project";
 import {ResizableDrawer} from "@Webapp/components/resizable-drawer";
 import {MemberTab} from "./components/member-tab";
 import {TeamRoleTab} from "./components/team-role-tab";
@@ -30,7 +30,7 @@ export const PermissionDrawer: React.FC<PermissionDrawerProps> = ({
         }
     }, [open, project, fetchPermissions]);
 
-    const canManageMembers = hasPermission("project_manage_members");
+    const canManageMembers = hasPermission(ProjectPermission.PROJECT_MANAGE_MEMBERS);
 
     const handleClose = useCallback(() => {
         onClose();

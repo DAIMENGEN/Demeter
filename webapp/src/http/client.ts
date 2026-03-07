@@ -5,6 +5,7 @@ import "@Webapp/logging";
 import type {AxiosInstance, InternalAxiosRequestConfig} from "axios";
 import axios, {AxiosError} from "axios";
 import type {ApiErrorResponse, ApiResponse, HttpError} from "./response";
+import {authEvent} from "./auth-event";
 import {log} from "@Webapp/logging.ts";
 
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || "http://localhost:9000/api/v1";
@@ -152,8 +153,8 @@ httpClient.interceptors.response.use(
       } catch (refreshError) {
         // 刷新失败：统一 reject 队列中的请求，避免 Promise 悬挂
         processQueue(refreshError, null);
-        // 会话彻底失效，强制跳回登录页
-        window.location.replace("/login");
+        // 会话彻底失效，通过事件通知 React 层进行路由跳转
+        authEvent.emitSessionExpired();
         return Promise.reject(refreshError);
       } finally {
         isRefreshing = false;

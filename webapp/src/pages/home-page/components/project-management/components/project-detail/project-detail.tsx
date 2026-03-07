@@ -19,7 +19,7 @@ import type {
 } from "schedulant";
 import {Schedulant} from "schedulant";
 import dayjs, {type Dayjs} from "dayjs";
-import {ProjectTaskType, type UpdateProjectTaskParams, useProjectTaskActions, useRecordProjectVisit, useMyProjectPermissions,} from "@Webapp/api";
+import {ProjectPermission, ProjectTaskType, type UpdateProjectTaskParams, useProjectTaskActions, useRecordProjectVisit, useMyProjectPermissions,} from "@Webapp/api";
 import {
     DEFAULT_CUSTOM_LINE_HEIGHT,
     DEFAULT_CUSTOM_SLOT_MIN_WIDTH,
@@ -64,12 +64,12 @@ export const ProjectDetail: React.FC = () => {
     }, [projectId, recordVisit, fetchPermissions]);
 
     // 权限标志
-    const canCreateTask = hasPermission("task_create");
-    const canEditTask = hasPermission("task_edit_all");
-    const canDeleteTask = hasPermission("task_delete_all");
-    const canBatchOperate = hasPermission("task_batch_operate");
-    const canEditAttributeConfig = hasPermission("attribute_config_edit");
-    const canViewAttributeConfig = hasPermission("attribute_config_view");
+    const canCreateTask = hasPermission(ProjectPermission.TASK_CREATE);
+    const canEditTask = hasPermission(ProjectPermission.TASK_EDIT_ALL);
+    const canDeleteTask = hasPermission(ProjectPermission.TASK_DELETE_ALL);
+    const canBatchOperate = hasPermission(ProjectPermission.TASK_BATCH_OPERATE);
+    const canEditAttributeConfig = hasPermission(ProjectPermission.ATTRIBUTE_CONFIG_EDIT);
+    const canViewAttributeConfig = hasPermission(ProjectPermission.ATTRIBUTE_CONFIG_VIEW);
     const canPreviewTask = canViewAttributeConfig;
     const isEditable = canEditTask;
 
