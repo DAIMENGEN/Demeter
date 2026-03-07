@@ -437,7 +437,7 @@ impl ProjectRepository {
         Ok(result.rows_affected())
     }
 
-    pub async fn reorder_projects(pool: &PgPool, project_ids: Vec<i64>) -> AppResult<()> {
+    pub async fn reorder_projects(pool: &PgPool, creator_id: i64, project_ids: Vec<i64>) -> AppResult<()> {
         if project_ids.is_empty() {
             return Ok(());
         }
@@ -450,11 +450,12 @@ impl ProjectRepository {
             UPDATE projects
             SET "order" = data.new_order, update_date_time = CURRENT_TIMESTAMP
             FROM unnest($1::bigint[], $2::float8[]) AS data(id, new_order)
-            WHERE projects.id = data.id
+            WHERE projects.id = data.id AND projects.creator_id = $3
             "#,
         )
         .bind(&project_ids)
         .bind(&orders)
+        .bind(creator_id)
         .execute(pool)
         .await?;
 

@@ -26,7 +26,7 @@ pub async fn get_members(
     Extension(perm): Extension<ProjectPermission>,
     Path(project_id): Path<Id>,
 ) -> AppResult<Json<ApiResponse<Vec<ProjectMember>>>> {
-    require_permission(&perm, Permission::ProjectManageMembers)?;
+    perm.require(Permission::ProjectManageMembers)?;
     let members = ProjectMemberRepository::get_members(&state.pool, project_id.0).await?;
     Ok(Json(ApiResponse::success(members)))
 }
@@ -37,9 +37,9 @@ pub async fn add_members(
     Path(project_id): Path<Id>,
     Json(params): Json<AddMembersParams>,
 ) -> AppResult<(StatusCode, Json<ApiResponse<Vec<ProjectMember>>>)> {
-    require_permission(&perm, Permission::ProjectManageMembers)?;
+    perm.require(Permission::ProjectManageMembers)?;
 
-    // 不能添加 Owner 角色（Owner 只能通过转让）
+    // 不能添加 Owner 角色（Owner 只能通过转让�?
     for item in &params.members {
         validate_assignable_role(item.role, &perm)?;
     }
@@ -63,7 +63,7 @@ pub async fn update_member_role(
     Path((project_id, user_id)): Path<(Id, Id)>,
     Json(params): Json<UpdateMemberRoleParams>,
 ) -> AppResult<StatusCode> {
-    require_permission(&perm, Permission::ProjectManageMembers)?;
+    perm.require(Permission::ProjectManageMembers)?;
     validate_assignable_role(params.role, &perm)?;
 
     let updated = ProjectMemberRepository::update_member_role(
@@ -85,7 +85,7 @@ pub async fn remove_member(
     Extension(perm): Extension<ProjectPermission>,
     Path((project_id, user_id)): Path<(Id, Id)>,
 ) -> AppResult<StatusCode> {
-    require_permission(&perm, Permission::ProjectManageMembers)?;
+    perm.require(Permission::ProjectManageMembers)?;
 
     // 不能移除自己
     if perm.user_id == user_id.0 {
@@ -109,7 +109,7 @@ pub async fn get_team_roles(
     Extension(perm): Extension<ProjectPermission>,
     Path(project_id): Path<Id>,
 ) -> AppResult<Json<ApiResponse<Vec<ProjectTeamRole>>>> {
-    require_permission(&perm, Permission::ProjectManageMembers)?;
+    perm.require(Permission::ProjectManageMembers)?;
     let roles = ProjectTeamRoleRepository::get_team_roles(&state.pool, project_id.0).await?;
     Ok(Json(ApiResponse::success(roles)))
 }
@@ -120,7 +120,7 @@ pub async fn add_team_roles(
     Path(project_id): Path<Id>,
     Json(params): Json<AddTeamRolesParams>,
 ) -> AppResult<(StatusCode, Json<ApiResponse<Vec<ProjectTeamRole>>>)> {
-    require_permission(&perm, Permission::ProjectManageMembers)?;
+    perm.require(Permission::ProjectManageMembers)?;
 
     for item in &params.team_roles {
         validate_assignable_role(item.role, &perm)?;
@@ -145,7 +145,7 @@ pub async fn update_team_role(
     Path((project_id, team_id)): Path<(Id, Id)>,
     Json(params): Json<UpdateTeamRoleParams>,
 ) -> AppResult<StatusCode> {
-    require_permission(&perm, Permission::ProjectManageMembers)?;
+    perm.require(Permission::ProjectManageMembers)?;
     validate_assignable_role(params.role, &perm)?;
 
     let updated = ProjectTeamRoleRepository::update_team_role(
@@ -167,7 +167,7 @@ pub async fn remove_team_role(
     Extension(perm): Extension<ProjectPermission>,
     Path((project_id, team_id)): Path<(Id, Id)>,
 ) -> AppResult<StatusCode> {
-    require_permission(&perm, Permission::ProjectManageMembers)?;
+    perm.require(Permission::ProjectManageMembers)?;
 
     let removed =
         ProjectTeamRoleRepository::remove_team_role(&state.pool, project_id.0, team_id.0).await?;
@@ -184,7 +184,7 @@ pub async fn get_department_roles(
     Extension(perm): Extension<ProjectPermission>,
     Path(project_id): Path<Id>,
 ) -> AppResult<Json<ApiResponse<Vec<ProjectDepartmentRole>>>> {
-    require_permission(&perm, Permission::ProjectManageMembers)?;
+    perm.require(Permission::ProjectManageMembers)?;
     let roles =
         ProjectDepartmentRoleRepository::get_department_roles(&state.pool, project_id.0).await?;
     Ok(Json(ApiResponse::success(roles)))
@@ -196,7 +196,7 @@ pub async fn add_department_roles(
     Path(project_id): Path<Id>,
     Json(params): Json<AddDepartmentRolesParams>,
 ) -> AppResult<(StatusCode, Json<ApiResponse<Vec<ProjectDepartmentRole>>>)> {
-    require_permission(&perm, Permission::ProjectManageMembers)?;
+    perm.require(Permission::ProjectManageMembers)?;
 
     for item in &params.department_roles {
         validate_assignable_role(item.role, &perm)?;
@@ -222,7 +222,7 @@ pub async fn update_department_role(
     Path((project_id, department_id)): Path<(Id, Id)>,
     Json(params): Json<UpdateDepartmentRoleParams>,
 ) -> AppResult<StatusCode> {
-    require_permission(&perm, Permission::ProjectManageMembers)?;
+    perm.require(Permission::ProjectManageMembers)?;
     validate_assignable_role(params.role, &perm)?;
 
     let updated = ProjectDepartmentRoleRepository::update_department_role(
@@ -244,7 +244,7 @@ pub async fn remove_department_role(
     Extension(perm): Extension<ProjectPermission>,
     Path((project_id, department_id)): Path<(Id, Id)>,
 ) -> AppResult<StatusCode> {
-    require_permission(&perm, Permission::ProjectManageMembers)?;
+    perm.require(Permission::ProjectManageMembers)?;
 
     let removed = ProjectDepartmentRoleRepository::remove_department_role(
         &state.pool,
@@ -271,7 +271,7 @@ pub async fn get_my_permissions(
     let sources =
         ProjectPermissionResolver::get_role_sources(&state.pool, project_id.0, claims.sub).await?;
 
-    let role_sources: Vec<RoleSource> = if claims.role == "super_admin" {
+    let role_sources: Vec<RoleSource> = if claims.is_super_admin() {
         vec![RoleSource {
             source: "system".to_string(),
             source_name: Some("super_admin".to_string()),
@@ -309,30 +309,17 @@ pub async fn get_my_permissions(
 
 // ──────────────── 工具函数 ────────────────
 
-fn require_permission(perm: &ProjectPermission, permission: Permission) -> AppResult<()> {
-    if !perm.has_permission(permission) {
-        return Err(AppError::Forbidden(
-            "You don't have permission to perform this action".to_string(),
-        ));
-    }
-    Ok(())
-}
-
 /// 校验可分配角色：不能分配比自己更高的角色，且 Owner 不能直接分配
-fn validate_assignable_role(role: i32, perm: &ProjectPermission) -> AppResult<()> {
-    let target_role = ProjectRole::from_i32(role).ok_or_else(|| {
-        AppError::BadRequest(format!("Invalid role value: {}. Valid values: 0-4", role))
-    })?;
-
+fn validate_assignable_role(role: ProjectRole, perm: &ProjectPermission) -> AppResult<()> {
     // Owner 角色只能通过转让
-    if target_role == ProjectRole::Owner {
+    if role == ProjectRole::Owner {
         return Err(AppError::BadRequest(
             "Owner role can only be transferred, not assigned directly".to_string(),
         ));
     }
 
     // 不能分配比自己更高权限的角色
-    if !perm.role.has_at_least(target_role) {
+    if !perm.role.has_at_least(role) {
         return Err(AppError::Forbidden(
             "Cannot assign a role higher than your own".to_string(),
         ));

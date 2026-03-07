@@ -1,7 +1,7 @@
 use crate::common::error::AppResult;
 use crate::modules::business::project::permission::models::{
     AddDepartmentRoleItem, AddMemberItem, AddTeamRoleItem, ProjectDepartmentRole, ProjectMember,
-    ProjectTeamRole,
+    ProjectRole, ProjectTeamRole,
 };
 use sqlx::PgPool;
 
@@ -29,6 +29,7 @@ impl ProjectPermissionResolver {
     }
 
     /// 查询用户通过团队获得的最高角色（MIN = 最高权限）
+    #[allow(unused)]
     pub async fn get_best_team_role(
         pool: &PgPool,
         project_id: i64,
@@ -52,6 +53,7 @@ impl ProjectPermissionResolver {
     }
 
     /// 查询用户通过部门获得的角色
+    #[allow(unused)]
     pub async fn get_department_role(
         pool: &PgPool,
         project_id: i64,
@@ -73,26 +75,33 @@ impl ProjectPermissionResolver {
     }
 
     /// 获取用户在项目中的最终角色（取所有来源中的最高权限）
+    /// 合并为单条 SQL，避免 3 次串行查询
     pub async fn resolve_role(
         pool: &PgPool,
         project_id: i64,
         user_id: i64,
     ) -> AppResult<Option<i32>> {
-        let mut best: Option<i32> = None;
-
-        if let Some(role) = Self::get_individual_role(pool, project_id, user_id).await? {
-            best = Some(role);
-        }
-
-        if let Some(role) = Self::get_best_team_role(pool, project_id, user_id).await? {
-            best = Some(best.map_or(role, |b| b.min(role)));
-        }
-
-        if let Some(role) = Self::get_department_role(pool, project_id, user_id).await? {
-            best = Some(best.map_or(role, |b| b.min(role)));
-        }
-
-        Ok(best)
+        let row: Option<(Option<i32>,)> = sqlx::query_as(
+            r#"
+            SELECT MIN(role) FROM (
+                SELECT role FROM project_members
+                WHERE project_id = $1 AND user_id = $2
+                UNION ALL
+                SELECT MIN(ptr.role) FROM project_team_roles ptr
+                    JOIN user_teams ut ON ut.team_id = ptr.team_id
+                    WHERE ptr.project_id = $1 AND ut.user_id = $2
+                UNION ALL
+                SELECT pdr.role FROM project_department_roles pdr
+                    JOIN user_departments ud ON ud.department_id = pdr.department_id
+                    WHERE pdr.project_id = $1 AND ud.user_id = $2
+            ) AS all_roles
+            "#,
+        )
+        .bind(project_id)
+        .bind(user_id)
+        .fetch_optional(pool)
+        .await?;
+        Ok(row.and_then(|r| r.0))
     }
 
     /// 获取所有角色来源（用于 my-permissions 详情）
@@ -190,7 +199,7 @@ impl ProjectMemberRepository {
             .bind(id)
             .bind(project_id)
             .bind(item.user_id.0)
-            .bind(item.role)
+            .bind(item.role.as_i32())
             .fetch_one(pool)
             .await?;
             members.push(member);
@@ -202,12 +211,12 @@ impl ProjectMemberRepository {
         pool: &PgPool,
         project_id: i64,
         user_id: i64,
-        role: i32,
+        role: ProjectRole,
     ) -> AppResult<bool> {
         let result = sqlx::query(
             "UPDATE project_members SET role = $1, update_date_time = CURRENT_TIMESTAMP WHERE project_id = $2 AND user_id = $3",
         )
-        .bind(role)
+        .bind(role.as_i32())
         .bind(project_id)
         .bind(user_id)
         .execute(pool)
@@ -271,7 +280,7 @@ impl ProjectTeamRoleRepository {
             .bind(id)
             .bind(project_id)
             .bind(item.team_id.0)
-            .bind(item.role)
+            .bind(item.role.as_i32())
             .fetch_one(pool)
             .await?;
             roles.push(role);
@@ -283,12 +292,12 @@ impl ProjectTeamRoleRepository {
         pool: &PgPool,
         project_id: i64,
         team_id: i64,
-        role: i32,
+        role: ProjectRole,
     ) -> AppResult<bool> {
         let result = sqlx::query(
             "UPDATE project_team_roles SET role = $1, update_date_time = CURRENT_TIMESTAMP WHERE project_id = $2 AND team_id = $3",
         )
-        .bind(role)
+        .bind(role.as_i32())
         .bind(project_id)
         .bind(team_id)
         .execute(pool)
@@ -356,7 +365,7 @@ impl ProjectDepartmentRoleRepository {
             .bind(id)
             .bind(project_id)
             .bind(item.department_id.0)
-            .bind(item.role)
+            .bind(item.role.as_i32())
             .fetch_one(pool)
             .await?;
             roles.push(role);
@@ -368,12 +377,12 @@ impl ProjectDepartmentRoleRepository {
         pool: &PgPool,
         project_id: i64,
         department_id: i64,
-        role: i32,
+        role: ProjectRole,
     ) -> AppResult<bool> {
         let result = sqlx::query(
             "UPDATE project_department_roles SET role = $1, update_date_time = CURRENT_TIMESTAMP WHERE project_id = $2 AND department_id = $3",
         )
-        .bind(role)
+        .bind(role.as_i32())
         .bind(project_id)
         .bind(department_id)
         .execute(pool)

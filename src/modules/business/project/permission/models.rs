@@ -4,7 +4,7 @@ use sqlx::FromRow;
 
 /// 项目角色枚举
 /// 数值越小权限越高: Owner(0) > Admin(1) > Maintainer(2) > Member(3) > Viewer(4)
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize)]
 #[serde(rename_all = "snake_case")]
 pub enum ProjectRole {
     Owner = 0,
@@ -12,6 +12,51 @@ pub enum ProjectRole {
     Maintainer = 2,
     Member = 3,
     Viewer = 4,
+}
+
+/// 自定义反序列化：同时接受整数 (0-4) 和字符串 ("owner"/"admin"/...)，保持前后端兼容
+impl<'de> Deserialize<'de> for ProjectRole {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        use serde::de;
+
+        struct ProjectRoleVisitor;
+
+        impl<'de> de::Visitor<'de> for ProjectRoleVisitor {
+            type Value = ProjectRole;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+                formatter.write_str("an integer 0-4 or a string role name (owner/admin/maintainer/member/viewer)")
+            }
+
+            fn visit_u64<E: de::Error>(self, v: u64) -> Result<ProjectRole, E> {
+                ProjectRole::from_i32(v as i32)
+                    .ok_or_else(|| de::Error::custom(format!("invalid role value: {v}. Valid: 0-4")))
+            }
+
+            fn visit_i64<E: de::Error>(self, v: i64) -> Result<ProjectRole, E> {
+                ProjectRole::from_i32(v as i32)
+                    .ok_or_else(|| de::Error::custom(format!("invalid role value: {v}. Valid: 0-4")))
+            }
+
+            fn visit_str<E: de::Error>(self, v: &str) -> Result<ProjectRole, E> {
+                match v {
+                    "owner" => Ok(ProjectRole::Owner),
+                    "admin" => Ok(ProjectRole::Admin),
+                    "maintainer" => Ok(ProjectRole::Maintainer),
+                    "member" => Ok(ProjectRole::Member),
+                    "viewer" => Ok(ProjectRole::Viewer),
+                    _ => Err(de::Error::custom(format!(
+                        "invalid role: '{v}'. Valid: owner/admin/maintainer/member/viewer"
+                    ))),
+                }
+            }
+        }
+
+        deserializer.deserialize_any(ProjectRoleVisitor)
+    }
 }
 
 impl ProjectRole {
@@ -174,6 +219,16 @@ impl ProjectPermission {
         Permission::for_role(self.role).contains(&permission)
     }
 
+    /// 检查权限，不满足时返回 Forbidden 错误
+    pub fn require(&self, permission: Permission) -> crate::common::error::AppResult<()> {
+        if !self.has_permission(permission) {
+            return Err(crate::common::error::AppError::Forbidden(
+                "You don't have permission to perform this action".to_string(),
+            ));
+        }
+        Ok(())
+    }
+
     /// 检查是否可操作某资源（考虑 own 类型权限）
     pub fn can_operate(&self, edit_all: Permission, edit_own: Permission, creator_id: i64) -> bool {
         if self.has_permission(edit_all) {
@@ -206,7 +261,7 @@ pub struct ProjectMember {
 #[serde(rename_all = "camelCase")]
 pub struct AddMemberItem {
     pub user_id: Id,
-    pub role: i32,
+    pub role: ProjectRole,
 }
 
 #[derive(Debug, Deserialize)]
@@ -218,7 +273,7 @@ pub struct AddMembersParams {
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct UpdateMemberRoleParams {
-    pub role: i32,
+    pub role: ProjectRole,
 }
 
 // ──────────────── 项目团队角色相关模型 ────────────────
@@ -240,7 +295,7 @@ pub struct ProjectTeamRole {
 #[serde(rename_all = "camelCase")]
 pub struct AddTeamRoleItem {
     pub team_id: Id,
-    pub role: i32,
+    pub role: ProjectRole,
 }
 
 #[derive(Debug, Deserialize)]
@@ -252,7 +307,7 @@ pub struct AddTeamRolesParams {
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct UpdateTeamRoleParams {
-    pub role: i32,
+    pub role: ProjectRole,
 }
 
 // ──────────────── 项目部门角色相关模型 ────────────────
@@ -274,7 +329,7 @@ pub struct ProjectDepartmentRole {
 #[serde(rename_all = "camelCase")]
 pub struct AddDepartmentRoleItem {
     pub department_id: Id,
-    pub role: i32,
+    pub role: ProjectRole,
 }
 
 #[derive(Debug, Deserialize)]
@@ -286,7 +341,7 @@ pub struct AddDepartmentRolesParams {
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct UpdateDepartmentRoleParams {
-    pub role: i32,
+    pub role: ProjectRole,
 }
 
 // ──────────────── 权限查询响应 ────────────────

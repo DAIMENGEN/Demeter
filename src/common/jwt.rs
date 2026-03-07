@@ -12,6 +12,16 @@ pub struct Claims {
     pub token_type: String,
 }
 
+impl Claims {
+    pub fn is_super_admin(&self) -> bool {
+        self.role == "super_admin"
+    }
+
+    pub fn is_admin_or_above(&self) -> bool {
+        self.role == "super_admin" || self.role == "admin"
+    }
+}
+
 pub struct JwtUtil;
 
 impl JwtUtil {

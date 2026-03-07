@@ -117,7 +117,7 @@ pub async fn update_user(
 
     // 只有 super_admin 才能修改用户角色为 admin / super_admin
     if let Some(ref role) = params.role {
-        if role.is_admin() && claims.role != "super_admin" {
+        if role.is_admin() && !claims.is_super_admin() {
             return Err(AppError::Forbidden(
                 "Only super admin can assign admin roles".to_string(),
             ));
@@ -127,7 +127,7 @@ pub async fn update_user(
     // 不允许修改 super_admin 的角色（降级保护）
     if params.role.is_some() {
         if let Some(target_user) = UserRepository::get_user_by_id(&state.pool, id.0).await? {
-            if target_user.role == UserRole::SuperAdmin && claims.role != "super_admin" {
+            if target_user.role == UserRole::SuperAdmin && !claims.is_super_admin() {
                 return Err(AppError::Forbidden(
                     "Cannot modify super admin's role".to_string(),
                 ));

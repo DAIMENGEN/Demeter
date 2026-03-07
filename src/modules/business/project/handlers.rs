@@ -85,6 +85,7 @@ pub async fn get_project_by_id(
 
 pub async fn get_project_by_name(
     State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
     Path(project_name): Path<String>,
 ) -> AppResult<Json<ApiResponse<Project>>> {
     let project = ProjectRepository::get_project_by_name(&state.pool, &project_name)
@@ -93,6 +94,19 @@ pub async fn get_project_by_name(
             "Project not found: {}",
             project_name
         )))?;
+
+    // 非 super_admin 访问 Private 项目时，需检查是否有权限
+    if !claims.is_super_admin() && project.visibility == 0 {
+        use crate::modules::business::project::permission::repository::ProjectPermissionResolver;
+        let has_role = ProjectPermissionResolver::resolve_role(&state.pool, project.id.0, claims.sub).await?;
+        if has_role.is_none() && project.creator_id.0 != claims.sub {
+            return Err(AppError::NotFound(format!(
+                "Project not found: {}",
+                project_name
+            )));
+        }
+    }
+
     Ok(Json(ApiResponse::success(project)))
 }
 
@@ -114,7 +128,7 @@ pub async fn create_project(
         .map_err(|e| AppError::InternalError(format!("Failed to generate member ID: {}", e)))?;
     let owner_item = crate::modules::business::project::permission::models::AddMemberItem {
         user_id: Id(creator_id),
-        role: 0, // Owner
+        role: crate::modules::business::project::permission::models::ProjectRole::Owner,
     };
     let _ = ProjectMemberRepository::add_members(
         &state.pool,
@@ -133,11 +147,7 @@ pub async fn update_project(
     Path(project_id): Path<Id>,
     Json(params): Json<UpdateProjectParams>,
 ) -> AppResult<Json<ApiResponse<Project>>> {
-    if !perm.has_permission(Permission::ProjectEdit) {
-        return Err(AppError::Forbidden(
-            "You don't have permission to edit this project".to_string(),
-        ));
-    }
+    perm.require(Permission::ProjectEdit)?;
     let updater_id = claims.sub;
     let project = ProjectRepository::update_project(&state.pool, project_id.0, params, updater_id)
         .await?
@@ -153,11 +163,7 @@ pub async fn delete_project(
     Extension(perm): Extension<ProjectPermission>,
     Path(project_id): Path<Id>,
 ) -> AppResult<StatusCode> {
-    if !perm.has_permission(Permission::ProjectDelete) {
-        return Err(AppError::Forbidden(
-            "You don't have permission to delete this project".to_string(),
-        ));
-    }
+    perm.require(Permission::ProjectDelete)?;
     let deleted = ProjectRepository::delete_project(&state.pool, project_id.0).await?;
     if !deleted {
         return Err(AppError::NotFound(format!(
@@ -170,8 +176,14 @@ pub async fn delete_project(
 
 pub async fn batch_delete_projects(
     State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
     Json(params): Json<BatchDeleteProjectsParams>,
 ) -> AppResult<StatusCode> {
+    if !claims.is_super_admin() {
+        return Err(AppError::Forbidden(
+            "Only super admin can batch delete projects".to_string(),
+        ));
+    }
     let project_ids: Vec<i64> = params.ids.into_iter().map(|id| id.0).collect();
     ProjectRepository::batch_delete_projects(&state.pool, project_ids).await?;
     Ok(StatusCode::NO_CONTENT)
@@ -179,10 +191,11 @@ pub async fn batch_delete_projects(
 
 pub async fn reorder_projects(
     State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
     Json(params): Json<ReorderProjectsParams>,
 ) -> AppResult<StatusCode> {
     let project_ids: Vec<i64> = params.project_ids.into_iter().map(|id| id.0).collect();
-    ProjectRepository::reorder_projects(&state.pool, project_ids).await?;
+    ProjectRepository::reorder_projects(&state.pool, claims.sub, project_ids).await?;
     Ok(StatusCode::NO_CONTENT)
 }
 

@@ -36,7 +36,7 @@ pub async fn project_permission_middleware(
     let project_id = extract_project_id_from_path(request.uri().path())?;
 
     // 3. super_admin 穿透
-    if claims.role == "super_admin" {
+    if claims.is_super_admin() {
         request.extensions_mut().insert(ProjectPermission {
             project_id,
             user_id: claims.sub,

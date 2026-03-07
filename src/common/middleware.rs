@@ -77,7 +77,7 @@ pub async fn admin_auth_middleware(
         .cloned()
         .ok_or_else(|| AppError::Unauthorized("Not authenticated".to_string()))?;
 
-    if claims.role != "super_admin" && claims.role != "admin" {
+    if !claims.is_admin_or_above() {
         return Err(AppError::Forbidden(
             "Admin access required".to_string(),
         ));
@@ -87,7 +87,6 @@ pub async fn admin_auth_middleware(
 }
 
 /// 超级管理员权限中间件（仅允许 super_admin）
-#[allow(unused)]
 pub async fn super_admin_auth_middleware(
     request: Request,
     next: Next,
@@ -98,7 +97,7 @@ pub async fn super_admin_auth_middleware(
         .cloned()
         .ok_or_else(|| AppError::Unauthorized("Not authenticated".to_string()))?;
 
-    if claims.role != "super_admin" {
+    if !claims.is_super_admin() {
         return Err(AppError::Forbidden(
             "Super admin access required".to_string(),
         ));
