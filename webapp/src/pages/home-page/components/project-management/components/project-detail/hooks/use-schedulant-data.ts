@@ -233,10 +233,14 @@ export const useSchedulantData = (projectId: string, options?: { skipAttributeCo
         `schedulant-selected-cols:${projectId}`, ["title"],
     );
 
-    // ---- 初始拉取 ----
+    // ---- 初始拉取：项目 & 任务 ----
     useEffect(() => {
         void fetchProject(projectId);
         void fetchTasks(projectId);
+    }, [projectId]);
+
+    // ---- 初始拉取：属性配置（依赖权限） ----
+    useEffect(() => {
         if (!skipAttributeConfigs) {
             void fetchAttributeConfigs(projectId);
         }
