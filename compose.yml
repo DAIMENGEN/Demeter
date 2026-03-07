@@ -1,20 +1,68 @@
 services:
+  demeter-postgres:
+    image: postgres:16-alpine
+    container_name: demeter-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-demeter_db}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-root}
+    ports:
+      - "5432:5432"
+    volumes:
+      - demeter-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-demeter_db}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   demeter-backend:
-    image: xxxx
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: backend-runtime
+    image: demeter-backend:latest
     container_name: demeter-backend
     restart: unless-stopped
-    privileged: true
-    stdin_open: true
-    tty: true
+    depends_on:
+      demeter-postgres:
+        condition: service_healthy
+    environment:
+      SERVER__HOST: ${SERVER__HOST:-0.0.0.0}
+      SERVER__PORT: ${SERVER__PORT:-9000}
+      SERVER__CORS_ORIGIN: ${SERVER__CORS_ORIGIN:-http://localhost:3000}
+      DATABASE__URL: ${DOCKER_DATABASE__URL:-postgres://postgres:root@demeter-postgres:5432/demeter_db}
+      DATABASE__MAX_CONNECTIONS: ${DATABASE__MAX_CONNECTIONS:-5}
+      JWT__SECRET: ${JWT__SECRET:-your-secret-key-change-this-in-production}
+      JWT__ACCESS_TOKEN_EXPIRES_IN: ${JWT__ACCESS_TOKEN_EXPIRES_IN:-3600}
+      JWT__REFRESH_TOKEN_EXPIRES_IN: ${JWT__REFRESH_TOKEN_EXPIRES_IN:-2592000}
+      SNOWFLAKE__DATACENTER_ID: ${SNOWFLAKE__DATACENTER_ID:-1}
+      SNOWFLAKE__MACHINE_ID: ${SNOWFLAKE__MACHINE_ID:-1}
+      LOG_DIR: ${LOG_DIR:-logs}
+      LOG_FILE_PREFIX: ${LOG_FILE_PREFIX:-demeter}
+      LOG_MAX_FILE_SIZE: ${LOG_MAX_FILE_SIZE:-10485760}
+      LOG_RETENTION_DAYS: ${LOG_RETENTION_DAYS:-7}
+      RUST_LOG: ${RUST_LOG:-info}
     ports:
       - "9000:9000"
+    volumes:
+      - ./logs:/app/logs
 
   demeter-frontend:
-    image: xxxx
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: frontend-runtime
+      args:
+        VITE_API_BASE_URL: ${DOCKER_VITE_API_BASE_URL:-http://localhost:9000/api/v1}
+    image: demeter-frontend:latest
     container_name: demeter-frontend
     restart: unless-stopped
-    privileged: true
-    stdin_open: true
-    tty: true
+    depends_on:
+      - demeter-backend
     ports:
       - "3000:3000"
+
+volumes:
+  demeter-postgres-data:
