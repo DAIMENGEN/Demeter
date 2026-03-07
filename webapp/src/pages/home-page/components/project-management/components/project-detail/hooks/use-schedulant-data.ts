@@ -210,8 +210,9 @@ const tasksToSchedulantModels = (
  * 封装 Schedulant 组件所需的全部数据：
  * 项目/任务/属性配置的获取、颜色渲染、列配置、以及最终的 Schedulant 模型。
  */
-export const useSchedulantData = (projectId: string) => {
+export const useSchedulantData = (projectId: string, options?: { skipAttributeConfigs?: boolean }) => {
     const {t} = useTranslation();
+    const skipAttributeConfigs = options?.skipAttributeConfigs ?? false;
 
     // ---- 数据获取 ----
     const {project, loading: projectLoading, fetchProject} = useProjectDetail();
@@ -236,8 +237,10 @@ export const useSchedulantData = (projectId: string) => {
     useEffect(() => {
         void fetchProject(projectId);
         void fetchTasks(projectId);
-        void fetchAttributeConfigs(projectId);
-    }, [projectId]);
+        if (!skipAttributeConfigs) {
+            void fetchAttributeConfigs(projectId);
+        }
+    }, [projectId, skipAttributeConfigs]);
 
     // ---- 刷新 ----
     const refetchTasks = useCallback(() => {

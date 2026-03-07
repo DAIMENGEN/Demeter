@@ -58,6 +58,11 @@ export interface SchedulantToolbarProps {
     colorRenderAttributeName?: string | null;
     onColorRenderAttributeNameChange?: (name: string | null) => void;
     refetchAttributeConfigs?: () => Promise<void> | void;
+
+    // 权限控制 props
+    canCreateTask?: boolean;
+    canBatchCreateTask?: boolean;
+    canConfigAttributes?: boolean;
 }
 
 
@@ -95,6 +100,9 @@ export const SchedulantToolbar = React.forwardRef<HTMLDivElement, SchedulantTool
                                                                                                colorRenderAttributeName,
                                                                                                onColorRenderAttributeNameChange,
                                                                                                refetchAttributeConfigs,
+                                                                                               canCreateTask = true,
+                                                                                               canBatchCreateTask = true,
+                                                                                               canConfigAttributes = true,
                                                                                            }, ref) => {
     const [attributeDrawerOpen, setAttributeDrawerOpen] = useState(false);
     const {t} = useTranslation();
@@ -148,12 +156,16 @@ export const SchedulantToolbar = React.forwardRef<HTMLDivElement, SchedulantTool
                                             "YYYY"
                         }
                         style={{width: 140}}/>
-                    <Tooltip title={t("toolbar.createTask")}>
-                        <Button type="primary" icon={<PlusOutlined/>} onClick={onOpenCreateTask}/>
-                    </Tooltip>
-                    <Tooltip title={t("toolbar.batchCreateTask")}>
-                        <Button type="primary" icon={<AppstoreAddOutlined/>} onClick={onOpenBatchCreateTask}/>
-                    </Tooltip>
+                    {canCreateTask && (
+                        <Tooltip title={t("toolbar.createTask")}>
+                            <Button type="primary" icon={<PlusOutlined/>} onClick={onOpenCreateTask}/>
+                        </Tooltip>
+                    )}
+                    {canBatchCreateTask && (
+                        <Tooltip title={t("toolbar.batchCreateTask")}>
+                            <Button type="primary" icon={<AppstoreAddOutlined/>} onClick={onOpenBatchCreateTask}/>
+                        </Tooltip>
+                    )}
                     <SchedulantConfig
                         lineHeightMode={lineHeightMode}
                         customLineHeight={customLineHeight}
@@ -172,9 +184,11 @@ export const SchedulantToolbar = React.forwardRef<HTMLDivElement, SchedulantTool
                         colorRenderAttributeName={colorRenderAttributeName}
                         onColorRenderAttributeNameChange={onColorRenderAttributeNameChange}
                     />
-                    <Tooltip title={t("toolbar.configAttributes")}>
-                        <Button type="primary" icon={<SettingOutlined/>} onClick={() => setAttributeDrawerOpen(true)}/>
-                    </Tooltip>
+                    {canConfigAttributes && (
+                        <Tooltip title={t("toolbar.configAttributes")}>
+                            <Button type="primary" icon={<SettingOutlined/>} onClick={() => setAttributeDrawerOpen(true)}/>
+                        </Tooltip>
+                    )}
                     <Tooltip title={t("toolbar.backToList")}>
                         <Button type="primary" icon={<ArrowLeftOutlined/>} onClick={onBack}/>
                     </Tooltip>

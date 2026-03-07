@@ -1,7 +1,7 @@
 use crate::common::error::AppResult;
 use crate::modules::business::project::models::{
-    CreateProjectParams, Project, ProjectQueryParams, RecentlyVisitedQueryParams,
-    UpdateProjectParams,
+    CreateProjectParams, Project, ProjectQueryParams,
+    RecentlyVisitedQueryParams, UpdateProjectParams,
 };
 use sqlx::PgPool;
 use sqlx::QueryBuilder;
@@ -217,7 +217,13 @@ impl ProjectRepository {
             r#"
             SELECT DISTINCT p.id, p.project_name, p.description, p.start_date_time, p.end_date_time,
                 p.project_status, p.version, p."order", p.visibility, p.creator_id, p.updater_id,
-                p.create_date_time, p.update_date_time
+                p.create_date_time, p.update_date_time,
+                LEAST(
+                    CASE WHEN p.creator_id = $1 THEN 0 END,
+                    (SELECT pm.role FROM project_members pm WHERE pm.project_id = p.id AND pm.user_id = $1),
+                    (SELECT MIN(ptr.role) FROM project_team_roles ptr JOIN user_teams ut ON ut.team_id = ptr.team_id WHERE ptr.project_id = p.id AND ut.user_id = $1),
+                    (SELECT pdr.role FROM project_department_roles pdr JOIN user_departments ud ON ud.department_id = pdr.department_id WHERE pdr.project_id = p.id AND ud.user_id = $1)
+                ) AS my_role
             FROM projects p
             WHERE (
                 p.creator_id = $1
@@ -494,8 +500,14 @@ impl ProjectVisitRepository {
         let projects = sqlx::query_as::<_, Project>(
             r#"
             SELECT p.id, p.project_name, p.description, p.start_date_time, p.end_date_time,
-                   p.project_status, p.version, p."order", p.creator_id, p.updater_id,
-                   p.create_date_time, p.update_date_time
+                   p.project_status, p.version, p."order", p.visibility, p.creator_id, p.updater_id,
+                   p.create_date_time, p.update_date_time,
+                   LEAST(
+                       CASE WHEN p.creator_id = $1 THEN 0 END,
+                       (SELECT pm.role FROM project_members pm WHERE pm.project_id = p.id AND pm.user_id = $1),
+                       (SELECT MIN(ptr.role) FROM project_team_roles ptr JOIN user_teams ut ON ut.team_id = ptr.team_id WHERE ptr.project_id = p.id AND ut.user_id = $1),
+                       (SELECT pdr.role FROM project_department_roles pdr JOIN user_departments ud ON ud.department_id = pdr.department_id WHERE pdr.project_id = p.id AND ud.user_id = $1)
+                   ) AS my_role
             FROM projects p
             INNER JOIN project_visits pv ON p.id = pv.project_id
             WHERE pv.user_id = $1

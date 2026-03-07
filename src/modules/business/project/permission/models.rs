@@ -151,13 +151,9 @@ impl Permission {
                 Permission::ProjectView,
                 Permission::AttributeConfigView,
                 Permission::TaskView,
-                Permission::TaskCreate,
-                Permission::TaskEditOwn,
-                Permission::TaskDeleteOwn,
             ],
             ProjectRole::Viewer => vec![
                 Permission::ProjectView,
-                Permission::AttributeConfigView,
                 Permission::TaskView,
             ],
         }

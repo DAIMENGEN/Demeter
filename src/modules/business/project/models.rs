@@ -19,6 +19,10 @@ pub struct Project {
     pub updater_id: Option<Id>,
     pub create_date_time: chrono::NaiveDateTime,
     pub update_date_time: Option<chrono::NaiveDateTime>,
+    /// 当前用户在此项目中的角色（0=owner, 1=admin, 2=maintainer, 3=member, 4=viewer, null=无角色）
+    /// 仅在特定查询中填充，其余场景默认 None
+    #[sqlx(default)]
+    pub my_role: Option<i32>,
 }
 
 #[derive(Debug, Deserialize)]

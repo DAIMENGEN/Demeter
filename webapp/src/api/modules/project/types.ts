@@ -96,6 +96,8 @@ export interface Project {
   updaterId?: string;
   createDateTime: string;
   updateDateTime?: string;
+  /** 当前用户在此项目中的角色（仅 accessible/recently-visited 接口返回） */
+  myRole?: number | null;
 }
 
 /**

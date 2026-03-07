@@ -13,7 +13,7 @@ import {
 import dayjs from "dayjs";
 import {useTranslation} from "react-i18next";
 import type {Project} from "@Webapp/api/modules/project";
-import {getProjectStatusLabel, ProjectStatus} from "@Webapp/api/modules/project";
+import {getProjectStatusLabel, ProjectRole, ProjectStatus} from "@Webapp/api/modules/project";
 import "./project-card.scss";
 
 const {Title, Text, Paragraph} = Typography;
@@ -51,6 +51,12 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({
                                                         }) => {
     const {t} = useTranslation();
 
+    // 权限判断：myRole 存在时根据角色控制，不存在时（如 myCreated 视图）默认允许
+    const role = project.myRole;
+    const canEdit = role == null || role <= ProjectRole.ADMIN;
+    const canDelete = role == null || role <= ProjectRole.OWNER;
+    const canManagePermission = role == null || role <= ProjectRole.ADMIN;
+
     const handleView = useCallback((e: React.MouseEvent) => {
         e.stopPropagation();
         onClick?.(project);
@@ -70,27 +76,42 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({
         e.stopPropagation();
     }, []);
 
-    const moreMenuItems: MenuProps["items"] = useMemo(() => [
-        {
-            key: "delete",
-            icon: <DeleteOutlined/>,
-            label: t("common.delete"),
-            danger: true,
-            onClick: (e) => {
-                e?.domEvent?.stopPropagation();
-                onDelete?.(project);
-            }
+    const moreMenuItems: MenuProps["items"] = useMemo(() => {
+        const items: MenuProps["items"] = [];
+        if (canDelete && onDelete) {
+            items.push({
+                key: "delete",
+                icon: <DeleteOutlined/>,
+                label: t("common.delete"),
+                danger: true,
+                onClick: (e) => {
+                    e?.domEvent?.stopPropagation();
+                    onDelete?.(project);
+                }
+            });
         }
-    ], [t, onDelete, project]);
+        return items;
+    }, [t, onDelete, project, canDelete]);
 
-    const cardActions = useMemo(() => [
-        <EyeOutlined key="view" onClick={handleView}/>,
-        <EditOutlined key="edit" onClick={handleEdit}/>,
-        <SafetyOutlined key="permission" onClick={handlePermission}/>,
-        <Dropdown menu={{items: moreMenuItems}} trigger={["click"]} key="more">
-            <MoreOutlined onClick={handleMoreClick}/>
-        </Dropdown>
-    ], [handleView, handleEdit, handlePermission, handleMoreClick, moreMenuItems]);
+    const cardActions = useMemo(() => {
+        const actions: React.ReactNode[] = [
+            <EyeOutlined key="view" onClick={handleView}/>,
+        ];
+        if (canEdit && onEdit) {
+            actions.push(<EditOutlined key="edit" onClick={handleEdit}/>);
+        }
+        if (canManagePermission && onPermission) {
+            actions.push(<SafetyOutlined key="permission" onClick={handlePermission}/>);
+        }
+        if (moreMenuItems && moreMenuItems.length > 0) {
+            actions.push(
+                <Dropdown menu={{items: moreMenuItems}} trigger={["click"]} key="more">
+                    <MoreOutlined onClick={handleMoreClick}/>
+                </Dropdown>
+            );
+        }
+        return actions;
+    }, [handleView, handleEdit, handlePermission, handleMoreClick, moreMenuItems, canEdit, canManagePermission, onEdit, onPermission]);
 
     const cardTitle = useMemo(() => (
         <div className="card-header">

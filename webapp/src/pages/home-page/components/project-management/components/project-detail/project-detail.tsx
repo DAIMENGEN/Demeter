@@ -19,7 +19,7 @@ import type {
 } from "schedulant";
 import {Schedulant} from "schedulant";
 import dayjs, {type Dayjs} from "dayjs";
-import {ProjectTaskType, type UpdateProjectTaskParams, useProjectTaskActions, useRecordProjectVisit,} from "@Webapp/api";
+import {ProjectTaskType, type UpdateProjectTaskParams, useProjectTaskActions, useRecordProjectVisit, useMyProjectPermissions,} from "@Webapp/api";
 import {
     DEFAULT_CUSTOM_LINE_HEIGHT,
     DEFAULT_CUSTOM_SLOT_MIN_WIDTH,
@@ -53,13 +53,25 @@ export const ProjectDetail: React.FC = () => {
     const {projectId} = useParams<{ projectId: string }>();
     const {updateTask, deleteTask} = useProjectTaskActions();
     const {recordVisit} = useRecordProjectVisit();
+    const {fetchPermissions, hasPermission} = useMyProjectPermissions();
 
-    // 进入项目详情页时记录访问
+    // 进入项目详情页时记录访问并获取权限
     useEffect(() => {
         if (projectId) {
             recordVisit(projectId);
+            fetchPermissions(projectId);
         }
-    }, [projectId, recordVisit]);
+    }, [projectId, recordVisit, fetchPermissions]);
+
+    // 权限标志
+    const canCreateTask = hasPermission("task_create");
+    const canEditTask = hasPermission("task_edit_all");
+    const canDeleteTask = hasPermission("task_delete_all");
+    const canBatchOperate = hasPermission("task_batch_operate");
+    const canEditAttributeConfig = hasPermission("attribute_config_edit");
+    const canViewAttributeConfig = hasPermission("attribute_config_view");
+    const canPreviewTask = canViewAttributeConfig;
+    const isEditable = canEditTask;
 
     const {
         project,
@@ -83,20 +95,45 @@ export const ProjectDetail: React.FC = () => {
         resourceAreaColumns,
         parentOptions,
         parentLabelMap,
-    } = useSchedulantData(projectId!);
-    const taskContextMenuItems = useMemo(() => [
-        {key: "create-subtask", label: t("task.createSubtask")},
-        {key: "create-checkpoint", label: t("task.createCheckpoint")},
-        {key: "create-milestone", label: t("task.createMilestone")},
-        {key: "preview-task", label: t("common.preview")},
-        {key: "edit-task", label: t("common.edit")},
-        {key: "delete-task", label: t("common.delete")},
-    ], [t]);
-    const simpleTaskContextMenuItems = useMemo(() => [
-        {key: "preview-task", label: t("common.preview")},
-        {key: "edit-task", label: t("common.edit")},
-        {key: "delete-task", label: t("common.delete")},
-    ], [t]);
+    } = useSchedulantData(projectId!, {skipAttributeConfigs: !canViewAttributeConfig});
+
+    // Viewer 只能看到固有列，不能使用自定义属性列
+    const filteredAvailableColumns = useMemo(() => {
+        if (canViewAttributeConfig) return availableColumns;
+        return availableColumns.filter((col) => !col.key.startsWith("ca."));
+    }, [availableColumns, canViewAttributeConfig]);
+
+    const taskContextMenuItems = useMemo(() => {
+        const items: { key: string; label: string }[] = [];
+        if (canCreateTask) {
+            items.push({key: "create-subtask", label: t("task.createSubtask")});
+            items.push({key: "create-checkpoint", label: t("task.createCheckpoint")});
+            items.push({key: "create-milestone", label: t("task.createMilestone")});
+        }
+        if (canPreviewTask) {
+            items.push({key: "preview-task", label: t("common.preview")});
+        }
+        if (canEditTask) {
+            items.push({key: "edit-task", label: t("common.edit")});
+        }
+        if (canDeleteTask) {
+            items.push({key: "delete-task", label: t("common.delete")});
+        }
+        return items;
+    }, [t, canCreateTask, canPreviewTask, canEditTask, canDeleteTask]);
+    const simpleTaskContextMenuItems = useMemo(() => {
+        const items: { key: string; label: string }[] = [];
+        if (canPreviewTask) {
+            items.push({key: "preview-task", label: t("common.preview")});
+        }
+        if (canEditTask) {
+            items.push({key: "edit-task", label: t("common.edit")});
+        }
+        if (canDeleteTask) {
+            items.push({key: "delete-task", label: t("common.delete")});
+        }
+        return items;
+    }, [t, canPreviewTask, canEditTask, canDeleteTask]);
 
     // 视图状态（视图类型持久化，日期范围根据视图类型动态计算）
     const [schedulantViewType, setSchedulantViewType] = useLocalStorageState<SchedulantViewType>("schedulant-view-type", "Day");
@@ -385,13 +422,16 @@ export const ProjectDetail: React.FC = () => {
                                                 onOpenCreateTask={handleOpenCreateTask}
                                                 onOpenBatchCreateTask={handleOpenBatchCreateTask}
                                                 onBack={() => navigate("/home/project-management")}
+                                                canCreateTask={canCreateTask}
+                                                canBatchCreateTask={canBatchOperate}
+                                                canConfigAttributes={canEditAttributeConfig}
                                                 lineHeightMode={lineHeightMode}
                                                 customLineHeight={customLineHeight}
                                                 slotMinWidthMode={slotMinWidthMode}
                                                 customSlotMinWidth={customSlotMinWidth}
                                                 actualLineHeight={actualLineHeight}
                                                 actualSlotMinWidth={actualSlotMinWidth}
-                                                availableColumns={availableColumns}
+                                                availableColumns={filteredAvailableColumns}
                                                 selectedColumnKeys={selectedColumnKeys}
                                                 onSelectedColumnKeysChange={setSelectedColumnKeys}
                                                 onLineHeightModeChange={setLineHeightMode}
@@ -400,13 +440,13 @@ export const ProjectDetail: React.FC = () => {
                                                 onCustomSlotMinWidthChange={setCustomSlotMinWidth}
                                                 attributeConfigs={attributeConfigs}
                                                 attributeConfigsLoading={attributeConfigsLoading}
-                                                colorRenderAttributeName={colorRenderAttributeName}
-                                                onColorRenderAttributeNameChange={setColorRenderAttributeName}
+                                                colorRenderAttributeName={canViewAttributeConfig ? colorRenderAttributeName : null}
+                                                onColorRenderAttributeNameChange={canViewAttributeConfig ? setColorRenderAttributeName : undefined}
                                                 refetchAttributeConfigs={refetchAttributeConfigs}/>}>
                     <div className={"schedulant-container"}>
                         <Schedulant start={schedulantStartDate}
                                     end={schedulantEndDate}
-                                    editable={true}
+                                    editable={isEditable}
                                     selectable={true}
                                     lineHeight={actualLineHeight}
                                     slotMinWidth={actualSlotMinWidth}
@@ -426,16 +466,16 @@ export const ProjectDetail: React.FC = () => {
                                     milestoneMove={handleMilestoneMove}
                                     checkpointMove={handleCheckpointMove}
                                     resourceLaneMove={handleResourceLaneMove}
-                                    enableEventContextMenu={true}
+                                    enableEventContextMenu={taskContextMenuItems.length > 0}
                                     eventContextMenuItems={taskContextMenuItems}
                                     eventContextMenuClick={handleEventContextMenuClick}
-                                    enableResourceLaneContextMenu={true}
+                                    enableResourceLaneContextMenu={taskContextMenuItems.length > 0}
                                     resourceLaneContextMenuItems={taskContextMenuItems}
                                     resourceLaneContextMenuClick={handleResourceLaneContextMenuClick}
-                                    enableCheckpointContextMenu={true}
+                                    enableCheckpointContextMenu={simpleTaskContextMenuItems.length > 0}
                                     checkpointContextMenuItems={simpleTaskContextMenuItems}
                                     checkpointContextMenuClick={handleCheckpointContextMenuClick}
-                                    enableMilestoneContextMenu={true}
+                                    enableMilestoneContextMenu={simpleTaskContextMenuItems.length > 0}
                                     milestoneContextMenuItems={simpleTaskContextMenuItems}
                                     milestoneContextMenuClick={handleMilestoneContextMenuClick}
                                     />
