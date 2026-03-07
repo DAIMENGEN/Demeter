@@ -1,5 +1,6 @@
 use crate::common::app_state::AppState;
 use crate::common::middleware::jwt_auth_middleware;
+use crate::modules::business::project::permission::middleware::project_permission_middleware;
 use crate::modules::business::project::task::handlers;
 use axum::{
     middleware,
@@ -72,6 +73,12 @@ pub fn task_routes(state: AppState) -> Router {
             "/projects/{project_id}/tasks/batch-delete",
             post(handlers::batch_delete_tasks),
         )
+        // 项目权限中间件（需要 Claims 已注入）
+        .layer(middleware::from_fn_with_state(
+            state.pool.clone(),
+            project_permission_middleware,
+        ))
+        // JWT 认证中间件
         .layer(middleware::from_fn_with_state(
             state.jwt_config.clone(),
             jwt_auth_middleware,

@@ -2,7 +2,8 @@ use crate::common::app_state::AppState;
 use crate::common::error::{AppError, AppResult};
 use crate::common::id::Id;
 use crate::common::jwt::Claims;
-use crate::common::response::{ApiResponse, PageResponse};
+use crate::common::response::{ApiResponse, PaginatedResponse};
+use crate::modules::business::project::permission::models::{Permission, ProjectPermission};
 use crate::modules::business::project::task::models::{
     BatchCreateTasksParams, BatchDeleteTaskAttributeConfigsParams, BatchDeleteTasksParams,
     CreateTaskAttributeConfigParams, CreateTaskParams, Task, TaskAttributeConfig, TaskQueryParams,
@@ -17,8 +18,10 @@ use axum::{
 
 pub async fn get_attribute_configs(
     State(state): State<AppState>,
+    Extension(perm): Extension<ProjectPermission>,
     Path(project_id): Path<Id>,
 ) -> AppResult<Json<ApiResponse<Vec<TaskAttributeConfig>>>> {
+    perm.require(Permission::AttributeConfigView)?;
     let configs =
         TaskRepository::get_attribute_configs_by_project(&state.pool, project_id.0).await?;
     Ok(Json(ApiResponse::success(configs)))
@@ -26,8 +29,10 @@ pub async fn get_attribute_configs(
 
 pub async fn get_attribute_config_by_id(
     State(state): State<AppState>,
+    Extension(perm): Extension<ProjectPermission>,
     Path((_project_id, config_id)): Path<(Id, Id)>,
 ) -> AppResult<Json<ApiResponse<TaskAttributeConfig>>> {
+    perm.require(Permission::AttributeConfigView)?;
     let config = TaskRepository::get_attribute_config_by_id(&state.pool, config_id.0)
         .await?
         .ok_or(AppError::NotFound(format!(
@@ -41,9 +46,11 @@ pub async fn get_attribute_config_by_id(
 pub async fn create_attribute_config(
     State(state): State<AppState>,
     Extension(claims): Extension<Claims>,
+    Extension(perm): Extension<ProjectPermission>,
     Path(project_id): Path<Id>,
     Json(params): Json<CreateTaskAttributeConfigParams>,
 ) -> AppResult<(StatusCode, Json<ApiResponse<TaskAttributeConfig>>)> {
+    perm.require(Permission::AttributeConfigCreate)?;
     let creator_id = claims.sub;
     let config_id = state.generate_id().map_err(|e| {
         AppError::InternalError(format!(
@@ -67,9 +74,11 @@ pub async fn create_attribute_config(
 pub async fn update_attribute_config(
     State(state): State<AppState>,
     Extension(claims): Extension<Claims>,
+    Extension(perm): Extension<ProjectPermission>,
     Path((_project_id, config_id)): Path<(Id, Id)>,
     Json(params): Json<UpdateTaskAttributeConfigParams>,
 ) -> AppResult<Json<ApiResponse<TaskAttributeConfig>>> {
+    perm.require(Permission::AttributeConfigEdit)?;
     let updater_id = claims.sub;
 
     let config =
@@ -82,8 +91,10 @@ pub async fn update_attribute_config(
 pub async fn delete_attribute_config(
     State(state): State<AppState>,
     Extension(claims): Extension<Claims>,
+    Extension(perm): Extension<ProjectPermission>,
     Path((_project_id, config_id)): Path<(Id, Id)>,
 ) -> AppResult<StatusCode> {
+    perm.require(Permission::AttributeConfigArchive)?;
     let updater_id = claims.sub;
     TaskRepository::archive_attribute_config(&state.pool, config_id.0, updater_id).await?;
     Ok(StatusCode::NO_CONTENT)
@@ -92,9 +103,11 @@ pub async fn delete_attribute_config(
 pub async fn batch_delete_attribute_configs(
     State(state): State<AppState>,
     Extension(claims): Extension<Claims>,
+    Extension(perm): Extension<ProjectPermission>,
     Path(_project_id): Path<Id>,
     Json(params): Json<BatchDeleteTaskAttributeConfigsParams>,
 ) -> AppResult<StatusCode> {
+    perm.require(Permission::AttributeConfigArchive)?;
     let updater_id = claims.sub;
     let ids: Vec<i64> = params.ids.into_iter().map(|id| id.0).collect();
     TaskRepository::batch_archive_attribute_configs(&state.pool, ids, updater_id).await?;
@@ -104,8 +117,10 @@ pub async fn batch_delete_attribute_configs(
 pub async fn restore_attribute_config(
     State(state): State<AppState>,
     Extension(claims): Extension<Claims>,
+    Extension(perm): Extension<ProjectPermission>,
     Path((_project_id, config_id)): Path<(Id, Id)>,
 ) -> AppResult<StatusCode> {
+    perm.require(Permission::AttributeConfigArchive)?;
     let updater_id = claims.sub;
     TaskRepository::restore_attribute_config(&state.pool, config_id.0, updater_id).await?;
     Ok(StatusCode::NO_CONTENT)
@@ -113,17 +128,21 @@ pub async fn restore_attribute_config(
 
 pub async fn hard_delete_attribute_config(
     State(state): State<AppState>,
+    Extension(perm): Extension<ProjectPermission>,
     Path((_project_id, config_id)): Path<(Id, Id)>,
 ) -> AppResult<StatusCode> {
+    perm.require(Permission::AttributeConfigArchive)?;
     TaskRepository::delete_attribute_config(&state.pool, config_id.0).await?;
     Ok(StatusCode::NO_CONTENT)
 }
 
 pub async fn batch_hard_delete_attribute_configs(
     State(state): State<AppState>,
+    Extension(perm): Extension<ProjectPermission>,
     Path(_project_id): Path<Id>,
     Json(params): Json<BatchDeleteTaskAttributeConfigsParams>,
 ) -> AppResult<StatusCode> {
+    perm.require(Permission::AttributeConfigArchive)?;
     let ids: Vec<i64> = params.ids.into_iter().map(|id| id.0).collect();
     TaskRepository::batch_delete_attribute_configs(&state.pool, ids).await?;
     Ok(StatusCode::NO_CONTENT)
@@ -131,30 +150,41 @@ pub async fn batch_hard_delete_attribute_configs(
 
 pub async fn get_task_list(
     State(state): State<AppState>,
+    Extension(perm): Extension<ProjectPermission>,
     Path(project_id): Path<Id>,
     Query(params): Query<TaskQueryParams>,
-) -> AppResult<Json<ApiResponse<PageResponse<Task>>>> {
+) -> AppResult<Json<PaginatedResponse<Task>>> {
+    perm.require(Permission::TaskView)?;
+    let page = params.page.unwrap_or(1);
+    let per_page = params.per_page.unwrap_or(20);
     let (tasks, total) = TaskRepository::get_task_list(&state.pool, project_id.0, params).await?;
 
-    Ok(Json(ApiResponse::success(PageResponse {
-        list: tasks,
+    Ok(Json(PaginatedResponse::new(
+        tasks,
         total,
-    })))
+        page,
+        per_page,
+        &format!("/api/v1/projects/{}/tasks", project_id),
+    )))
 }
 
 pub async fn get_all_tasks(
     State(state): State<AppState>,
+    Extension(perm): Extension<ProjectPermission>,
     Path(project_id): Path<Id>,
     Query(params): Query<TaskQueryParams>,
 ) -> AppResult<Json<ApiResponse<Vec<Task>>>> {
+    perm.require(Permission::TaskView)?;
     let tasks = TaskRepository::get_all_tasks(&state.pool, project_id.0, params).await?;
     Ok(Json(ApiResponse::success(tasks)))
 }
 
 pub async fn get_task_by_id(
     State(state): State<AppState>,
+    Extension(perm): Extension<ProjectPermission>,
     Path((_project_id, task_id)): Path<(Id, Id)>,
 ) -> AppResult<Json<ApiResponse<Task>>> {
+    perm.require(Permission::TaskView)?;
     let task = TaskRepository::get_task_by_id(&state.pool, task_id.0)
         .await?
         .ok_or_else(|| AppError::NotFound("Task not found".to_string()))?;
@@ -165,9 +195,11 @@ pub async fn get_task_by_id(
 pub async fn create_task(
     State(state): State<AppState>,
     Extension(claims): Extension<Claims>,
+    Extension(perm): Extension<ProjectPermission>,
     Path(project_id): Path<Id>,
     Json(params): Json<CreateTaskParams>,
 ) -> AppResult<(StatusCode, Json<ApiResponse<Task>>)> {
+    perm.require(Permission::TaskCreate)?;
     let creator_id = claims.sub;
     let task_id = state
         .generate_id()
@@ -182,9 +214,11 @@ pub async fn create_task(
 pub async fn batch_create_tasks(
     State(state): State<AppState>,
     Extension(claims): Extension<Claims>,
+    Extension(perm): Extension<ProjectPermission>,
     Path(project_id): Path<Id>,
     Json(params): Json<BatchCreateTasksParams>,
 ) -> AppResult<(StatusCode, Json<ApiResponse<Vec<Task>>>)> {
+    perm.require(Permission::TaskCreate)?;
     let creator_id = claims.sub;
 
     if params.tasks.is_empty() {
@@ -215,9 +249,19 @@ pub async fn batch_create_tasks(
 pub async fn update_task(
     State(state): State<AppState>,
     Extension(claims): Extension<Claims>,
+    Extension(perm): Extension<ProjectPermission>,
     Path((_project_id, task_id)): Path<(Id, Id)>,
     Json(params): Json<UpdateTaskParams>,
 ) -> AppResult<Json<ApiResponse<Task>>> {
+    // 检查编辑权限：edit_all �?edit_own（需查询任务创建者）
+    let task = TaskRepository::get_task_by_id(&state.pool, task_id.0)
+        .await?
+        .ok_or_else(|| AppError::NotFound("Task not found".to_string()))?;
+    if !perm.can_operate(Permission::TaskEditAll, Permission::TaskEditOwn, task.creator_id.0) {
+        return Err(AppError::Forbidden(
+            "You don't have permission to edit this task".to_string(),
+        ));
+    }
     let updater_id = claims.sub;
 
     let task = TaskRepository::update_task(&state.pool, task_id.0, params, updater_id).await?;
@@ -227,17 +271,29 @@ pub async fn update_task(
 
 pub async fn delete_task(
     State(state): State<AppState>,
+    Extension(perm): Extension<ProjectPermission>,
     Path((_project_id, task_id)): Path<(Id, Id)>,
 ) -> AppResult<StatusCode> {
+    // 检查删除权限：delete_all �?delete_own
+    let task = TaskRepository::get_task_by_id(&state.pool, task_id.0)
+        .await?
+        .ok_or_else(|| AppError::NotFound("Task not found".to_string()))?;
+    if !perm.can_operate(Permission::TaskDeleteAll, Permission::TaskDeleteOwn, task.creator_id.0) {
+        return Err(AppError::Forbidden(
+            "You don't have permission to delete this task".to_string(),
+        ));
+    }
     TaskRepository::delete_task(&state.pool, task_id.0).await?;
     Ok(StatusCode::NO_CONTENT)
 }
 
 pub async fn batch_delete_tasks(
     State(state): State<AppState>,
+    Extension(perm): Extension<ProjectPermission>,
     Path(_project_id): Path<Id>,
     Json(params): Json<BatchDeleteTasksParams>,
 ) -> AppResult<StatusCode> {
+    perm.require(Permission::TaskBatchOperate)?;
     let ids: Vec<i64> = params.ids.into_iter().map(|id| id.0).collect();
     TaskRepository::batch_delete_tasks(&state.pool, ids).await?;
     Ok(StatusCode::NO_CONTENT)

@@ -5,24 +5,34 @@
 import {useCallback, useState} from "react";
 import {projectApi} from "./api";
 import type {
+    AddDepartmentRolesParams,
+    AddMembersParams,
+    AddTeamRolesParams,
     BatchCreateProjectTasksParams,
     BatchDeleteProjectsParams,
     BatchDeleteProjectTaskAttributeConfigsParams,
     CreateProjectParams,
     CreateProjectTaskAttributeConfigParams,
     CreateProjectTaskParams,
+    MyPermissionsResponse,
     Project,
+    ProjectDepartmentRole,
+    ProjectMember,
     ProjectQueryParams,
     ProjectTask,
     ProjectTaskAttributeConfig,
+    ProjectTeamRole,
     RecentlyVisitedQueryParams,
     ReorderProjectsParams,
     ReorderProjectTasksParams,
+    UpdateDepartmentRoleParams,
+    UpdateMemberRoleParams,
     UpdateProjectParams,
     UpdateProjectTaskAttributeConfigParams,
     UpdateProjectTaskParams,
+    UpdateTeamRoleParams,
 } from "./types";
-import {assertApiOk} from "@Webapp/api/common/response.ts";
+import {unwrapData} from "@Webapp/http";
 import {DEFAULT_PAGINATION, type Pagination} from "@Webapp/api/common/pagination.ts";
 
 /**
@@ -38,21 +48,21 @@ export const useProjectList = () => {
       setLoading(true);
       const response = await projectApi.getProjectList({
         page: pagination.page,
-        pageSize: pagination.pageSize,
+        perPage: pagination.perPage,
         ...params,
       });
-      const pageRes = assertApiOk(response);
-      setProjects(pageRes.list);
+      setProjects(response.data);
       setPagination((prev) => ({
         ...prev,
-        total: pageRes.total,
+        total: response.meta.total,
+        totalPages: response.meta.total_pages,
         page: params?.page ?? prev.page,
-        pageSize: params?.pageSize ?? prev.pageSize,
+        perPage: params?.perPage ?? prev.perPage,
       }));
     } finally {
       setLoading(false);
     }
-  }, [pagination.page, pagination.pageSize]);
+  }, [pagination.page, pagination.perPage]);
 
   return {
     projects,
@@ -74,7 +84,7 @@ export const useProjectDetail = () => {
     try {
       setLoading(true);
       const response = await projectApi.getProjectById(id);
-      setProject(assertApiOk(response));
+      setProject(unwrapData(response));
     } finally {
       setLoading(false);
     }
@@ -97,7 +107,7 @@ export const useProjectActions = () => {
     try {
       setLoading(true);
       const response = await projectApi.createProject(data);
-      return assertApiOk(response);
+      return unwrapData(response);
     } finally {
       setLoading(false);
     }
@@ -107,7 +117,7 @@ export const useProjectActions = () => {
     try {
       setLoading(true);
       const response = await projectApi.updateProject(id, data);
-      return assertApiOk(response);
+      return unwrapData(response);
     } finally {
       setLoading(false);
     }
@@ -116,8 +126,7 @@ export const useProjectActions = () => {
   const deleteProject = useCallback(async (id: string) => {
     try {
       setLoading(true);
-      const response = await projectApi.deleteProject(id);
-      assertApiOk(response);
+      await projectApi.deleteProject(id);
     } finally {
       setLoading(false);
     }
@@ -126,8 +135,7 @@ export const useProjectActions = () => {
   const batchDeleteProjects = useCallback(async (params: BatchDeleteProjectsParams) => {
     try {
       setLoading(true);
-      const response = await projectApi.batchDeleteProjects(params);
-      return assertApiOk(response);
+      await projectApi.batchDeleteProjects(params);
     } finally {
       setLoading(false);
     }
@@ -136,8 +144,7 @@ export const useProjectActions = () => {
   const reorderProjects = useCallback(async (params: ReorderProjectsParams) => {
     try {
       setLoading(true);
-      const response = await projectApi.reorderProjects(params);
-      assertApiOk(response);
+      await projectApi.reorderProjects(params);
     } finally {
       setLoading(false);
     }
@@ -160,11 +167,11 @@ export const useAllProjects = () => {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(false);
 
-  const fetchAllProjects = useCallback(async (params?: Omit<ProjectQueryParams, "page" | "pageSize">) => {
+  const fetchAllProjects = useCallback(async (params?: Omit<ProjectQueryParams, "page" | "perPage">) => {
     try {
       setLoading(true);
       const response = await projectApi.getAllProjects(params);
-      setProjects(assertApiOk(response));
+      setProjects(unwrapData(response));
     } finally {
       setLoading(false);
     }
@@ -190,21 +197,21 @@ export const useMyProjectList = () => {
       setLoading(true);
       const response = await projectApi.getMyProjectList({
         page: pagination.page,
-        pageSize: pagination.pageSize,
+        perPage: pagination.perPage,
         ...params,
       });
-      const pageRes = assertApiOk(response);
-      setProjects(pageRes.list);
+      setProjects(response.data);
       setPagination((prev) => ({
         ...prev,
-        total: pageRes.total,
+        total: response.meta.total,
+        totalPages: response.meta.total_pages,
         page: params?.page ?? prev.page,
-        pageSize: params?.pageSize ?? prev.pageSize,
+        perPage: params?.perPage ?? prev.perPage,
       }));
     } finally {
       setLoading(false);
     }
-  }, [pagination.page, pagination.pageSize]);
+  }, [pagination.page, pagination.perPage]);
 
   return {
     projects,
@@ -222,11 +229,11 @@ export const useMyAllProjects = () => {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(false);
 
-  const fetchAllProjects = useCallback(async (params?: Omit<ProjectQueryParams, "page" | "pageSize">) => {
+  const fetchAllProjects = useCallback(async (params?: Omit<ProjectQueryParams, "page" | "perPage">) => {
     try {
       setLoading(true);
       const response = await projectApi.getMyAllProjects(params);
-      setProjects(assertApiOk(response));
+      setProjects(unwrapData(response));
     } finally {
       setLoading(false);
     }
@@ -236,6 +243,30 @@ export const useMyAllProjects = () => {
     projects,
     loading,
     fetchAllProjects,
+  };
+};
+
+/**
+ * 获取当前用户可访问的所有项目（不分页） Hook
+ */
+export const useAccessibleProjects = () => {
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  const fetchAccessibleProjects = useCallback(async (params?: Omit<ProjectQueryParams, "page" | "perPage">) => {
+    try {
+      setLoading(true);
+      const response = await projectApi.getAccessibleProjects(params);
+      setProjects(unwrapData(response));
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  return {
+    projects,
+    loading,
+    fetchAccessibleProjects,
   };
 };
 
@@ -250,7 +281,7 @@ export const useRecentlyVisitedProjects = () => {
     try {
       setLoading(true);
       const response = await projectApi.getRecentlyVisitedProjects(params);
-      setProjects(assertApiOk(response));
+      setProjects(unwrapData(response));
     } finally {
       setLoading(false);
     }
@@ -289,7 +320,7 @@ export const useProjectTaskList = () => {
     try {
       setLoading(true);
       const response = await projectApi.getProjectTasks(projectId);
-      setTasks(assertApiOk(response));
+      setTasks(unwrapData(response));
     } finally {
       setLoading(false);
     }
@@ -312,7 +343,7 @@ export const useProjectTaskActions = () => {
     try {
       setLoading(true);
       const response = await projectApi.createProjectTask(projectId, data);
-      return assertApiOk(response);
+      return unwrapData(response);
     } finally {
       setLoading(false);
     }
@@ -322,7 +353,7 @@ export const useProjectTaskActions = () => {
     try {
       setLoading(true);
       const response = await projectApi.updateProjectTask(projectId, taskId, data);
-      return assertApiOk(response);
+      return unwrapData(response);
     } finally {
       setLoading(false);
     }
@@ -331,8 +362,7 @@ export const useProjectTaskActions = () => {
   const deleteTask = useCallback(async (projectId: string, taskId: string) => {
     try {
       setLoading(true);
-      const response = await projectApi.deleteProjectTask(projectId, taskId);
-      assertApiOk(response);
+      await projectApi.deleteProjectTask(projectId, taskId);
     } finally {
       setLoading(false);
     }
@@ -341,8 +371,7 @@ export const useProjectTaskActions = () => {
   const reorderTasks = useCallback(async (projectId: string, params: ReorderProjectTasksParams) => {
     try {
       setLoading(true);
-      const response = await projectApi.reorderProjectTasks(projectId, params);
-      assertApiOk(response);
+      await projectApi.reorderProjectTasks(projectId, params);
     } finally {
       setLoading(false);
     }
@@ -352,7 +381,7 @@ export const useProjectTaskActions = () => {
     try {
       setLoading(true);
       const response = await projectApi.batchCreateProjectTasks(projectId, data);
-      return assertApiOk(response);
+      return unwrapData(response);
     } finally {
       setLoading(false);
     }
@@ -379,7 +408,7 @@ export const useProjectTaskAttributeConfigList = () => {
     try {
       setLoading(true);
       const response = await projectApi.getProjectTaskAttributeConfigs(projectId);
-      setConfigs(assertApiOk(response));
+      setConfigs(unwrapData(response));
     } finally {
       setLoading(false);
     }
@@ -405,7 +434,7 @@ export const useProjectTaskAttributeConfigActions = () => {
     try {
       setLoading(true);
       const response = await projectApi.createProjectTaskAttributeConfig(projectId, data);
-      return assertApiOk(response);
+      return unwrapData(response);
     } finally {
       setLoading(false);
     }
@@ -419,7 +448,7 @@ export const useProjectTaskAttributeConfigActions = () => {
     try {
       setLoading(true);
       const response = await projectApi.updateProjectTaskAttributeConfig(projectId, id, data);
-      return assertApiOk(response);
+      return unwrapData(response);
     } finally {
       setLoading(false);
     }
@@ -428,8 +457,7 @@ export const useProjectTaskAttributeConfigActions = () => {
   const deleteConfig = useCallback(async (projectId: string, id: string) => {
     try {
       setLoading(true);
-      const response = await projectApi.deleteProjectTaskAttributeConfig(projectId, id);
-      assertApiOk(response);
+      await projectApi.deleteProjectTaskAttributeConfig(projectId, id);
     } finally {
       setLoading(false);
     }
@@ -441,8 +469,7 @@ export const useProjectTaskAttributeConfigActions = () => {
   ) => {
     try {
       setLoading(true);
-      const response = await projectApi.batchDeleteProjectTaskAttributeConfigs(projectId, params);
-      assertApiOk(response);
+      await projectApi.batchDeleteProjectTaskAttributeConfigs(projectId, params);
     } finally {
       setLoading(false);
     }
@@ -451,8 +478,7 @@ export const useProjectTaskAttributeConfigActions = () => {
   const restoreConfig = useCallback(async (projectId: string, id: string) => {
     try {
       setLoading(true);
-      const response = await projectApi.restoreProjectTaskAttributeConfig(projectId, id);
-      assertApiOk(response);
+      await projectApi.restoreProjectTaskAttributeConfig(projectId, id);
     } finally {
       setLoading(false);
     }
@@ -465,5 +491,237 @@ export const useProjectTaskAttributeConfigActions = () => {
     deleteConfig,
     batchDeleteConfigs,
     restoreConfig,
+  };
+};
+
+// ──────────────── 项目权限管理 Hooks ────────────────
+
+/**
+ * 项目成员列表 Hook
+ */
+export const useProjectMembers = () => {
+  const [members, setMembers] = useState<ProjectMember[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  const fetchMembers = useCallback(async (projectId: string) => {
+    try {
+      setLoading(true);
+      const response = await projectApi.getMembers(projectId);
+      setMembers(unwrapData(response));
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  return {
+    members,
+    loading,
+    fetchMembers,
+  };
+};
+
+/**
+ * 项目成员操作 Hook
+ */
+export const useProjectMemberActions = () => {
+  const [loading, setLoading] = useState(false);
+
+  const addMembers = useCallback(async (projectId: string, data: AddMembersParams) => {
+    try {
+      setLoading(true);
+      const response = await projectApi.addMembers(projectId, data);
+      return unwrapData(response);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const updateMemberRole = useCallback(async (projectId: string, userId: string, data: UpdateMemberRoleParams) => {
+    try {
+      setLoading(true);
+      const response = await projectApi.updateMemberRole(projectId, userId, data);
+      return unwrapData(response);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const removeMember = useCallback(async (projectId: string, userId: string) => {
+    try {
+      setLoading(true);
+      await projectApi.removeMember(projectId, userId);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  return {
+    loading,
+    addMembers,
+    updateMemberRole,
+    removeMember,
+  };
+};
+
+/**
+ * 项目团队角色列表 Hook
+ */
+export const useProjectTeamRoles = () => {
+  const [teamRoles, setTeamRoles] = useState<ProjectTeamRole[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  const fetchTeamRoles = useCallback(async (projectId: string) => {
+    try {
+      setLoading(true);
+      const response = await projectApi.getTeamRoles(projectId);
+      setTeamRoles(unwrapData(response));
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  return {
+    teamRoles,
+    loading,
+    fetchTeamRoles,
+  };
+};
+
+/**
+ * 项目团队角色操作 Hook
+ */
+export const useProjectTeamRoleActions = () => {
+  const [loading, setLoading] = useState(false);
+
+  const addTeamRoles = useCallback(async (projectId: string, data: AddTeamRolesParams) => {
+    try {
+      setLoading(true);
+      const response = await projectApi.addTeamRoles(projectId, data);
+      return unwrapData(response);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const updateTeamRole = useCallback(async (projectId: string, teamId: string, data: UpdateTeamRoleParams) => {
+    try {
+      setLoading(true);
+      const response = await projectApi.updateTeamRole(projectId, teamId, data);
+      return unwrapData(response);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const removeTeamRole = useCallback(async (projectId: string, teamId: string) => {
+    try {
+      setLoading(true);
+      await projectApi.removeTeamRole(projectId, teamId);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  return {
+    loading,
+    addTeamRoles,
+    updateTeamRole,
+    removeTeamRole,
+  };
+};
+
+/**
+ * 项目部门角色列表 Hook
+ */
+export const useProjectDepartmentRoles = () => {
+  const [departmentRoles, setDepartmentRoles] = useState<ProjectDepartmentRole[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  const fetchDepartmentRoles = useCallback(async (projectId: string) => {
+    try {
+      setLoading(true);
+      const response = await projectApi.getDepartmentRoles(projectId);
+      setDepartmentRoles(unwrapData(response));
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  return {
+    departmentRoles,
+    loading,
+    fetchDepartmentRoles,
+  };
+};
+
+/**
+ * 项目部门角色操作 Hook
+ */
+export const useProjectDepartmentRoleActions = () => {
+  const [loading, setLoading] = useState(false);
+
+  const addDepartmentRoles = useCallback(async (projectId: string, data: AddDepartmentRolesParams) => {
+    try {
+      setLoading(true);
+      const response = await projectApi.addDepartmentRoles(projectId, data);
+      return unwrapData(response);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const updateDepartmentRole = useCallback(async (projectId: string, departmentId: string, data: UpdateDepartmentRoleParams) => {
+    try {
+      setLoading(true);
+      const response = await projectApi.updateDepartmentRole(projectId, departmentId, data);
+      return unwrapData(response);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const removeDepartmentRole = useCallback(async (projectId: string, departmentId: string) => {
+    try {
+      setLoading(true);
+      await projectApi.removeDepartmentRole(projectId, departmentId);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  return {
+    loading,
+    addDepartmentRoles,
+    updateDepartmentRole,
+    removeDepartmentRole,
+  };
+};
+
+/**
+ * 当前用户项目权限 Hook
+ */
+export const useMyProjectPermissions = () => {
+  const [permissions, setPermissions] = useState<MyPermissionsResponse>();
+  const [loading, setLoading] = useState(false);
+
+  const fetchPermissions = useCallback(async (projectId: string) => {
+    try {
+      setLoading(true);
+      const response = await projectApi.getMyPermissions(projectId);
+      setPermissions(unwrapData(response));
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const hasPermission = useCallback((permission: string) => {
+    return permissions?.permissions.includes(permission) ?? false;
+  }, [permissions]);
+
+  return {
+    permissions,
+    loading,
+    fetchPermissions,
+    hasPermission,
   };
 };

@@ -5,7 +5,7 @@ import {LeftOutlined, RightOutlined} from "@ant-design/icons";
 import dayjs from "@Webapp/config/dayjs";
 import {useTranslation} from "react-i18next";
 import {holidayApi} from "@Webapp/api";
-import {assertApiOk} from "@Webapp/api/common/response.ts";
+import {unwrapData} from "@Webapp/http";
 import type {Holiday} from "@Webapp/api/modules/holiday/types";
 import {YearCalendar} from "./components/year-calendar";
 import {HolidayModal} from "./components/holiday-modal";
@@ -40,7 +40,7 @@ export const HolidayCalendar: React.FC = () => {
             const startDate = `${selectedYear}-01-01`;
             const endDate = `${selectedYear}-12-31`;
             const response = await holidayApi.getAllHolidays({startDate, endDate});
-            setHolidays(assertApiOk(response));
+            setHolidays(unwrapData(response));
         } catch (error) {
             log.error("Failed to load holidays:", error);
             const errorMessage = error instanceof Error ? error.message : t("holiday.loadFailed");

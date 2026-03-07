@@ -44,7 +44,7 @@ export interface UpdateHolidayParams {
  */
 export interface HolidayQueryParams {
   page?: number;
-  pageSize?: number;
+  perPage?: number;
   holidayName?: string;
   holidayType?: number;
   startDate?: string;

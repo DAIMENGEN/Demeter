@@ -1,4 +1,5 @@
-import {useCallback, useEffect, useMemo, useState} from "react";
+import {useCallback, useEffect, useMemo} from "react";
+import {useLocalStorageState} from "@Webapp/hooks";
 import {useTranslation} from "react-i18next";
 import type {TFunction} from "i18next";
 import type {Checkpoint, Event, Milestone, Resource, ResourceAreaColumn} from "schedulant";
@@ -209,8 +210,9 @@ const tasksToSchedulantModels = (
  * 封装 Schedulant 组件所需的全部数据：
  * 项目/任务/属性配置的获取、颜色渲染、列配置、以及最终的 Schedulant 模型。
  */
-export const useSchedulantData = (projectId: string) => {
+export const useSchedulantData = (projectId: string, options?: { skipAttributeConfigs?: boolean }) => {
     const {t} = useTranslation();
+    const skipAttributeConfigs = options?.skipAttributeConfigs ?? false;
 
     // ---- 数据获取 ----
     const {project, loading: projectLoading, fetchProject} = useProjectDetail();
@@ -221,18 +223,28 @@ export const useSchedulantData = (projectId: string) => {
         fetchConfigs: fetchAttributeConfigs,
     } = useProjectTaskAttributeConfigList();
 
-    // ---- 颜色渲染属性 ----
-    const [colorRenderAttributeName, setColorRenderAttributeName] = useState<string | null>(null);
+    // ---- 颜色渲染属性（按项目持久化）----
+    const [colorRenderAttributeName, setColorRenderAttributeName] = useLocalStorageState<string | null>(
+        `schedulant-color-attr:${projectId}`, null,
+    );
 
-    // ---- 列选择 ----
-    const [selectedColumnKeys, setSelectedColumnKeys] = useState<string[]>(["title"]);
+    // ---- 列选择（按项目持久化）----
+    const [selectedColumnKeys, setSelectedColumnKeys] = useLocalStorageState<string[]>(
+        `schedulant-selected-cols:${projectId}`, ["title"],
+    );
 
-    // ---- 初始拉取 ----
+    // ---- 初始拉取：项目 & 任务 ----
     useEffect(() => {
         void fetchProject(projectId);
         void fetchTasks(projectId);
-        void fetchAttributeConfigs(projectId);
     }, [projectId]);
+
+    // ---- 初始拉取：属性配置（依赖权限） ----
+    useEffect(() => {
+        if (!skipAttributeConfigs) {
+            void fetchAttributeConfigs(projectId);
+        }
+    }, [projectId, skipAttributeConfigs]);
 
     // ---- 刷新 ----
     const refetchTasks = useCallback(() => {

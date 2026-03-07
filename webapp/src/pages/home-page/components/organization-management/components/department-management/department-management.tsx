@@ -24,12 +24,12 @@ export const DepartmentManagement: React.FC = () => {
     const [form] = Form.useForm();
 
     const buildQueryParams = useCallback(
-        (page?: number, pageSize?: number): DepartmentQueryParams => ({
+        (page?: number, perPage?: number): DepartmentQueryParams => ({
             page: page ?? pagination.page,
-            pageSize: pageSize ?? pagination.pageSize,
+            perPage: perPage ?? pagination.perPage,
             departmentName: keyword || undefined,
         }),
-        [keyword, pagination.page, pagination.pageSize]
+        [keyword, pagination.page, pagination.perPage]
     );
 
     useEffect(() => {
@@ -42,8 +42,8 @@ export const DepartmentManagement: React.FC = () => {
 
     const handleReset = useCallback(() => {
         setKeyword("");
-        fetchDepartments({page: 1, pageSize: pagination.pageSize});
-    }, [fetchDepartments, pagination.pageSize]);
+        fetchDepartments({page: 1, perPage: pagination.perPage});
+    }, [fetchDepartments, pagination.perPage]);
 
     const handleRefresh = useCallback(() => {
         fetchDepartments(buildQueryParams());
@@ -53,7 +53,7 @@ export const DepartmentManagement: React.FC = () => {
         (paginationConfig: TablePaginationConfig) => {
             const newPage = paginationConfig.current ?? 1;
             const newPageSize = paginationConfig.pageSize ?? 10;
-            setPagination((prev) => ({...prev, page: newPage, pageSize: newPageSize}));
+            setPagination((prev) => ({...prev, page: newPage, perPage: newPageSize}));
             fetchDepartments(buildQueryParams(newPage, newPageSize));
         },
         [fetchDepartments, buildQueryParams, setPagination]
@@ -211,7 +211,7 @@ export const DepartmentManagement: React.FC = () => {
                 loading={loading}
                 pagination={{
                     current: pagination.page,
-                    pageSize: pagination.pageSize,
+                    pageSize: pagination.perPage,
                     total: pagination.total,
                     showSizeChanger: true,
                     showTotal: (total) => t("departmentManagement.totalCount", {total}),

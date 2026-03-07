@@ -2,12 +2,12 @@ import {Button, Result} from "antd";
 import {useNavigate} from "react-router-dom";
 import {useTranslation} from "react-i18next";
 
-interface Result404Props {
+interface NotFoundProps {
     returnPath?: string;
     returnPageName?: string;
 }
 
-export const Result404 = ({returnPath = "/home", returnPageName}: Result404Props) => {
+export const NotFound = ({returnPath = "/home", returnPageName}: NotFoundProps) => {
     const {t} = useTranslation();
     const navigate = useNavigate();
 

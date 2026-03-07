@@ -11,7 +11,7 @@ impl AuthRepository {
     ) -> AppResult<Option<AuthUser>> {
         let user = sqlx::query_as::<_, AuthUser>(
             r#"
-            SELECT id, username, password, full_name, email, phone, is_active,
+            SELECT id, username, password, full_name, email, phone, role, is_active,
                    creator_id, updater_id, create_date_time, update_date_time
             FROM users
             WHERE username = $1
@@ -63,7 +63,7 @@ impl AuthRepository {
             r#"
             INSERT INTO users (id, username, password, full_name, email, phone, is_active, creator_id, create_date_time)
             VALUES ($1, $2, $3, $4, $5, $6, true, $1, NOW())
-            RETURNING id, username, password, full_name, email, phone, is_active, creator_id, updater_id, create_date_time, update_date_time
+            RETURNING id, username, password, full_name, email, phone, role, is_active, creator_id, updater_id, create_date_time, update_date_time
             "#
         )
         .bind(user_id)
@@ -168,7 +168,7 @@ impl AuthRepository {
     pub async fn get_auth_user_by_id(pool: &PgPool, user_id: i64) -> AppResult<Option<AuthUser>> {
         let user = sqlx::query_as::<_, AuthUser>(
             r#"
-            SELECT id, username, password, full_name, email, phone, is_active,
+            SELECT id, username, password, full_name, email, phone, role, is_active,
                    creator_id, updater_id, create_date_time, update_date_time
             FROM users
             WHERE id = $1

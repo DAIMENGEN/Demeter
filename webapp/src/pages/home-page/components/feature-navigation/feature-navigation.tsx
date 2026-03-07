@@ -5,7 +5,7 @@ import "./feature-navigation.scss";
 import projectManagementImage from "@Webapp/assets/nv/project-management-nv.gif";
 import calendarImage from "@Webapp/assets/nv/calendar-nv.gif";
 import {useAppSelector} from "@Webapp/store/hooks";
-import {selectCurrentUser} from "@Webapp/store/slices/user-slice";
+import {selectIsAdmin} from "@Webapp/store/slices/user-slice";
 import {useMemo} from "react";
 
 const {Title, Paragraph} = Typography;
@@ -54,8 +54,7 @@ const features: FeatureItem[] = [
 export const FeatureNavigation = () => {
     const navigate = useNavigate();
     const {t} = useTranslation();
-    const currentUser = useAppSelector(selectCurrentUser);
-    const isAdmin = currentUser?.username === "admin";
+    const isAdmin = useAppSelector(selectIsAdmin);
 
     const visibleFeatures = useMemo(
         () => features.filter((f) => !f.adminOnly || isAdmin),

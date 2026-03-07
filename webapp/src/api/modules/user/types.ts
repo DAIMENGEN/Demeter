@@ -1,6 +1,10 @@
 ﻿/**
  * 用户模块类型定义
  */
+
+/** 用户角色枚举 */
+export type UserRole = "super_admin" | "admin" | "user";
+
 /**
  * 用户数据类型
  */
@@ -11,6 +15,8 @@ export interface User {
   fullName: string;
   email: string;
   phone?: string;
+  /** 用户角色：super_admin / admin / user */
+  role: UserRole;
   isActive: boolean;
   departmentId?: string;
   /** 部门名称（后端 JOIN 返回） */
@@ -35,6 +41,7 @@ export interface CreateUserParams {
   departmentId?: string;
   teamIds?: string[];
   isActive?: boolean;
+  role?: UserRole;
 }
 /**
  * 更新用户参数
@@ -46,6 +53,7 @@ export interface UpdateUserParams {
   email?: string;
   phone?: string;
   isActive?: boolean;
+  role?: UserRole;
   departmentId?: string | null;
   teamIds?: string[];
 }
@@ -54,7 +62,7 @@ export interface UpdateUserParams {
  */
 export interface UserQueryParams {
   page?: number;
-  pageSize?: number;
+  perPage?: number;
   /** 模糊搜索关键词，同时匹配 username 和 fullName（OR 逻辑） */
   keyword?: string;
   username?: string;

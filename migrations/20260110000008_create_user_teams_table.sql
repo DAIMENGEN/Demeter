@@ -4,7 +4,9 @@ CREATE TABLE IF NOT EXISTS user_teams (
     user_id BIGINT NOT NULL,
     team_id BIGINT NOT NULL,
     creator_id BIGINT NOT NULL,
+    updater_id BIGINT,
     create_date_time TIMESTAMP NOT NULL DEFAULT NOW(),
+    update_date_time TIMESTAMP,
     CONSTRAINT fk_ut_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
     CONSTRAINT fk_ut_team FOREIGN KEY (team_id) REFERENCES teams(id) ON DELETE CASCADE,
     CONSTRAINT uq_ut_user_team UNIQUE (user_id, team_id)

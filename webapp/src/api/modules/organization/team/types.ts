@@ -31,7 +31,7 @@ export interface UpdateTeamParams {
 
 export interface TeamQueryParams {
     page?: number;
-    pageSize?: number;
+    perPage?: number;
     teamName?: string;
 }
 

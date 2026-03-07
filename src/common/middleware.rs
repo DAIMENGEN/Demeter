@@ -66,8 +66,7 @@ pub fn get_current_user(request: &Request) -> Result<Claims, AppError> {
         .ok_or_else(|| AppError::Unauthorized("Not authenticated".to_string()))
 }
 
-const ADMIN_USERNAME: &str = "admin";
-
+/// 管理员权限中间件（允许 super_admin 和 admin）
 pub async fn admin_auth_middleware(
     request: Request,
     next: Next,
@@ -78,9 +77,29 @@ pub async fn admin_auth_middleware(
         .cloned()
         .ok_or_else(|| AppError::Unauthorized("Not authenticated".to_string()))?;
 
-    if claims.username != ADMIN_USERNAME {
+    if !claims.is_admin_or_above() {
         return Err(AppError::Forbidden(
             "Admin access required".to_string(),
+        ));
+    }
+
+    Ok(next.run(request).await)
+}
+
+/// 超级管理员权限中间件（仅允许 super_admin）
+pub async fn super_admin_auth_middleware(
+    request: Request,
+    next: Next,
+) -> Result<Response, AppError> {
+    let claims = request
+        .extensions()
+        .get::<Claims>()
+        .cloned()
+        .ok_or_else(|| AppError::Unauthorized("Not authenticated".to_string()))?;
+
+    if !claims.is_super_admin() {
+        return Err(AppError::Forbidden(
+            "Super admin access required".to_string(),
         ));
     }
 

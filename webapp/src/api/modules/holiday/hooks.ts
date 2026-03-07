@@ -13,7 +13,7 @@ import type {
   HolidayQueryParams,
   UpdateHolidayParams
 } from "./types";
-import {assertApiOk} from "@Webapp/api/common/response.ts";
+import {unwrapData} from "@Webapp/http";
 import {DEFAULT_PAGINATION, type Pagination} from "@Webapp/api/common/pagination.ts";
 
 /**
@@ -29,21 +29,21 @@ export const useHolidayList = () => {
       setLoading(true);
       const response = await holidayApi.getHolidayList({
         page: pagination.page,
-        pageSize: pagination.pageSize,
+        perPage: pagination.perPage,
         ...params
       });
-      const pageRes = assertApiOk(response);
-      setHolidays(pageRes.list);
+      setHolidays(response.data);
       setPagination((prev) => ({
         ...prev,
-        total: pageRes.total,
+        total: response.meta.total,
+        totalPages: response.meta.total_pages,
         page: params?.page ?? prev.page,
-        pageSize: params?.pageSize ?? prev.pageSize
+        perPage: params?.perPage ?? prev.perPage
       }));
     } finally {
       setLoading(false);
     }
-  }, [pagination.page, pagination.pageSize]);
+  }, [pagination.page, pagination.perPage]);
 
   return {
     holidays,
@@ -65,7 +65,7 @@ export const useHolidayDetail = () => {
     try {
       setLoading(true);
       const response = await holidayApi.getHolidayById(id);
-      setHoliday(assertApiOk(response));
+      setHoliday(unwrapData(response));
     } finally {
       setLoading(false);
     }
@@ -88,7 +88,7 @@ export const useHolidayActions = () => {
     try {
       setLoading(true);
       const response = await holidayApi.createHoliday(data);
-      return assertApiOk(response);
+      return unwrapData(response);
     } finally {
       setLoading(false);
     }
@@ -98,7 +98,7 @@ export const useHolidayActions = () => {
     try {
       setLoading(true);
       const response = await holidayApi.updateHoliday(id, data);
-      return assertApiOk(response);
+      return unwrapData(response);
     } finally {
       setLoading(false);
     }
@@ -107,8 +107,7 @@ export const useHolidayActions = () => {
   const deleteHoliday = useCallback(async (id: string) => {
     try {
       setLoading(true);
-      const response = await holidayApi.deleteHoliday(id);
-      assertApiOk(response);
+      await holidayApi.deleteHoliday(id);
     } finally {
       setLoading(false);
     }
@@ -117,8 +116,7 @@ export const useHolidayActions = () => {
   const batchDeleteHolidays = useCallback(async (params: BatchDeleteHolidaysParams) => {
     try {
       setLoading(true);
-      const response = await holidayApi.batchDeleteHolidays(params);
-      assertApiOk(response);
+      await holidayApi.batchDeleteHolidays(params);
     } finally {
       setLoading(false);
     }
@@ -128,7 +126,7 @@ export const useHolidayActions = () => {
     try {
       setLoading(true);
       const response = await holidayApi.batchCreateHolidays(params);
-      return assertApiOk(response);
+      return unwrapData(response);
     } finally {
       setLoading(false);
     }
@@ -138,7 +136,7 @@ export const useHolidayActions = () => {
     try {
       setLoading(true);
       const response = await holidayApi.batchUpdateHolidays(params);
-      return assertApiOk(response);
+      return unwrapData(response);
     } finally {
       setLoading(false);
     }
@@ -162,11 +160,11 @@ export const useAllHolidays = () => {
   const [holidays, setHolidays] = useState<Holiday[]>([]);
   const [loading, setLoading] = useState(false);
 
-  const fetchAllHolidays = useCallback(async (params?: Omit<HolidayQueryParams, "page" | "pageSize">) => {
+  const fetchAllHolidays = useCallback(async (params?: Omit<HolidayQueryParams, "page" | "perPage">) => {
     try {
       setLoading(true);
       const response = await holidayApi.getAllHolidays(params);
-      setHolidays(assertApiOk(response));
+      setHolidays(unwrapData(response));
     } finally {
       setLoading(false);
     }

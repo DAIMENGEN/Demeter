@@ -191,7 +191,15 @@
     "statusInProgress": "進行中",
     "statusPaused": "一時停止",
     "statusCompleted": "完了",
-    "statusCancelled": "キャンセル"
+    "statusCancelled": "キャンセル",
+    "roleOwner": "オーナー",
+    "roleAdmin": "管理者",
+    "roleMaintainer": "メンテナー",
+    "roleMember": "メンバー",
+    "roleViewer": "閲覧者",
+    "visibilityPrivate": "プライベート",
+    "visibilityInternal": "内部",
+    "visibilityPublic": "公開"
   },
   "task": {
     "createTask": "タスクを作成",
@@ -487,6 +495,28 @@
     "viewMonth": "月",
     "viewQuarter": "四半期",
     "viewYear": "年"
+  },
+  "permission": {
+    "title": "権限管理",
+    "members": "メンバー",
+    "teams": "チーム",
+    "departments": "部門",
+    "name": "名前",
+    "role": "ロール",
+    "joinedAt": "参加日",
+    "actions": "操作",
+    "teamName": "チーム名",
+    "departmentName": "部門名",
+    "addMember": "メンバーを追加",
+    "addTeam": "チームを追加",
+    "addDepartment": "部門を追加",
+    "selectUser": "ユーザーを選択",
+    "selectTeam": "チームを選択",
+    "selectDepartment": "部門を選択",
+    "searchUserPlaceholder": "ユーザー名または名前で検索",
+    "searchTeamPlaceholder": "チームを検索",
+    "searchDepartmentPlaceholder": "部門を検索",
+    "removeConfirm": "本当に削除しますか？"
   },
   "notFound": {
     "title": "404",

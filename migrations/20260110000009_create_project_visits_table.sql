@@ -4,6 +4,9 @@ CREATE TABLE IF NOT EXISTS project_visits (
     user_id BIGINT NOT NULL,
     project_id BIGINT NOT NULL,
     visited_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updater_id BIGINT,
+    create_date_time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    update_date_time TIMESTAMP,
     CONSTRAINT uq_project_visits_user_project UNIQUE (user_id, project_id)
 );
 

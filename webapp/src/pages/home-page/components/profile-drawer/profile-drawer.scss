@@ -1,0 +1,68 @@
+.profile-drawer-content {
+	.membership-section {
+		margin-bottom: 4px;
+	}
+
+	.profile-header {
+		display: flex;
+		align-items: flex-start;
+		gap: 16px;
+		width: 100%;
+	}
+
+	.profile-avatar-slot {
+		width: 140px;
+		min-width: 140px;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		padding: 8px 0;
+	}
+
+	.profile-avatar {
+		flex-shrink: 0;
+		background: transparent;
+		color: #1677ff;
+		font-size: 28px;
+	}
+
+	.profile-meta {
+		display: flex;
+		flex-direction: column;
+		min-width: 0;
+		flex: 1;
+	}
+
+	.profile-name {
+		font-size: 16px;
+		line-height: 24px;
+	}
+
+	.profile-date-block {
+		margin-top: 8px;
+		display: flex;
+		flex-direction: column;
+	}
+
+	.profile-date-label {
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+		line-height: 20px;
+	}
+
+	.profile-date-value {
+		margin-top: 6px;
+		line-height: 22px;
+	}
+
+	.profile-membership-tag {
+		margin-top: 10px;
+		margin-inline-start: 0;
+		width: fit-content;
+		font-size: 14px;
+		padding: 4px 12px;
+		line-height: 20px;
+	}
+}
+

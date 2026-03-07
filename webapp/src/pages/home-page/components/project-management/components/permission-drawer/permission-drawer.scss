@@ -1,0 +1,57 @@
+.permission-drawer {
+  .ant-tabs {
+    height: 100%;
+  }
+
+  .ant-tabs-content {
+    height: 100%;
+  }
+
+  .ant-tabs-tabpane {
+    height: 100%;
+  }
+}
+
+.permission-tab {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+
+  .tab-toolbar {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 16px;
+  }
+
+  .ant-table-wrapper {
+    flex: 1;
+    overflow: auto;
+  }
+}
+
+.add-popover-content {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 300px;
+  padding: 4px 0;
+
+  .popover-field {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+
+    .popover-label {
+      font-size: 13px;
+      font-weight: 500;
+      color: rgba(0, 0, 0, 0.88);
+    }
+  }
+
+  .popover-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 4px;
+  }
+}

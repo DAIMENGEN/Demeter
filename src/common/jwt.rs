@@ -6,10 +6,20 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Claims {
     pub sub: i64,
-    pub username: String,
+    pub role: String,
     pub exp: u64,
     pub iat: u64,
     pub token_type: String,
+}
+
+impl Claims {
+    pub fn is_super_admin(&self) -> bool {
+        self.role == "super_admin"
+    }
+
+    pub fn is_admin_or_above(&self) -> bool {
+        self.role == "super_admin" || self.role == "admin"
+    }
 }
 
 pub struct JwtUtil;
@@ -17,13 +27,13 @@ pub struct JwtUtil;
 impl JwtUtil {
     pub fn generate_access_token(
         user_id: i64,
-        username: &str,
+        role: &str,
         config: &JwtConfig,
     ) -> AppResult<String> {
         let now = chrono::Utc::now().timestamp() as u64;
         let claims = Claims {
             sub: user_id,
-            username: username.to_string(),
+            role: role.to_string(),
             exp: now + config.access_token_expires_in as u64,
             iat: now,
             token_type: "access".to_string(),
@@ -39,13 +49,13 @@ impl JwtUtil {
 
     pub fn generate_refresh_token(
         user_id: i64,
-        username: &str,
+        role: &str,
         config: &JwtConfig,
     ) -> AppResult<String> {
         let now = chrono::Utc::now().timestamp() as u64;
         let claims = Claims {
             sub: user_id,
-            username: username.to_string(),
+            role: role.to_string(),
             exp: now + config.refresh_token_expires_in as u64,
             iat: now,
             token_type: "refresh".to_string(),

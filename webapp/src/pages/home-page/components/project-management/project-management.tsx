@@ -2,10 +2,11 @@ import React, {useCallback, useEffect, useMemo, useState} from "react";
 import {App, Layout, Menu} from "antd";
 import {useNavigate} from "react-router-dom";
 import {ClockCircleOutlined, ExclamationCircleOutlined, FolderOutlined, TeamOutlined} from "@ant-design/icons";
-import {type Project, useMyAllProjects, useProjectActions, useRecentlyVisitedProjects} from "@Webapp/api/modules/project";
+import {type Project, useAccessibleProjects, useMyAllProjects, useProjectActions, useRecentlyVisitedProjects} from "@Webapp/api/modules/project";
 import "./project-management.scss";
 import {ProjectList} from "./components/project-list";
 import {CreateProjectDrawer, EditProjectDrawer} from "./components/project-drawer";
+import {PermissionDrawer} from "./components/permission-drawer";
 import {log} from "@Webapp/logging.ts";
 import {useTranslation} from "react-i18next";
 
@@ -21,13 +22,15 @@ export const ProjectManagement: React.FC = () => {
     const [createDrawerOpen, setCreateDrawerOpen] = useState(false);
     const [editDrawerOpen, setEditDrawerOpen] = useState(false);
     const [editingProject, setEditingProject] = useState<Project | null>(null);
+    const [permissionDrawerOpen, setPermissionDrawerOpen] = useState(false);
+    const [permissionProject, setPermissionProject] = useState<Project | null>(null);
     const [selectedView, setSelectedView] = useState<ProjectViewType>("myCreated");
     const [searchKeyword, setSearchKeyword] = useState("");
 
     // 获取不同视图的项目数据
     const {deleteProject, reorderProjects} = useProjectActions();
     const myCreatedProjects = useMyAllProjects();
-    const myAccessibleProjects = useMyAllProjects();
+    const myAccessibleProjects = useAccessibleProjects();
     const recentlyAccessedProjects = useRecentlyVisitedProjects();
 
     // 包装 fetchRecentlyVisited，使其签名与其他视图的 refetch 兼容，同时保持引用稳定
@@ -50,7 +53,7 @@ export const ProjectManagement: React.FC = () => {
                 return {
                     projects: myAccessibleProjects.projects,
                     loading: myAccessibleProjects.loading,
-                    refetch: myAccessibleProjects.fetchAllProjects,
+                    refetch: myAccessibleProjects.fetchAccessibleProjects,
                     title: t("project.myAccessibleTitle"),
                     emptyDescription: t("project.myAccessibleEmpty")
                 };
@@ -78,7 +81,7 @@ export const ProjectManagement: React.FC = () => {
         myCreatedProjects.fetchAllProjects,
         myAccessibleProjects.projects,
         myAccessibleProjects.loading,
-        myAccessibleProjects.fetchAllProjects,
+        myAccessibleProjects.fetchAccessibleProjects,
         recentlyAccessedProjects.projects,
         recentlyAccessedProjects.loading,
         recentlyAccessedRefetch,
@@ -94,6 +97,12 @@ export const ProjectManagement: React.FC = () => {
     const handleEditProject = useCallback((project: Project) => {
         setEditingProject(project);
         setEditDrawerOpen(true);
+    }, []);
+
+    // 处理权限管理
+    const handlePermission = useCallback((project: Project) => {
+        setPermissionProject(project);
+        setPermissionDrawerOpen(true);
     }, []);
 
     // 处理删除项目
@@ -197,6 +206,7 @@ export const ProjectManagement: React.FC = () => {
                              onClick={handleProjectClick}
                              onEdit={handleEditProject}
                              onDelete={handleDeleteProject}
+                             onPermission={handlePermission}
                              onRefresh={handleRefresh}
                              onSearch={handleSearch}
                              searchKeyword={searchKeyword}
@@ -214,6 +224,12 @@ export const ProjectManagement: React.FC = () => {
                                    setEditingProject(null);
                                }}
                                onSuccess={handleEditSuccess}/>
+            <PermissionDrawer open={permissionDrawerOpen}
+                              project={permissionProject}
+                              onClose={() => {
+                                  setPermissionDrawerOpen(false);
+                                  setPermissionProject(null);
+                              }}/>
         </Layout>
     );
 };

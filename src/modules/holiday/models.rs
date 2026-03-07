@@ -43,7 +43,7 @@ pub struct UpdateHolidayParams {
 #[serde(rename_all = "camelCase")]
 pub struct HolidayQueryParams {
     pub page: Option<i64>,
-    pub page_size: Option<i64>,
+    pub per_page: Option<i64>,
     pub holiday_name: Option<String>,
     pub holiday_type: Option<i32>,
     pub start_date: Option<chrono::NaiveDate>,

@@ -2,7 +2,7 @@
  * 假期模块 API
  */
 
-import type {PageResponse} from "@Webapp/http";
+import type {PaginatedResponse, ApiResponse} from "@Webapp/http";
 import {del, get, post, put} from "@Webapp/http";
 import type {
   BatchCreateHolidaysParams,
@@ -22,35 +22,35 @@ export const holidayApi = {
    * 获取假期列表（分页）
    */
   getHolidayList: (params?: HolidayQueryParams) => {
-    return get<PageResponse<Holiday>>("/holidays", params);
+    return get<PaginatedResponse<Holiday>>("/holidays", params);
   },
 
   /**
    * 获取所有假期列表（不分页）
    */
-  getAllHolidays: (params?: Omit<HolidayQueryParams, "page" | "pageSize">) => {
-    return get<Holiday[]>("/holidays/all", params);
+  getAllHolidays: (params?: Omit<HolidayQueryParams, "page" | "perPage">) => {
+    return get<ApiResponse<Holiday[]>>("/holidays/all", params);
   },
 
   /**
    * 根据 ID 获取假期详情
    */
   getHolidayById: (id: string) => {
-    return get<Holiday>(`/holidays/${id}`);
+    return get<ApiResponse<Holiday>>(`/holidays/${id}`);
   },
 
   /**
    * 创建假期
    */
   createHoliday: (data: CreateHolidayParams) => {
-    return post<Holiday>("/holidays", data);
+    return post<ApiResponse<Holiday>>("/holidays", data);
   },
 
   /**
    * 更新假期
    */
   updateHoliday: (id: string, data: UpdateHolidayParams) => {
-    return put<Holiday>(`/holidays/${id}`, data);
+    return put<ApiResponse<Holiday>>(`/holidays/${id}`, data);
   },
 
   /**
@@ -62,24 +62,23 @@ export const holidayApi = {
 
   /**
    * 批量删除假期
-   * @returns 返回删除的数量
    */
   batchDeleteHolidays: (params: BatchDeleteHolidaysParams) => {
-    return post<number>("/holidays/batch-delete", params);
+    return post<void>("/holidays/batch-delete", params);
   },
 
   /**
    * 批量创建假期
    */
   batchCreateHolidays: (params: BatchCreateHolidaysParams) => {
-    return post<Holiday[]>("/holidays/batch-create", params);
+    return post<ApiResponse<Holiday[]>>("/holidays/batch-create", params);
   },
 
   /**
    * 批量更新假期
    */
   batchUpdateHolidays: (params: BatchUpdateHolidaysParams) => {
-    return post<Holiday[]>("/holidays/batch-update", params);
+    return post<ApiResponse<Holiday[]>>("/holidays/batch-update", params);
   }
 };
 

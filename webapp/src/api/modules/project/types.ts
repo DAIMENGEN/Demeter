@@ -21,6 +21,53 @@ export const ProjectStatus = {
 export type ProjectStatus = (typeof ProjectStatus)[keyof typeof ProjectStatus];
 
 /**
+ * 项目可见性枚举
+ */
+export const ProjectVisibility = {
+  /** 仅成员可见 */
+  PRIVATE: 0,
+  /** 所有登录用户可见（操作需成员权限） */
+  INTERNAL: 1,
+  /** 所有人可见 */
+  PUBLIC: 2,
+} as const;
+
+export type ProjectVisibility = (typeof ProjectVisibility)[keyof typeof ProjectVisibility];
+
+/**
+ * 项目可见性标签映射 (i18n keys)
+ */
+export const ProjectVisibilityLabelKeys: Record<ProjectVisibility, string> = {
+  [ProjectVisibility.PRIVATE]: "project.visibilityPrivate",
+  [ProjectVisibility.INTERNAL]: "project.visibilityInternal",
+  [ProjectVisibility.PUBLIC]: "project.visibilityPublic",
+};
+
+/**
+ * 项目角色枚举（数值越小权限越高）
+ */
+export const ProjectRole = {
+  OWNER: 0,
+  ADMIN: 1,
+  MAINTAINER: 2,
+  MEMBER: 3,
+  VIEWER: 4,
+} as const;
+
+export type ProjectRole = (typeof ProjectRole)[keyof typeof ProjectRole];
+
+/**
+ * 项目角色标签映射 (i18n keys)
+ */
+export const ProjectRoleLabelKeys: Record<ProjectRole, string> = {
+  [ProjectRole.OWNER]: "project.roleOwner",
+  [ProjectRole.ADMIN]: "project.roleAdmin",
+  [ProjectRole.MAINTAINER]: "project.roleMaintainer",
+  [ProjectRole.MEMBER]: "project.roleMember",
+  [ProjectRole.VIEWER]: "project.roleViewer",
+};
+
+/**
  * 项目状态标签映射 (i18n keys)
  */
 export const ProjectStatusLabelKeys: Record<ProjectStatus, string> = {
@@ -43,10 +90,14 @@ export interface Project {
   projectStatus: ProjectStatus;
   version?: number;
   order?: number;
+  /** 可见性: 0=private, 1=internal, 2=public */
+  visibility: ProjectVisibility;
   creatorId: string;
   updaterId?: string;
   createDateTime: string;
   updateDateTime?: string;
+  /** 当前用户在此项目中的角色（仅 accessible/recently-visited 接口返回） */
+  myRole?: number | null;
 }
 
 /**
@@ -60,6 +111,8 @@ export interface CreateProjectParams {
   projectStatus: ProjectStatus;
   version?: number;
   order?: number;
+  /** 可见性，默认 0 (private) */
+  visibility?: ProjectVisibility;
 }
 
 /**
@@ -82,6 +135,7 @@ export interface UpdateProjectParams {
   version?: number | null;
   /** 可空字段：传 null 可清空 */
   order?: number | null;
+  visibility?: ProjectVisibility;
 }
 
 /**
@@ -89,7 +143,7 @@ export interface UpdateProjectParams {
  */
 export interface ProjectQueryParams {
   page?: number;
-  pageSize?: number;
+  perPage?: number;
   projectName?: string;
   projectStatus?: ProjectStatus;
   startDateTime?: string;
@@ -270,4 +324,133 @@ export interface ReorderProjectTasksParams {
 
 export interface BatchCreateProjectTasksParams {
   tasks: CreateProjectTaskParams[];
+}
+
+// ──────────────── 项目权限相关类型 ────────────────
+
+/**
+ * 项目权限枚举（与后端 Permission enum snake_case 序列化一一对应）
+ */
+export const ProjectPermission = {
+  // 项目
+  PROJECT_VIEW: "project_view",
+  PROJECT_EDIT: "project_edit",
+  PROJECT_DELETE: "project_delete",
+  PROJECT_MANAGE_MEMBERS: "project_manage_members",
+  PROJECT_TRANSFER_OWNERSHIP: "project_transfer_ownership",
+  // 属性配置
+  ATTRIBUTE_CONFIG_VIEW: "attribute_config_view",
+  ATTRIBUTE_CONFIG_CREATE: "attribute_config_create",
+  ATTRIBUTE_CONFIG_EDIT: "attribute_config_edit",
+  ATTRIBUTE_CONFIG_ARCHIVE: "attribute_config_archive",
+  // 任务
+  TASK_VIEW: "task_view",
+  TASK_CREATE: "task_create",
+  TASK_EDIT_ALL: "task_edit_all",
+  TASK_EDIT_OWN: "task_edit_own",
+  TASK_DELETE_ALL: "task_delete_all",
+  TASK_DELETE_OWN: "task_delete_own",
+  TASK_BATCH_OPERATE: "task_batch_operate",
+} as const;
+
+export type ProjectPermission = (typeof ProjectPermission)[keyof typeof ProjectPermission];
+
+/**
+ * 项目成员
+ */
+export interface ProjectMember {
+  id: string;
+  projectId: string;
+  userId: string;
+  role: number;
+  createDateTime: string;
+  updateDateTime: string | null;
+  username?: string;
+  fullName?: string;
+}
+
+/**
+ * 项目团队角色
+ */
+export interface ProjectTeamRole {
+  id: string;
+  projectId: string;
+  teamId: string;
+  role: number;
+  createDateTime: string;
+  updateDateTime: string | null;
+  teamName?: string;
+}
+
+/**
+ * 项目部门角色
+ */
+export interface ProjectDepartmentRole {
+  id: string;
+  projectId: string;
+  departmentId: string;
+  role: number;
+  createDateTime: string;
+  updateDateTime: string | null;
+  departmentName?: string;
+}
+
+/**
+ * 角色来源信息
+ */
+export interface RoleSource {
+  source: string;
+  sourceName?: string;
+  role: string;
+}
+
+/**
+ * 我的项目权限响应
+ */
+export interface MyPermissionsResponse {
+  role: string;
+  roleSources: RoleSource[];
+  permissions: string[];
+}
+
+/**
+ * 添加成员参数
+ */
+export interface AddMembersParams {
+  members: { userId: string; role: number }[];
+}
+
+/**
+ * 更新成员角色参数
+ */
+export interface UpdateMemberRoleParams {
+  role: number;
+}
+
+/**
+ * 添加团队角色参数
+ */
+export interface AddTeamRolesParams {
+  teamRoles: { teamId: string; role: number }[];
+}
+
+/**
+ * 更新团队角色参数
+ */
+export interface UpdateTeamRoleParams {
+  role: number;
+}
+
+/**
+ * 添加部门角色参数
+ */
+export interface AddDepartmentRolesParams {
+  departmentRoles: { departmentId: string; role: number }[];
+}
+
+/**
+ * 更新部门角色参数
+ */
+export interface UpdateDepartmentRoleParams {
+  role: number;
 }

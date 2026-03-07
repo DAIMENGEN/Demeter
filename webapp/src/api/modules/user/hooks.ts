@@ -4,7 +4,7 @@
 import {useCallback, useRef, useState} from "react";
 import {userApi} from "./api";
 import type {CreateUserParams, UpdateUserParams, User, UserQueryParams} from "./types";
-import {assertApiOk} from "@Webapp/api/common/response.ts";
+import {unwrapData} from "@Webapp/http";
 import {DEFAULT_PAGINATION, type Pagination} from "@Webapp/api/common/pagination.ts";
 
 /**
@@ -20,22 +20,22 @@ export const useUserList = () => {
             setLoading(true);
             const response = await userApi.getUserList({
                 page: pagination.page,
-                pageSize: pagination.pageSize,
+                perPage: pagination.perPage,
                 ...params,
             });
 
-            const pageRes = assertApiOk(response);
-            setUsers(pageRes.list);
+            setUsers(response.data);
             setPagination((prev) => ({
                 ...prev,
-                total: pageRes.total,
+                total: response.meta.total,
+                totalPages: response.meta.total_pages,
                 page: params?.page ?? prev.page,
-                pageSize: params?.pageSize ?? prev.pageSize,
+                perPage: params?.perPage ?? prev.perPage,
             }));
         } finally {
             setLoading(false);
         }
-    }, [pagination.page, pagination.pageSize]);
+    }, [pagination.page, pagination.perPage]);
 
     return {
         users,
@@ -57,7 +57,7 @@ export const useUserDetail = () => {
         try {
             setLoading(true);
             const response = await userApi.getUserById(id);
-            setUser(assertApiOk(response));
+            setUser(unwrapData(response));
         } finally {
             setLoading(false);
         }
@@ -80,7 +80,7 @@ export const useUserActions = () => {
         try {
             setLoading(true);
             const response = await userApi.createUser(data);
-            return assertApiOk(response);
+            return unwrapData(response);
         } finally {
             setLoading(false);
         }
@@ -93,7 +93,7 @@ export const useUserActions = () => {
         try {
             setLoading(true);
             const response = await userApi.updateUser(id, data);
-            return assertApiOk(response);
+            return unwrapData(response);
         } finally {
             setLoading(false);
         }
@@ -102,8 +102,7 @@ export const useUserActions = () => {
     const deleteUser = useCallback(async (id: string) => {
         try {
             setLoading(true);
-            const response = await userApi.deleteUser(id);
-            assertApiOk(response);
+            await userApi.deleteUser(id);
         } finally {
             setLoading(false);
         }
@@ -113,7 +112,7 @@ export const useUserActions = () => {
         try {
             setLoading(true);
             const response = await userApi.toggleUserStatus(id, {isActive});
-            return assertApiOk(response);
+            return unwrapData(response);
         } finally {
             setLoading(false);
         }
@@ -123,7 +122,7 @@ export const useUserActions = () => {
         try {
             setLoading(true);
             const response = await userApi.resetPassword(id);
-            return assertApiOk(response);
+            return unwrapData(response);
         } finally {
             setLoading(false);
         }
@@ -155,10 +154,10 @@ export interface UserSelectOption {
 }
 
 export const useUserSelectOptions = (params?: {
-    pageSize?: number;
+    perPage?: number;
     activeOnly?: boolean;
 }) => {
-    const pageSize = params?.pageSize ?? 20;
+    const perPage = params?.perPage ?? 20;
     const activeOnly = params?.activeOnly ?? true;
 
     const [options, setOptions] = useState<UserSelectOption[]>([]);
@@ -187,18 +186,17 @@ export const useUserSelectOptions = (params?: {
             setLoading(true);
             const response = await userApi.getUserList({
                 page: 1,
-                pageSize,
+                perPage,
                 keyword: kw || undefined,
                 isActive: activeOnly ? true : undefined,
             });
-            const pageRes = assertApiOk(response);
-            const mapped = pageRes.list.map(toOption);
+            const mapped = response.data.map(toOption);
             setOptions(mapped);
-            hasMoreRef.current = pageRes.list.length >= pageSize;
+            hasMoreRef.current = response.data.length >= perPage;
         } finally {
             setLoading(false);
         }
-    }, [pageSize, activeOnly, toOption]);
+    }, [perPage, activeOnly, toOption]);
 
     /**
      * 加载更多（下一页追加）
@@ -211,14 +209,13 @@ export const useUserSelectOptions = (params?: {
             setLoading(true);
             const response = await userApi.getUserList({
                 page: nextPage,
-                pageSize,
+                perPage,
                 keyword: keywordRef.current || undefined,
                 isActive: activeOnly ? true : undefined,
             });
-            const pageRes = assertApiOk(response);
-            const mapped = pageRes.list.map(toOption);
+            const mapped = response.data.map(toOption);
             pageRef.current = nextPage;
-            hasMoreRef.current = pageRes.list.length >= pageSize;
+            hasMoreRef.current = response.data.length >= perPage;
             setOptions((prev) => {
                 // 去重合并
                 const map = new Map(prev.map((o) => [o.value, o]));
@@ -228,7 +225,7 @@ export const useUserSelectOptions = (params?: {
         } finally {
             setLoading(false);
         }
-    }, [loading, pageSize, activeOnly, toOption]);
+    }, [loading, perPage, activeOnly, toOption]);
 
     /**
      * 重置为初始状态

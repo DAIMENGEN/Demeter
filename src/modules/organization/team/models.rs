@@ -35,7 +35,7 @@ pub struct UpdateTeamParams {
 #[serde(rename_all = "camelCase")]
 pub struct TeamQueryParams {
     pub page: Option<i64>,
-    pub page_size: Option<i64>,
+    pub per_page: Option<i64>,
     pub team_name: Option<String>,
 }
 

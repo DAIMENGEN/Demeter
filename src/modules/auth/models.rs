@@ -11,6 +11,7 @@ use crate::modules::user::models::User;
 #[derive(Debug, Clone, FromRow)]
 pub struct AuthUser {
     pub id: Id,
+    #[allow(unused)]
     pub username: String,
     pub password: Option<String>,
     #[allow(unused)]
@@ -19,6 +20,7 @@ pub struct AuthUser {
     pub email: String,
     #[allow(unused)]
     pub phone: Option<String>,
+    pub role: crate::modules::user::models::UserRole,
     pub is_active: bool,
     #[allow(unused)]
     pub creator_id: Id,

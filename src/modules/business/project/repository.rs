@@ -1,7 +1,7 @@
 use crate::common::error::AppResult;
 use crate::modules::business::project::models::{
-    CreateProjectParams, Project, ProjectQueryParams, RecentlyVisitedQueryParams,
-    UpdateProjectParams,
+    CreateProjectParams, Project, ProjectQueryParams,
+    RecentlyVisitedQueryParams, UpdateProjectParams,
 };
 use sqlx::PgPool;
 use sqlx::QueryBuilder;
@@ -12,12 +12,12 @@ pub struct ProjectRepository;
 
 /// projects 表 SELECT 列
 const PROJECT_COLUMNS: &str = r#"id, project_name, description, start_date_time, end_date_time, 
-    project_status, version, "order", creator_id, updater_id, 
+    project_status, version, "order", visibility, creator_id, updater_id, 
     create_date_time, update_date_time"#;
 
 /// projects 表 RETURNING 列
 const PROJECT_RETURNING: &str = r#" RETURNING id, project_name, description, start_date_time, end_date_time, 
-    project_status, version, "order", creator_id, updater_id, 
+    project_status, version, "order", visibility, creator_id, updater_id, 
     create_date_time, update_date_time"#;
 
 impl ProjectRepository {
@@ -26,7 +26,7 @@ impl ProjectRepository {
         params: ProjectQueryParams,
     ) -> AppResult<(Vec<Project>, i64)> {
         let page = params.page.unwrap_or(1);
-        let page_size = params.page_size.unwrap_or(10);
+        let page_size = params.per_page.unwrap_or(10);
         let offset = (page - 1) * page_size;
         let project_name_pattern = params.project_name.as_ref().map(|p| format!("%{}%", p));
         let projects = sqlx::query_as::<_, Project>(
@@ -139,7 +139,7 @@ impl ProjectRepository {
         params: ProjectQueryParams,
     ) -> AppResult<(Vec<Project>, i64)> {
         let page = params.page.unwrap_or(1);
-        let page_size = params.page_size.unwrap_or(10);
+        let page_size = params.per_page.unwrap_or(10);
         let offset = (page - 1) * page_size;
         let project_name_pattern = params.project_name.as_ref().map(|p| format!("%{}%", p));
 
@@ -205,6 +205,53 @@ impl ProjectRepository {
         Ok(projects)
     }
 
+    /// 获取用户可访问的所有项目（不分页）
+    /// 来源：直接成员 + 团队成员 + 部门成员 + Internal/Public 可见性 + 用户创建的项目
+    pub async fn get_accessible_projects(
+        pool: &PgPool,
+        user_id: i64,
+        params: ProjectQueryParams,
+    ) -> AppResult<Vec<Project>> {
+        let project_name_pattern = params.project_name.as_ref().map(|p| format!("%{}%", p));
+        let projects = sqlx::query_as::<_, Project>(
+            r#"
+            SELECT DISTINCT p.id, p.project_name, p.description, p.start_date_time, p.end_date_time,
+                p.project_status, p.version, p."order", p.visibility, p.creator_id, p.updater_id,
+                p.create_date_time, p.update_date_time,
+                LEAST(
+                    CASE WHEN p.creator_id = $1 THEN 0 END,
+                    (SELECT pm.role FROM project_members pm WHERE pm.project_id = p.id AND pm.user_id = $1),
+                    (SELECT MIN(ptr.role) FROM project_team_roles ptr JOIN user_teams ut ON ut.team_id = ptr.team_id WHERE ptr.project_id = p.id AND ut.user_id = $1),
+                    (SELECT pdr.role FROM project_department_roles pdr JOIN user_departments ud ON ud.department_id = pdr.department_id WHERE pdr.project_id = p.id AND ud.user_id = $1)
+                ) AS my_role
+            FROM projects p
+            WHERE (
+                p.creator_id = $1
+                OR EXISTS (SELECT 1 FROM project_members pm WHERE pm.project_id = p.id AND pm.user_id = $1)
+                OR EXISTS (
+                    SELECT 1 FROM project_team_roles ptr
+                    JOIN user_teams ut ON ut.team_id = ptr.team_id
+                    WHERE ptr.project_id = p.id AND ut.user_id = $1
+                )
+                OR EXISTS (
+                    SELECT 1 FROM project_department_roles pdr
+                    JOIN user_departments ud ON ud.department_id = pdr.department_id
+                    WHERE pdr.project_id = p.id AND ud.user_id = $1
+                )
+                OR p.visibility IN (1, 2)
+            )
+            AND ($2::TEXT IS NULL OR p.project_name ILIKE $2)
+            ORDER BY p."order" ASC NULLS LAST, p.create_date_time DESC
+            "#,
+        )
+        .bind(user_id)
+        .bind(&project_name_pattern)
+        .fetch_all(pool)
+        .await?;
+
+        Ok(projects)
+    }
+
     pub async fn create_project(
         pool: &PgPool,
         project_id: i64,
@@ -213,8 +260,8 @@ impl ProjectRepository {
     ) -> AppResult<Project> {
         let sql = format!(
             r#"INSERT INTO projects (id, project_name, description, start_date_time, end_date_time,
-                                 project_status, version, "order", creator_id, create_date_time)
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW()){}
+                                 project_status, version, "order", visibility, creator_id, create_date_time)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW()){}
             "#,
             PROJECT_RETURNING,
         );
@@ -227,6 +274,7 @@ impl ProjectRepository {
         .bind(params.project_status)
         .bind(params.version)
         .bind(params.order)
+        .bind(params.visibility.unwrap_or(0))
         .bind(creator_id)
         .fetch_one(pool)
         .await?;
@@ -294,6 +342,13 @@ impl ProjectRepository {
             has_set = true;
         }
 
+        if let Some(ref vis) = params.visibility {
+            if has_set { qb.push(", "); }
+            qb.push("visibility = ");
+            qb.push_bind(*vis);
+            has_set = true;
+        }
+
         // 若没有任何业务字段出现，仅更新 updater_id + update_date_time
         if has_set { qb.push(", "); }
         qb.push("updater_id = ");
@@ -324,6 +379,18 @@ impl ProjectRepository {
             .bind(project_id)
             .execute(&mut *tx)
             .await?;
+        sqlx::query("DELETE FROM project_members WHERE project_id = $1")
+            .bind(project_id)
+            .execute(&mut *tx)
+            .await?;
+        sqlx::query("DELETE FROM project_team_roles WHERE project_id = $1")
+            .bind(project_id)
+            .execute(&mut *tx)
+            .await?;
+        sqlx::query("DELETE FROM project_department_roles WHERE project_id = $1")
+            .bind(project_id)
+            .execute(&mut *tx)
+            .await?;
         let result = sqlx::query("DELETE FROM projects WHERE id = $1")
             .bind(project_id)
             .execute(&mut *tx)
@@ -350,6 +417,18 @@ impl ProjectRepository {
             .bind(&project_ids)
             .execute(&mut *tx)
             .await?;
+        sqlx::query("DELETE FROM project_members WHERE project_id = ANY($1)")
+            .bind(&project_ids)
+            .execute(&mut *tx)
+            .await?;
+        sqlx::query("DELETE FROM project_team_roles WHERE project_id = ANY($1)")
+            .bind(&project_ids)
+            .execute(&mut *tx)
+            .await?;
+        sqlx::query("DELETE FROM project_department_roles WHERE project_id = ANY($1)")
+            .bind(&project_ids)
+            .execute(&mut *tx)
+            .await?;
         let result = sqlx::query("DELETE FROM projects WHERE id = ANY($1)")
             .bind(&project_ids)
             .execute(&mut *tx)
@@ -358,7 +437,7 @@ impl ProjectRepository {
         Ok(result.rows_affected())
     }
 
-    pub async fn reorder_projects(pool: &PgPool, project_ids: Vec<i64>) -> AppResult<()> {
+    pub async fn reorder_projects(pool: &PgPool, creator_id: i64, project_ids: Vec<i64>) -> AppResult<()> {
         if project_ids.is_empty() {
             return Ok(());
         }
@@ -371,11 +450,12 @@ impl ProjectRepository {
             UPDATE projects
             SET "order" = data.new_order, update_date_time = CURRENT_TIMESTAMP
             FROM unnest($1::bigint[], $2::float8[]) AS data(id, new_order)
-            WHERE projects.id = data.id
+            WHERE projects.id = data.id AND projects.creator_id = $3
             "#,
         )
         .bind(&project_ids)
         .bind(&orders)
+        .bind(creator_id)
         .execute(pool)
         .await?;
 
@@ -393,10 +473,11 @@ impl ProjectVisitRepository {
     ) -> AppResult<()> {
         sqlx::query(
             r#"
-            INSERT INTO project_visits (id, user_id, project_id, visited_at)
-            VALUES ($1, $2, $3, CURRENT_TIMESTAMP)
+            INSERT INTO project_visits (id, user_id, project_id, visited_at, create_date_time)
+            VALUES ($1, $2, $3, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
             ON CONFLICT (user_id, project_id)
-            DO UPDATE SET visited_at = CURRENT_TIMESTAMP
+            DO UPDATE SET visited_at = CURRENT_TIMESTAMP,
+                         update_date_time = CURRENT_TIMESTAMP
             "#,
         )
         .bind(visit_id)
@@ -420,8 +501,14 @@ impl ProjectVisitRepository {
         let projects = sqlx::query_as::<_, Project>(
             r#"
             SELECT p.id, p.project_name, p.description, p.start_date_time, p.end_date_time,
-                   p.project_status, p.version, p."order", p.creator_id, p.updater_id,
-                   p.create_date_time, p.update_date_time
+                   p.project_status, p.version, p."order", p.visibility, p.creator_id, p.updater_id,
+                   p.create_date_time, p.update_date_time,
+                   LEAST(
+                       CASE WHEN p.creator_id = $1 THEN 0 END,
+                       (SELECT pm.role FROM project_members pm WHERE pm.project_id = p.id AND pm.user_id = $1),
+                       (SELECT MIN(ptr.role) FROM project_team_roles ptr JOIN user_teams ut ON ut.team_id = ptr.team_id WHERE ptr.project_id = p.id AND ut.user_id = $1),
+                       (SELECT pdr.role FROM project_department_roles pdr JOIN user_departments ud ON ud.department_id = pdr.department_id WHERE pdr.project_id = p.id AND ud.user_id = $1)
+                   ) AS my_role
             FROM projects p
             INNER JOIN project_visits pv ON p.id = pv.project_id
             WHERE pv.user_id = $1

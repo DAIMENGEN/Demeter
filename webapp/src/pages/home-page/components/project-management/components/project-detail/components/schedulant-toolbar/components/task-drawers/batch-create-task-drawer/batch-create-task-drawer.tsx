@@ -796,7 +796,7 @@ export const BatchCreateTaskDrawer: React.FC<BatchCreateTaskDrawerProps> = ({
             defaultSize={1200}
             classNames={{body: "batch-create-task-drawer-body"}}
             footer={footer}
-            destroyOnClose
+            destroyOnHidden
         >
             {/* Toolbar */}
             <div className="batch-create-toolbar">

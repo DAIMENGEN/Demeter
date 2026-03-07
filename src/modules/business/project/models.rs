@@ -13,10 +13,16 @@ pub struct Project {
     pub project_status: i32,
     pub version: Option<i32>,
     pub order: Option<f64>,
+    /// 可见性: 0=private, 1=internal, 2=public
+    pub visibility: i32,
     pub creator_id: Id,
     pub updater_id: Option<Id>,
     pub create_date_time: chrono::NaiveDateTime,
     pub update_date_time: Option<chrono::NaiveDateTime>,
+    /// 当前用户在此项目中的角色（0=owner, 1=admin, 2=maintainer, 3=member, 4=viewer, null=无角色）
+    /// 仅在特定查询中填充，其余场景默认 None
+    #[sqlx(default)]
+    pub my_role: Option<i32>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -29,6 +35,8 @@ pub struct CreateProjectParams {
     pub project_status: i32,
     pub version: Option<i32>,
     pub order: Option<f64>,
+    /// 可见性: 0=private(默认), 1=internal, 2=public
+    pub visibility: Option<i32>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -52,13 +60,15 @@ pub struct UpdateProjectParams {
     /// 可空字段，双层 Option
     #[serde(default, deserialize_with = "crate::common::serde_helpers::double_option::deserialize")]
     pub order: Option<Option<f64>>,
+    /// NOT NULL 字段
+    pub visibility: Option<i32>,
 }
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ProjectQueryParams {
     pub page: Option<i64>,
-    pub page_size: Option<i64>,
+    pub per_page: Option<i64>,
     pub project_name: Option<String>,
     pub project_status: Option<i32>,
     pub start_date_time: Option<chrono::NaiveDateTime>,
@@ -84,6 +94,9 @@ pub struct ProjectVisit {
     pub user_id: Id,
     pub project_id: Id,
     pub visited_at: chrono::NaiveDateTime,
+    pub updater_id: Option<Id>,
+    pub create_date_time: chrono::NaiveDateTime,
+    pub update_date_time: Option<chrono::NaiveDateTime>,
 }
 
 #[derive(Debug, Deserialize)]

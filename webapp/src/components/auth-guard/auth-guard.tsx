@@ -1,26 +1,27 @@
 import type {ReactNode} from "react";
-import {useEffect, useRef, useState} from "react";
-import {useLocation, useNavigate} from "react-router-dom";
+import {useCallback, useEffect, useRef, useState} from "react";
+import {useNavigate} from "react-router-dom";
 import {App} from "antd";
 import {useTranslation} from "react-i18next";
 import {useSession} from "@Webapp/api";
+import {authEvent} from "@Webapp/http";
 import {useAppDispatch} from "@Webapp/store/hooks";
 import {loginSuccess, logout as logoutAction} from "@Webapp/store/slices/user-slice";
 
-interface AuthSessionGuardProps {
+interface AuthGuardProps {
     children: ReactNode;
 }
 
 /**
- * 会话守卫：
- * - 在进入受保护路由区域（/home/**）时，向后端询问当前 cookie 会话是否有效
+ * 会话守卫：仅包裹受保护路由，挂载时向后端验证 cookie 会话。
  * - 有效：回填 redux 用户信息
  * - 失效：清理 redux，跳转 /login
+ *
+ * 同时注册 authEvent 回调，当 token 刷新失败时收到通知并在 React 层进行路由跳转。
  */
-export const AuthGuard = ({children}: AuthSessionGuardProps) => {
+export const AuthGuard = ({children}: AuthGuardProps) => {
     const {message} = App.useApp();
     const {t} = useTranslation();
-    const location = useLocation();
     const navigate = useNavigate();
     const dispatch = useAppDispatch();
     const {getSession} = useSession();
@@ -29,13 +30,18 @@ export const AuthGuard = ({children}: AuthSessionGuardProps) => {
     const checkingRef = useRef(false);
     const notifiedRef = useRef(false);
 
-    useEffect(() => {
-        const shouldCheck = location.pathname.startsWith("/home");
-        if (!shouldCheck) {
-            setChecked(true);
-            return;
-        }
+    // 注册会话失效事件回调（token 刷新失败时触发）
+    const handleSessionExpired = useCallback(() => {
+        dispatch(logoutAction());
+        navigate("/login", {replace: true});
+    }, [dispatch, navigate]);
 
+    useEffect(() => {
+        authEvent.onSessionExpired(handleSessionExpired);
+        return () => authEvent.onSessionExpired(null);
+    }, [handleSessionExpired]);
+
+    useEffect(() => {
         if (checkingRef.current) return;
         checkingRef.current = true;
 
@@ -55,7 +61,7 @@ export const AuthGuard = ({children}: AuthSessionGuardProps) => {
                 checkingRef.current = false;
             }
         })();
-    }, [location.pathname, dispatch, navigate, getSession, message, t]);
+    }, [dispatch, navigate, getSession, message, t]);
 
     if (!checked) return null;
     return <>{children}</>;
